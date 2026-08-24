@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+## Description: Start DDEV backend environment and launch React frontend dev server
+## Usage: dev
+## UsageExample: ddev dev
+
+# Ensure DDEV services are started
+if ! ddev describe >/dev/null 2>&1; then
+    echo "Starting DDEV services..."
+    ddev start
+fi
+
+# Check if frontend node_modules exists, install if missing
+if [ -f "$DDEV_APPROOT/frontend/package.json" ] && [ ! -d "$DDEV_APPROOT/frontend/node_modules" ]; then
+    echo "Installing frontend dependencies..."
+    cd "$DDEV_APPROOT/frontend" && npm install
+fi
+
+echo "🚀 Starting React Frontend Dev Server..."
+cd "$DDEV_APPROOT/frontend" && npm run dev
