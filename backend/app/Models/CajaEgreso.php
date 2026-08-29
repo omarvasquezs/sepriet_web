@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CajaEgreso extends Model
 {
+    public $timestamps = false;
     protected $table = 'caja_egresos';
 
     protected $fillable = [
@@ -20,7 +21,7 @@ class CajaEgreso extends Model
 
     protected $casts = [
         'fecha' => 'datetime',
-        'monto' => 'decimal:2',
+        'monto' => 'float',
     ];
 
     public function caja()

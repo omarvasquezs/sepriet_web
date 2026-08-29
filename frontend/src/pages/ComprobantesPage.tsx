@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2 } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
 
 export const ComprobantesPage: React.FC = () => {
-  const [comprobantes, setComprobantes] = useState<any[]>([]);
+  const [comprobantesData, setComprobantesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
   const [clientes, setClientes] = useState<any[]>([]);
   const [servicios, setServicios] = useState<any[]>([]);
-  const [catalogos, setCatalogos] = useState<any>({ estados: [], estados_ropa: [], metodos_pago: [] });
+  const [catalogos, setCatalogos] = useState<any>({ estados_pago: [], estados_ropa: [], metodos_pago: [] });
 
   const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
+  const [estadoPagoFilter, setEstadoPagoFilter] = useState('');
+  const [estadoRopaFilter, setEstadoRopaFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Modals
@@ -20,38 +22,44 @@ export const ComprobantesPage: React.FC = () => {
 
   // Abono Form
   const [abonoAmount, setAbonoAmount] = useState('');
-  const [abonoMetodoPago, setAbonoMetodoPago] = useState('');
+  const [abonoMetodoPago, setAbonoMetodoPago] = useState('4');
 
   // Create Form State
   const [createForm, setCreateForm] = useState({
+    tipo_comprobante: 'N',
     cliente_id: '',
-    fecha_entrega: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+    metodo_pago_id: '4', // Efectivo
     descuento: '0.00',
     monto_abonado: '0.00',
-    metodo_pago_id: '',
     observaciones: '',
+    num_ruc: '',
+    razon_social: '',
     detalles: [
-      { servicio_id: '', peso_kg: '', costo_kilo: '', cantidad: 1, precio_unitario: '0.00', estado_ropa_id: '', observaciones: '' }
+      { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00' }
     ]
   });
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [compRes, cliRes, servRes, catRes] = await Promise.all([
-        api.get('/comprobantes', { params: { search, estado_id: estadoFilter } }),
-        api.get('/clientes'),
-        api.get('/servicios'),
+        api.get('/comprobantes', {
+          params: {
+            search,
+            estado_comprobante_id: estadoPagoFilter,
+            estado_ropa_id: estadoRopaFilter,
+            page
+          }
+        }),
+        api.get('/clientes', { params: { per_page: 100 } }),
+        api.get('/servicios', { params: { habilitado: true } }),
         api.get('/catalogos')
       ]);
 
-      setComprobantes(compRes.data);
-      setClientes(cliRes.data);
+      setComprobantesData(compRes.data);
+      setClientes(cliRes.data.data || cliRes.data);
       setServicios(servRes.data);
       setCatalogos(catRes.data);
-
-      if (catRes.data.metodos_pago.length > 0 && !createForm.metodo_pago_id) {
-        setCreateForm(prev => ({ ...prev, metodo_pago_id: String(catRes.data.metodos_pago[0].id) }));
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -61,14 +69,14 @@ export const ComprobantesPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [search, estadoFilter]);
+  }, [search, estadoPagoFilter, estadoRopaFilter, page]);
 
   const handleAddDetalle = () => {
     setCreateForm(prev => ({
       ...prev,
       detalles: [
         ...prev.detalles,
-        { servicio_id: '', peso_kg: '', costo_kilo: '', cantidad: 1, precio_unitario: '0.00', estado_ropa_id: '', observaciones: '' }
+        { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00' }
       ]
     }));
   };
@@ -89,23 +97,16 @@ export const ComprobantesPage: React.FC = () => {
         ...newDetalles[index],
         servicio_id: servicioId,
         costo_kilo: s?.precio_kilo ? String(s.precio_kilo) : '0.00',
-        precio_unitario: s?.precio_unidad ? String(s.precio_unidad) : '0.00',
-        peso_kg: s?.tipo_servicio === 'Kilo' ? '2.5' : '',
-        cantidad: s?.tipo_servicio === 'Kilo' ? 1 : 1
+        peso_kg: newDetalles[index].peso_kg || '1.00'
       };
       return { ...prev, detalles: newDetalles };
     });
   };
 
-  // Calculations
   const calculateTotal = () => {
     let subtotal = 0;
     createForm.detalles.forEach(d => {
-      if (Number(d.peso_kg || 0) > 0 && Number(d.costo_kilo || 0) > 0) {
-        subtotal += Number(d.peso_kg) * Number(d.costo_kilo);
-      } else {
-        subtotal += Number(d.cantidad || 1) * Number(d.precio_unitario || 0);
-      }
+      subtotal += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0);
     });
     const desc = Number(createForm.descuento || 0);
     return Math.max(0, subtotal - desc);
@@ -122,19 +123,16 @@ export const ComprobantesPage: React.FC = () => {
         monto_abonado: Number(createForm.monto_abonado),
         detalles: createForm.detalles.map(d => ({
           servicio_id: Number(d.servicio_id),
-          peso_kg: d.peso_kg ? Number(d.peso_kg) : null,
-          costo_kilo: d.costo_kilo ? Number(d.costo_kilo) : null,
-          cantidad: Number(d.cantidad),
-          precio_unitario: Number(d.precio_unitario),
-          estado_ropa_id: d.estado_ropa_id ? Number(d.estado_ropa_id) : null,
-          observaciones: d.observaciones
+          peso_kg: Number(d.peso_kg),
+          costo_kilo: Number(d.costo_kilo),
         }))
       });
 
       setShowCreateModal(false);
+      setPage(1);
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al guardar comprobante');
+      alert(err.response?.data?.message || 'Error al registrar comprobante');
     }
   };
 
@@ -154,39 +152,62 @@ export const ComprobantesPage: React.FC = () => {
     }
   };
 
-  const handleEstadoChange = async (ticketId: number, estadoId: string) => {
+  const handleEstadoRopaChange = async (ticketId: number, estadoRopaId: string) => {
     try {
-      await api.put(`/comprobantes/${ticketId}/estado`, { estado_id: Number(estadoId) });
+      await api.put(`/comprobantes/${ticketId}/estado`, { estado_ropa_id: Number(estadoRopaId) });
       fetchData();
     } catch (err) {
       console.error(err);
     }
   };
 
+  const getBadgeClassPago = (nombre: string) => {
+    switch (nombre?.toUpperCase()) {
+      case 'CANCELADO': return 'badge-listo';
+      case 'ABONO': return 'badge-proceso';
+      case 'DEBE': return 'badge-pendiente';
+      case 'ANULADO': return 'badge-cancelado';
+      default: return 'badge-pendiente';
+    }
+  };
+
+
+
   return (
     <div style={{ padding: '28px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '16px', flex: 1, maxWidth: '600px' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
+        <div style={{ display: 'flex', gap: '12px', flex: 1, maxWidth: '750px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', minWidth: '260px', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
             <input
               type="text"
               className="form-input"
               style={{ width: '100%', paddingLeft: '42px' }}
-              placeholder="Buscar por código (TICK-...) o cliente..."
+              placeholder="Buscar ticket (NV001-...), DNI, cliente..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
 
           <select
             className="form-select"
-            value={estadoFilter}
-            onChange={(e) => setEstadoFilter(e.target.value)}
+            value={estadoPagoFilter}
+            onChange={(e) => { setEstadoPagoFilter(e.target.value); setPage(1); }}
           >
-            <option value="">Todos los Estados</option>
-            {catalogos.estados.map((est: any) => (
-              <option key={est.id} value={est.id}>{est.nombre}</option>
+            <option value="">Pago: Todos</option>
+            {catalogos.estados_pago.map((ep: any) => (
+              <option key={ep.id} value={ep.id}>{ep.nom_estado}</option>
+            ))}
+          </select>
+
+          <select
+            className="form-select"
+            value={estadoRopaFilter}
+            onChange={(e) => { setEstadoRopaFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">Prendas: Todos</option>
+            {catalogos.estados_ropa.map((er: any) => (
+              <option key={er.id} value={er.id}>{er.nom_estado_ropa}</option>
             ))}
           </select>
         </div>
@@ -198,81 +219,113 @@ export const ComprobantesPage: React.FC = () => {
 
       <div className="glass-panel" style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Cargando comprobantes...</p>
-        ) : comprobantes.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay comprobantes para mostrar.</p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>Cargando comprobantes...</p>
+        ) : comprobantesData.data.length === 0 ? (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron comprobantes con esos filtros.</p>
         ) : (
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Ticket</th>
-                <th>Cliente</th>
-                <th>Fecha Recepción</th>
-                <th>Fecha Entrega</th>
-                <th>Estado</th>
-                <th>Total</th>
-                <th>Abonado</th>
-                <th>Restante</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comprobantes.map((t) => (
-                <tr key={t.id} className="row-item">
-                  <td style={{ fontWeight: 700, color: '#818cf8' }}>{t.cod_comprobante}</td>
-                  <td style={{ fontWeight: 600, color: 'white' }}>{t.cliente?.nombres}</td>
-                  <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
-                  <td>{t.fecha_entrega ? new Date(t.fecha_entrega).toLocaleDateString('es-PE') : '-'}</td>
-                  <td>
-                    <select
-                      className="form-select"
-                      style={{ padding: '4px 8px', fontSize: '0.8rem', fontWeight: 600 }}
-                      value={t.estado_id}
-                      onChange={(e) => handleEstadoChange(t.id, e.target.value)}
-                    >
-                      {catalogos.estados.map((est: any) => (
-                        <option key={est.id} value={est.id}>{est.nombre}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total).toFixed(2)}</td>
-                  <td style={{ color: '#34d399', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
-                  <td style={{ color: Number(t.monto_restante) > 0 ? '#fca5a5' : '#34d399', fontWeight: 700 }}>
-                    S/ {Number(t.monto_restante).toFixed(2)}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {Number(t.monto_restante) > 0 && (
+          <div>
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Cliente</th>
+                  <th>Fecha</th>
+                  <th>Estado Pago</th>
+                  <th>Estado Ropa</th>
+                  <th>Total</th>
+                  <th>Abonado</th>
+                  <th>Restante</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comprobantesData.data.map((t: any) => (
+                  <tr key={t.id} className="row-item">
+                    <td style={{ fontWeight: 700, color: '#818cf8' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
+                    <td style={{ fontWeight: 600, color: 'white' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
+                    <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
+                    <td>
+                      <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado)}`}>
+                        {t.estado_comprobante?.nom_estado || 'DEBE'}
+                      </span>
+                    </td>
+                    <td>
+                      <select
+                        className="form-select"
+                        style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 600 }}
+                        value={t.estado_ropa_id || 1}
+                        onChange={(e) => handleEstadoRopaChange(t.id, e.target.value)}
+                      >
+                        {catalogos.estados_ropa.map((er: any) => (
+                          <option key={er.id} value={er.id}>{er.nom_estado_ropa}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total).toFixed(2)}</td>
+                    <td style={{ color: '#34d399', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
+                    <td style={{ color: Number(t.monto_restante) > 0 ? '#fca5a5' : '#34d399', fontWeight: 700 }}>
+                      S/ {Number(t.monto_restante).toFixed(2)}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {Number(t.monto_restante) > 0 && (
+                          <button
+                            className="btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: '0.78rem' }}
+                            title="Registrar Abono"
+                            onClick={() => {
+                              setSelectedTicket(t);
+                              setAbonoMetodoPago('4');
+                              setShowAbonoModal(true);
+                            }}
+                          >
+                            <DollarSign size={14} color="#34d399" /> Abono
+                          </button>
+                        )}
                         <button
                           className="btn-secondary"
-                          style={{ padding: '4px 8px', fontSize: '0.78rem' }}
-                          title="Registrar Abono"
+                          style={{ padding: '4px 8px' }}
+                          title="Imprimir / Vista Previa"
                           onClick={() => {
                             setSelectedTicket(t);
-                            setAbonoMetodoPago(catalogos.metodos_pago[0]?.id || '');
-                            setShowAbonoModal(true);
+                            setShowPrintModal(true);
                           }}
                         >
-                          <DollarSign size={14} color="#34d399" /> Abono
+                          <Printer size={14} />
                         </button>
-                      )}
-                      <button
-                        className="btn-secondary"
-                        style={{ padding: '4px 8px' }}
-                        title="Imprimir / Vista Previa"
-                        onClick={() => {
-                          setSelectedTicket(t);
-                          setShowPrintModal(true);
-                        }}
-                      >
-                        <Printer size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Mostrando página {comprobantesData.current_page} de {comprobantesData.last_page} ({comprobantesData.total} tickets en total)
+              </span>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn-secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  style={{ opacity: page <= 1 ? 0.5 : 1 }}
+                >
+                  <ChevronLeft size={16} /> Anterior
+                </button>
+                <button
+                  className="btn-secondary"
+                  disabled={page >= comprobantesData.last_page}
+                  onClick={() => setPage(prev => prev + 1)}
+                  style={{ opacity: page >= comprobantesData.last_page ? 0.5 : 1 }}
+                >
+                  Siguiente <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -280,10 +333,23 @@ export const ComprobantesPage: React.FC = () => {
       {showCreateModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '850px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '20px' }}>Registrar Comprobante / Ticket</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '20px' }}>Registrar Nuevo Comprobante</h3>
 
             <form onSubmit={handleCreateSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Tipo de Comprobante *</label>
+                  <select
+                    className="form-select"
+                    value={createForm.tipo_comprobante}
+                    onChange={(e) => setCreateForm({ ...createForm, tipo_comprobante: e.target.value })}
+                  >
+                    <option value="N">Nota de Venta (NV)</option>
+                    <option value="B">Boleta de Venta (BV)</option>
+                    <option value="F">Factura (FV)</option>
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Cliente *</label>
                   <select
@@ -298,23 +364,38 @@ export const ComprobantesPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Fecha Estimada de Entrega</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={createForm.fecha_entrega}
-                    onChange={(e) => setCreateForm({ ...createForm, fecha_entrega: e.target.value })}
-                  />
-                </div>
               </div>
+
+              {createForm.tipo_comprobante === 'F' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">RUC *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      required
+                      value={createForm.num_ruc}
+                      onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Razón Social *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      required
+                      value={createForm.razon_social}
+                      onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
 
               <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', marginTop: '16px', marginBottom: '12px' }}>Detalles de Servicios</h4>
 
               {createForm.detalles.map((det, idx) => (
                 <div key={idx} className="glass-card" style={{ padding: '14px', marginBottom: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
                     <select
                       className="form-select"
                       required
@@ -323,15 +404,17 @@ export const ComprobantesPage: React.FC = () => {
                     >
                       <option value="">Seleccionar Servicio...</option>
                       {servicios.map(s => (
-                        <option key={s.id} value={s.id}>{s.nom_servicio} ({s.tipo_servicio})</option>
+                        <option key={s.id} value={s.id}>
+                          {s.nom_servicio} ({s.tipo_servicio === 'k' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo).toFixed(2)}
+                        </option>
                       ))}
                     </select>
 
                     <input
                       type="number"
-                      step="0.10"
+                      step="0.01"
                       className="form-input"
-                      placeholder="Peso KG"
+                      placeholder="Peso / Cant"
                       value={det.peso_kg}
                       onChange={(e) => {
                         const newD = [...createForm.detalles];
@@ -342,37 +425,19 @@ export const ComprobantesPage: React.FC = () => {
 
                     <input
                       type="number"
+                      step="0.01"
                       className="form-input"
-                      placeholder="Cant."
-                      value={det.cantidad}
+                      placeholder="Precio Unit"
+                      value={det.costo_kilo}
                       onChange={(e) => {
                         const newD = [...createForm.detalles];
-                        newD[idx].cantidad = Number(e.target.value);
+                        newD[idx].costo_kilo = e.target.value;
                         setCreateForm({ ...createForm, detalles: newD });
                       }}
                     />
 
-                    <select
-                      className="form-select"
-                      value={det.estado_ropa_id}
-                      onChange={(e) => {
-                        const newD = [...createForm.detalles];
-                        newD[idx].estado_ropa_id = e.target.value;
-                        setCreateForm({ ...createForm, detalles: newD });
-                      }}
-                    >
-                      <option value="">Estado Ropa</option>
-                      {catalogos.estados_ropa.map((er: any) => (
-                        <option key={er.id} value={er.id}>{er.nombre}</option>
-                      ))}
-                    </select>
-
-                    <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.95rem' }}>
-                      S/ {
-                        Number(det.peso_kg || 0) > 0 && Number(det.costo_kilo || 0) > 0
-                          ? (Number(det.peso_kg) * Number(det.costo_kilo)).toFixed(2)
-                          : (Number(det.cantidad || 1) * Number(det.precio_unitario || 0)).toFixed(2)
-                      }
+                    <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.95rem', textAlign: 'right' }}>
+                      S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
                     </div>
 
                     <button
@@ -387,7 +452,7 @@ export const ComprobantesPage: React.FC = () => {
               ))}
 
               <button type="button" className="btn-secondary" onClick={handleAddDetalle} style={{ marginBottom: '20px' }}>
-                + Agregar Servicio
+                + Agregar Fila
               </button>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
@@ -414,7 +479,7 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Método de Pago Initial</label>
+                  <label className="form-label">Método de Pago</label>
                   <select
                     className="form-select"
                     value={createForm.metodo_pago_id}
@@ -427,9 +492,20 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Observaciones</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Notas adicionales..."
+                  value={createForm.observaciones}
+                  onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value })}
+                />
+              </div>
+
               <div style={{ textAlign: 'right', marginBottom: '24px' }}>
                 <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white' }}>
-                  Total Final: <span style={{ color: '#818cf8' }}>S/ {calculateTotal().toFixed(2)}</span>
+                  Total a Pagar: <span style={{ color: '#818cf8' }}>S/ {calculateTotal().toFixed(2)}</span>
                 </span>
               </div>
 
@@ -447,10 +523,10 @@ export const ComprobantesPage: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '16px' }}>
-              Registrar Abono a Ticket {selectedTicket.cod_comprobante}
+              Registrar Abono a {selectedTicket.cod_comprobante}
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Deuda pendiente: <b style={{ color: '#fca5a5' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
+              Monto pendiente: <b style={{ color: '#fca5a5' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
             </p>
 
             <form onSubmit={handleAbonoSubmit}>
@@ -495,31 +571,32 @@ export const ComprobantesPage: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-content" style={{ background: '#ffffff', color: '#000000', fontFamily: 'monospace' }}>
             <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: '12px', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>LAVANDERIA SEPRIET</h2>
-              <p style={{ fontSize: '0.8rem' }}>RUC: 20601234567 | Av. Principal 123</p>
-              <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '6px' }}>{selectedTicket.cod_comprobante}</p>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>SEPRIET LAUNDRY</h2>
+              <p style={{ fontSize: '0.8rem' }}>Av Agustín de la Rosa Toro 318 SAN LUIS</p>
+              <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '6px' }}>{selectedTicket.cod_comprobante || `Ticket #${selectedTicket.id}`}</p>
             </div>
 
             <div style={{ fontSize: '0.85rem', marginBottom: '12px' }}>
               <p><b>CLIENTE:</b> {selectedTicket.cliente?.nombres}</p>
-              <p><b>DNI:</b> {selectedTicket.cliente?.dni || 'N/A'}</p>
+              <p><b>DNI/DOC:</b> {selectedTicket.cliente?.dni || 'N/A'}</p>
               <p><b>FECHA:</b> {new Date(selectedTicket.fecha).toLocaleString('es-PE')}</p>
-              <p><b>ENTREGA:</b> {selectedTicket.fecha_entrega ? new Date(selectedTicket.fecha_entrega).toLocaleDateString('es-PE') : '-'}</p>
+              <p><b>ESTADO PAGO:</b> {selectedTicket.estado_comprobante?.nom_estado}</p>
+              <p><b>ESTADO PRENDA:</b> {selectedTicket.estado_ropa?.nom_estado_ropa}</p>
             </div>
 
             <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse', marginBottom: '12px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #000', textAlign: 'left' }}>
-                  <th>CANT/KG</th>
-                  <th>DESCRIPCION</th>
+                  <th>KG/CANT</th>
+                  <th>SERVICIO</th>
                   <th style={{ textAlign: 'right' }}>TOTAL</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedTicket.detalles?.map((d: any, idx: number) => (
                   <tr key={idx}>
-                    <td>{d.peso_kg ? `${d.peso_kg} KG` : `${d.cantidad} UN`}</td>
-                    <td>{d.servicio?.nom_servicio}</td>
+                    <td>{d.peso_kg}</td>
+                    <td>{d.servicio?.nom_servicio || 'Servicio'}</td>
                     <td style={{ textAlign: 'right' }}>S/ {Number(d.subtotal).toFixed(2)}</td>
                   </tr>
                 ))}
@@ -534,7 +611,7 @@ export const ComprobantesPage: React.FC = () => {
 
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
               <p style={{ fontSize: '0.75rem' }}>¡Gracias por su preferencia!</p>
-              <p style={{ fontSize: '0.7rem', color: '#666' }}>Conserve este ticket para recoger sus prendas.</p>
+              <p style={{ fontSize: '0.7rem', color: '#666' }}>Conserve este ticket para retirar sus prendas.</p>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>

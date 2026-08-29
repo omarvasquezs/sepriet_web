@@ -18,10 +18,42 @@ class AuthController extends Controller
 
         $user = User::with('role')
             ->where('username', $request->username)
-            ->orWhere('email', $request->username)
             ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user) {
+            // Case-insensitive username check fallback
+            $user = User::with('role')
+                ->whereRaw('LOWER(username) = ?', [strtolower($request->username)])
+                ->first();
+        }
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Credenciales incorrectas'
+            ], 401);
+        }
+
+        $passwordValid = false;
+
+        if (str_starts_with($user->password, '$2y$') || str_starts_with($user->password, '$2a$') || str_starts_with($user->password, '$argon')) {
+            try {
+                if (Hash::check($request->password, $user->password)) {
+                    $passwordValid = true;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        if (!$passwordValid) {
+            $legacyHash = md5(sha1($request->password));
+            if ($legacyHash === $user->password) {
+                $passwordValid = true;
+                // Transparently upgrade password to modern bcrypt
+                $user->password = Hash::make($request->password);
+                $user->save();
+            }
+        }
+
+        if (!$passwordValid) {
             return response()->json([
                 'message' => 'Credenciales incorrectas'
             ], 401);
@@ -40,10 +72,9 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => $user->username,
                 'username' => $user->username,
-                'email' => $user->email,
-                'role' => $user->role ? $user->role->nom_rol : 'Usuario',
+                'role' => $user->role ? $user->role->role_name : 'Usuario',
             ]
         ]);
     }
@@ -64,10 +95,9 @@ class AuthController extends Controller
         return response()->json([
             'user' => [
                 'id' => $user->id,
-                'name' => $user->name,
+                'name' => $user->username,
                 'username' => $user->username,
-                'email' => $user->email,
-                'role' => $user->role ? $user->role->nom_rol : 'Usuario',
+                'role' => $user->role ? $user->role->role_name : 'Usuario',
             ]
         ]);
     }

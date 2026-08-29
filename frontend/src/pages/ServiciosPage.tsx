@@ -4,15 +4,16 @@ import api from '../api/axios';
 
 export const ServiciosPage: React.FC = () => {
   const [servicios, setServicios] = useState<any[]>([]);
+  const [activeTipo, setActiveTipo] = useState<string>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     nom_servicio: '',
-    tipo_servicio: 'Kilo',
+    tipo_servicio: 'k',
     precio_kilo: '0.00',
-    precio_unidad: '0.00',
     habilitado: true,
+    activado: true,
   });
 
   const fetchServicios = async () => {
@@ -28,9 +29,14 @@ export const ServiciosPage: React.FC = () => {
     fetchServicios();
   }, []);
 
+  const filteredServicios = servicios.filter(s => {
+    if (activeTipo === 'all') return true;
+    return s.tipo_servicio === activeTipo;
+  });
+
   const openCreateModal = () => {
     setEditingId(null);
-    setForm({ nom_servicio: '', tipo_servicio: 'Kilo', precio_kilo: '0.00', precio_unidad: '0.00', habilitado: true });
+    setForm({ nom_servicio: '', tipo_servicio: 'k', precio_kilo: '0.00', habilitado: true, activado: true });
     setShowModal(true);
   };
 
@@ -40,8 +46,8 @@ export const ServiciosPage: React.FC = () => {
       nom_servicio: s.nom_servicio,
       tipo_servicio: s.tipo_servicio,
       precio_kilo: s.precio_kilo,
-      precio_unidad: s.precio_unidad,
       habilitado: s.habilitado,
+      activado: s.activado,
     });
     setShowModal(true);
   };
@@ -61,10 +67,44 @@ export const ServiciosPage: React.FC = () => {
     }
   };
 
+  const getTipoLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'k': return 'Por Kilo';
+      case 's': return 'Servicio Especial';
+      case 'p': return 'Por Prenda';
+      default: return tipo;
+    }
+  };
+
   return (
     <div style={{ padding: '28px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>Lista de Servicios y Tarifas</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(15, 23, 42, 0.6)', padding: '4px', borderRadius: '10px' }}>
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: 'k', label: 'Por Kilo' },
+            { id: 's', label: 'Servicios' },
+            { id: 'p', label: 'Prendas' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTipo(tab.id)}
+              style={{
+                background: activeTipo === tab.id ? 'var(--accent-primary)' : 'transparent',
+                color: activeTipo === tab.id ? 'white' : 'var(--text-muted)',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <button className="btn-primary" onClick={openCreateModal}>
           <Plus size={18} />
           Nuevo Servicio
@@ -72,7 +112,7 @@ export const ServiciosPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-        {servicios.map((s) => (
+        {filteredServicios.map((s) => (
           <div key={s.id} className="glass-card" style={{ padding: '20px', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div style={{ padding: '10px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>
@@ -86,22 +126,16 @@ export const ServiciosPage: React.FC = () => {
               </button>
             </div>
 
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '4px' }}>{s.nom_servicio}</h4>
-            <span style={{ fontSize: '0.8rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>
-              Tipo: {s.tipo_servicio}
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white', marginBottom: '4px' }}>{s.nom_servicio}</h4>
+            <span style={{ fontSize: '0.78rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>
+              Tipo: {getTipoLabel(s.tipo_servicio)}
             </span>
 
             <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                {s.tipo_servicio === 'Kilo' ? (
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399' }}>
-                    S/ {Number(s.precio_kilo).toFixed(2)} <small style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ KG</small>
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399' }}>
-                    S/ {Number(s.precio_unidad).toFixed(2)} <small style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ Unidad</small>
-                  </span>
-                )}
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399' }}>
+                  S/ {Number(s.precio_kilo || 0).toFixed(2)}
+                </span>
               </div>
 
               {s.habilitado ? (
@@ -144,34 +178,22 @@ export const ServiciosPage: React.FC = () => {
                   value={form.tipo_servicio}
                   onChange={(e) => setForm({ ...form, tipo_servicio: e.target.value })}
                 >
-                  <option value="Kilo">Kilo</option>
-                  <option value="Unidad">Unidad</option>
-                  <option value="Prenda">Prenda</option>
+                  <option value="k">Por Kilo (k)</option>
+                  <option value="s">Servicio Especial (s)</option>
+                  <option value="p">Por Prenda (p)</option>
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Precio por Kilo (S/)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    value={form.precio_kilo}
-                    onChange={(e) => setForm({ ...form, precio_kilo: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Precio por Unidad (S/)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    value={form.precio_unidad}
-                    onChange={(e) => setForm({ ...form, precio_unidad: e.target.value })}
-                  />
-                </div>
+              <div className="form-group">
+                <label className="form-label">Precio (S/) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="form-input"
+                  required
+                  value={form.precio_kilo}
+                  onChange={(e) => setForm({ ...form, precio_kilo: e.target.value })}
+                />
               </div>
 
               <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px', marginTop: '12px' }}>

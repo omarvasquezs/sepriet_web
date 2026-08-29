@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
 
 export const ClientesPage: React.FC = () => {
-  const [clientes, setClientes] = useState<any[]>([]);
+  const [clientesData, setClientesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -18,9 +19,10 @@ export const ClientesPage: React.FC = () => {
   });
 
   const fetchClientes = async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/clientes', { params: { search } });
-      setClientes(res.data);
+      const res = await api.get('/clientes', { params: { search, page, per_page: 30 } });
+      setClientesData(res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -30,7 +32,7 @@ export const ClientesPage: React.FC = () => {
 
   useEffect(() => {
     fetchClientes();
-  }, [search]);
+  }, [search, page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +40,7 @@ export const ClientesPage: React.FC = () => {
       await api.post('/clientes', form);
       setShowModal(false);
       setForm({ nombres: '', dni: '', codigo_pais: '+51', telefono: '', email: '', direccion: '' });
+      setPage(1);
       fetchClientes();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al guardar cliente');
@@ -46,16 +49,16 @@ export const ClientesPage: React.FC = () => {
 
   return (
     <div style={{ padding: '28px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div style={{ position: 'relative', width: '320px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ position: 'relative', width: '360px' }}>
           <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
           <input
             type="text"
             className="form-input"
             style={{ width: '100%', paddingLeft: '42px' }}
-            placeholder="Buscar cliente por nombre o DNI..."
+            placeholder="Buscar por nombres, DNI o teléfono..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
 
@@ -67,34 +70,62 @@ export const ClientesPage: React.FC = () => {
 
       <div className="glass-panel" style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Cargando clientes...</p>
-        ) : clientes.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No se encontraron clientes.</p>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>Cargando directorio de clientes...</p>
+        ) : clientesData.data.length === 0 ? (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron clientes.</p>
         ) : (
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Nombres</th>
-                <th>DNI</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Dirección</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr key={c.id} className="row-item">
-                  <td style={{ fontWeight: 600, color: 'white' }}>{c.nombres}</td>
-                  <td>{c.dni || '-'}</td>
-                  <td>
-                    {c.telefono ? `${c.codigo_pais || ''} ${c.telefono}` : '-'}
-                  </td>
-                  <td>{c.email || '-'}</td>
-                  <td>{c.direccion || '-'}</td>
+          <div>
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Nombres y Apellidos</th>
+                  <th>DNI / Doc</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Dirección</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {clientesData.data.map((c: any) => (
+                  <tr key={c.id} className="row-item">
+                    <td style={{ fontWeight: 600, color: 'white' }}>{c.nombres}</td>
+                    <td>{c.dni || '-'}</td>
+                    <td>
+                      {c.telefono ? `${c.codigo_pais || ''} ${c.telefono}` : '-'}
+                    </td>
+                    <td>{c.email || '-'}</td>
+                    <td>{c.direccion || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Página {clientesData.current_page} de {clientesData.last_page} ({clientesData.total} clientes registrados)
+              </span>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn-secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  style={{ opacity: page <= 1 ? 0.5 : 1 }}
+                >
+                  <ChevronLeft size={16} /> Anterior
+                </button>
+                <button
+                  className="btn-secondary"
+                  disabled={page >= clientesData.last_page}
+                  onClick={() => setPage(prev => prev + 1)}
+                  style={{ opacity: page >= clientesData.last_page ? 0.5 : 1 }}
+                >
+                  Siguiente <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

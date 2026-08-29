@@ -16,10 +16,10 @@ class ReporteController extends Controller
         $fechaInicio = $request->get('fecha_inicio', now()->startOfMonth()->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->endOfMonth()->toDateString());
 
-        $ingresosQuery = ReporteIngreso::with(['cliente', 'metodoPago', 'usuario'])
+        $ingresosQuery = ReporteIngreso::with(['cliente', 'metodoPago'])
             ->whereBetween('fecha', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59']);
 
-        $totalIngresos = $ingresosQuery->sum('monto_abonado');
+        $totalIngresos = (float)$ingresosQuery->sum('monto_abonado');
 
         $porMetodoPago = ReporteIngreso::select('metodo_pago_id', DB::raw('SUM(monto_abonado) as total'))
             ->whereBetween('fecha', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
@@ -27,7 +27,7 @@ class ReporteController extends Controller
             ->with('metodoPago')
             ->get();
 
-        $egresosTotal = CajaEgreso::whereBetween('fecha', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
+        $egresosTotal = (float)CajaEgreso::whereBetween('fecha', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
             ->sum('monto');
 
         return response()->json([
@@ -37,7 +37,7 @@ class ReporteController extends Controller
             'total_egresos' => $egresosTotal,
             'ganancia_neta' => $totalIngresos - $egresosTotal,
             'por_metodo_pago' => $porMetodoPago,
-            'listado_ingresos' => $ingresosQuery->orderBy('fecha', 'desc')->get(),
+            'listado_ingresos' => $ingresosQuery->orderBy('fecha', 'desc')->limit(100)->get(),
         ]);
     }
 
@@ -46,13 +46,13 @@ class ReporteController extends Controller
         $fechaInicio = $request->get('fecha_inicio', now()->startOfMonth()->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->endOfMonth()->toDateString());
 
-        $comprobantes = Comprobante::with(['cliente', 'estado', 'detalles.servicio'])
+        $comprobantes = Comprobante::with(['cliente', 'estadoComprobante', 'estadoRopa', 'detalles.servicio'])
             ->whereBetween('fecha', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
             ->orderBy('id', 'desc')
             ->get();
 
         $totalTickets = $comprobantes->count();
-        $totalMonto = $comprobantes->sum('costo_total');
+        $totalMonto = (float)$comprobantes->sum('costo_total');
 
         return response()->json([
             'fecha_inicio' => $fechaInicio,

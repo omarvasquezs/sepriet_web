@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReporteIngreso extends Model
 {
+    public $timestamps = false;
     protected $table = 'reporte_ingresos';
 
     protected $fillable = [
@@ -14,16 +15,15 @@ class ReporteIngreso extends Model
         'metodo_pago_id',
         'fecha',
         'monto_abonado',
-        'costo_total',
         'descuento',
-        'user_id',
+        'costo_total',
     ];
 
     protected $casts = [
         'fecha' => 'datetime',
-        'monto_abonado' => 'decimal:2',
-        'costo_total' => 'decimal:2',
-        'descuento' => 'decimal:2',
+        'monto_abonado' => 'float',
+        'descuento' => 'float',
+        'costo_total' => 'float',
     ];
 
     public function cliente()
@@ -34,10 +34,5 @@ class ReporteIngreso extends Model
     public function metodoPago()
     {
         return $this->belongsTo(MetodoPago::class, 'metodo_pago_id');
-    }
-
-    public function usuario()
-    {
-        return $this->belongsTo(User::class, 'user_id');
     }
 }

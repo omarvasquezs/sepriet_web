@@ -12,7 +12,7 @@ class ClienteController extends Controller
     {
         $query = Cliente::query();
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nombres', 'like', "%{$search}%")
@@ -21,16 +21,21 @@ class ClienteController extends Controller
             });
         }
 
-        return response()->json($query->orderBy('nombres')->get());
+        if ($request->has('all') && $request->all == 'true') {
+            return response()->json($query->orderBy('nombres')->get());
+        }
+
+        $perPage = (int)$request->get('per_page', 50);
+        return response()->json($query->orderBy('nombres')->paginate($perPage));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'nombres' => 'required|string|max:255',
-            'dni' => 'nullable|string|max:20',
+            'dni' => 'nullable|string|max:100',
             'codigo_pais' => 'nullable|string|max:10',
-            'telefono' => 'nullable|string|max:20',
+            'telefono' => 'nullable|string|max:100',
             'email' => 'nullable|email|max:255',
             'direccion' => 'nullable|string',
         ]);
@@ -52,9 +57,9 @@ class ClienteController extends Controller
 
         $validated = $request->validate([
             'nombres' => 'sometimes|required|string|max:255',
-            'dni' => 'nullable|string|max:20',
+            'dni' => 'nullable|string|max:100',
             'codigo_pais' => 'nullable|string|max:10',
-            'telefono' => 'nullable|string|max:20',
+            'telefono' => 'nullable|string|max:100',
             'email' => 'nullable|email|max:255',
             'direccion' => 'nullable|string',
         ]);

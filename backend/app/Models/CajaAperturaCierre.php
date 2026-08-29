@@ -6,30 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class CajaAperturaCierre extends Model
 {
+    public $timestamps = false;
     protected $table = 'caja_apertura_cierre';
 
     protected $fillable = [
         'datetime_apertura',
-        'datetime_cierre',
         'monto_apertura',
-        'monto_cierre',
         'id_usuario_apertura',
+        'datetime_cierre',
+        'monto_cierre',
         'id_usuario_cierre',
-        'total_ventas',
-        'total_egresos',
-        'saldo_final',
-        'estado',
     ];
 
     protected $casts = [
         'datetime_apertura' => 'datetime',
         'datetime_cierre' => 'datetime',
-        'monto_apertura' => 'decimal:2',
-        'monto_cierre' => 'decimal:2',
-        'total_ventas' => 'decimal:2',
-        'total_egresos' => 'decimal:2',
-        'saldo_final' => 'decimal:2',
+        'monto_apertura' => 'float',
+        'monto_cierre' => 'float',
     ];
+
+    protected $appends = ['estado'];
+
+    public function getEstadoAttribute()
+    {
+        return $this->datetime_cierre ? 'Cerrada' : 'Abierta';
+    }
 
     public function usuarioApertura()
     {

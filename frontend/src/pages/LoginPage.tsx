@@ -117,7 +117,7 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          Credenciales demo: <b>admin</b> / <b>admin123</b>
+          Credenciales del sistema: <b>ADMIN</b> / <b>123</b>
         </div>
       </div>
     </div>

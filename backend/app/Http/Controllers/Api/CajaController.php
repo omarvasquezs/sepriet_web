@@ -7,15 +7,14 @@ use App\Models\CajaAperturaCierre;
 use App\Models\CajaEgreso;
 use App\Models\ReporteIngreso;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CajaController extends Controller
 {
     public function estado()
     {
         $cajaAbierta = CajaAperturaCierre::with(['usuarioApertura', 'egresos.metodoPago', 'egresos.usuario'])
-            ->where('estado', 'Abierta')
-            ->latest()
+            ->whereNull('datetime_cierre')
+            ->latest('id')
             ->first();
 
         if (!$cajaAbierta) {
@@ -25,16 +24,12 @@ class CajaController extends Controller
             ]);
         }
 
-        // Calculate sales income logged since apertura
-        $totalVentas = ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
+        // Calculate sales income logged since datetime_apertura
+        $totalVentas = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
             ->sum('monto_abonado');
 
-        $totalEgresos = $cajaAbierta->egresos()->sum('monto');
-        $saldoEstimado = $cajaAbierta->monto_apertura + $totalVentas - $totalEgresos;
-
-        $cajaAbierta->total_ventas = $totalVentas;
-        $cajaAbierta->total_egresos = $totalEgresos;
-        $cajaAbierta->saldo_final = $saldoEstimado;
+        $totalEgresos = (float)$cajaAbierta->egresos()->sum('monto');
+        $saldoEstimado = (float)$cajaAbierta->monto_apertura + $totalVentas - $totalEgresos;
 
         return response()->json([
             'caja' => $cajaAbierta,
@@ -50,16 +45,15 @@ class CajaController extends Controller
             'monto_apertura' => 'required|numeric|min:0',
         ]);
 
-        $cajaAbierta = CajaAperturaCierre::where('estado', 'Abierta')->first();
+        $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')->first();
         if ($cajaAbierta) {
             return response()->json(['message' => 'Ya existe una caja abierta'], 422);
         }
 
         $caja = CajaAperturaCierre::create([
             'datetime_apertura' => now(),
-            'monto_apertura' => $validated['monto_apertura'],
+            'monto_apertura' => (float)$validated['monto_apertura'],
             'id_usuario_apertura' => $request->user()->id,
-            'estado' => 'Abierta',
         ]);
 
         return response()->json($caja->load('usuarioApertura'), 201);
@@ -71,25 +65,15 @@ class CajaController extends Controller
             'monto_cierre' => 'required|numeric|min:0',
         ]);
 
-        $cajaAbierta = CajaAperturaCierre::where('estado', 'Abierta')->first();
+        $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')->first();
         if (!$cajaAbierta) {
             return response()->json(['message' => 'No hay una caja abierta para cerrar'], 422);
         }
 
-        $totalVentas = ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
-            ->sum('monto_abonado');
-
-        $totalEgresos = $cajaAbierta->egresos()->sum('monto');
-        $saldoFinal = $validated['monto_cierre'];
-
         $cajaAbierta->update([
             'datetime_cierre' => now(),
-            'monto_cierre' => $validated['monto_cierre'],
+            'monto_cierre' => (float)$validated['monto_cierre'],
             'id_usuario_cierre' => $request->user()->id,
-            'total_ventas' => $totalVentas,
-            'total_egresos' => $totalEgresos,
-            'saldo_final' => $saldoFinal,
-            'estado' => 'Cerrada',
         ]);
 
         return response()->json($cajaAbierta->load(['usuarioApertura', 'usuarioCierre']));
@@ -103,7 +87,7 @@ class CajaController extends Controller
             'id_metodo_pago' => 'nullable|exists:metodo_pago,id',
         ]);
 
-        $cajaAbierta = CajaAperturaCierre::where('estado', 'Abierta')->first();
+        $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')->first();
         if (!$cajaAbierta) {
             return response()->json(['message' => 'Debe abrir caja antes de registrar egresos'], 422);
         }
@@ -112,8 +96,8 @@ class CajaController extends Controller
             'id_caja' => $cajaAbierta->id,
             'fecha' => now(),
             'descripcion' => $validated['descripcion'],
-            'monto' => $validated['monto'],
-            'id_metodo_pago' => $validated['id_metodo_pago'] ?? null,
+            'monto' => (float)$validated['monto'],
+            'id_metodo_pago' => $validated['id_metodo_pago'] ?? 4, // 4 = Efectivo default
             'id_usuario' => $request->user()->id,
         ]);
 

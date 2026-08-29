@@ -6,17 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Servicio extends Model
 {
+    public $timestamps = false;
+    protected $table = 'servicios';
+
     protected $fillable = [
         'nom_servicio',
         'tipo_servicio',
-        'precio_kilo',
-        'precio_unidad',
         'habilitado',
+        'precio_kilo',
+        'activado',
     ];
 
     protected $casts = [
-        'precio_kilo' => 'decimal:2',
-        'precio_unidad' => 'decimal:2',
+        'precio_kilo' => 'float',
         'habilitado' => 'boolean',
+        'activado' => 'boolean',
     ];
 }
