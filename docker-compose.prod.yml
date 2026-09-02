@@ -33,6 +33,7 @@ services:
       - .env.production
     volumes:
       - storage_data:/var/www/html/storage
+      - ./.env.production:/var/www/html/.env
     networks:
       - sepriet_network
 
