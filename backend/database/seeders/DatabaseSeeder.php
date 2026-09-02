@@ -117,5 +117,16 @@ class DatabaseSeeder extends Seeder
             'email' => 'maria@gmail.com',
             'direccion' => 'Calle Los Olivos 456',
         ]);
+
+        // Default Local
+        if (\App\Models\Local::count() === 0) {
+            \App\Models\Local::create([
+                'nombre' => 'Oficina Principal',
+                'direccion' => 'Av Agustín de la Rosa Toro 318 SAN LUIS',
+                'telefono' => '913027176',
+                'observaciones' => 'vjslaundry@mypefact.com',
+                'habilitado' => 1,
+            ]);
+        }
     }
 }
