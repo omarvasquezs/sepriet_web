@@ -61,6 +61,10 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['habilitado'] = $request->boolean('habilitado', true);
 
+        if (array_key_exists('email', $validated) && empty($validated['email'])) {
+            $validated['email'] = null;
+        }
+
         if (Schema::hasColumn('users', 'name') && empty($validated['name'])) {
             $validated['name'] = $validated['username'];
         }
@@ -96,6 +100,10 @@ class UserController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        if (array_key_exists('email', $validated) && empty($validated['email'])) {
+            $validated['email'] = null;
+        }
 
         // Evitar deshabilitarse a uno mismo si es el usuario autenticado
         if ($request->has('habilitado') && !$request->boolean('habilitado') && $request->user()->id === $user->id) {

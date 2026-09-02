@@ -128,7 +128,7 @@ export const UsuariosPage: React.FC = () => {
       const payload: any = {
         name: userForm.name,
         username: userForm.username,
-        email: userForm.email,
+        email: userForm.email.trim() ? userForm.email.trim() : null,
         role_id: Number(userForm.role_id),
         habilitado: userForm.habilitado,
       };
@@ -590,12 +590,11 @@ export const UsuariosPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Correo Electrónico *</label>
+                <label className="form-label">Correo Electrónico (opcional)</label>
                 <input
                   type="email"
                   className="form-input"
-                  required
-                  placeholder="usuario@sepriet.com"
+                  placeholder="Opcional (ej: usuario@sepriet.com)"
                   value={userForm.email}
                   onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                 />
