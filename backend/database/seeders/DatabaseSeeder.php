@@ -119,7 +119,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Default Local
-        if (\App\Models\Local::count() === 0) {
+        if (\Illuminate\Support\Facades\Schema::hasTable('locales') && \App\Models\Local::count() === 0) {
             \App\Models\Local::create([
                 'nombre' => 'Oficina Principal',
                 'direccion' => 'Av Agustín de la Rosa Toro 318 SAN LUIS',
@@ -127,6 +127,13 @@ class DatabaseSeeder extends Seeder
                 'observaciones' => 'vjslaundry@mypefact.com',
                 'habilitado' => 1,
             ]);
+        }
+
+        // Default Counters
+        if (\Illuminate\Support\Facades\Schema::hasTable('comprobante_counter') && \App\Models\ComprobanteCounter::count() === 0) {
+            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'N', 'last_value' => 0]);
+            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'B', 'last_value' => 0]);
+            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'F', 'last_value' => 0]);
         }
     }
 }
