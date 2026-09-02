@@ -22,12 +22,9 @@ cd ..
 echo "🐳 Levantando contenedores Docker..."
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 
-# 4. Copiar .env y Generar APP_KEY si está vacía
-echo "🔑 Verificando archivo .env y APP_KEY de Laravel..."
-docker compose --env-file .env.production -f docker-compose.prod.yml cp .env.production backend:/var/www/html/.env
+# 4. Generar APP_KEY si está vacía
+echo "🔑 Verificando APP_KEY de Laravel..."
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan key:generate --force
-# Copiar de vuelta para guardar la APP_KEY generada en el host
-docker compose --env-file .env.production -f docker-compose.prod.yml cp backend:/var/www/html/.env .env.production
 
 # 5. Ejecutar migraciones y seeders
 echo "🗄️  Ejecutando migraciones de base de datos..."
