@@ -20,24 +20,24 @@ cd ..
 
 # 3. Levantar contenedores Docker
 echo "🐳 Levantando contenedores Docker..."
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 
 # 4. Copiar .env y Generar APP_KEY si está vacía
 echo "🔑 Verificando archivo .env y APP_KEY de Laravel..."
-docker compose -f docker-compose.prod.yml cp .env.production backend:/var/www/html/.env
-docker compose -f docker-compose.prod.yml exec backend php artisan key:generate --force
+docker compose --env-file .env.production -f docker-compose.prod.yml cp .env.production backend:/var/www/html/.env
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan key:generate --force
 # Copiar de vuelta para guardar la APP_KEY generada en el host
-docker compose -f docker-compose.prod.yml cp backend:/var/www/html/.env .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml cp backend:/var/www/html/.env .env.production
 
 # 5. Ejecutar migraciones y seeders
 echo "🗄️  Ejecutando migraciones de base de datos..."
-docker compose -f docker-compose.prod.yml exec backend php artisan migrate --force
-docker compose -f docker-compose.prod.yml exec backend php artisan db:seed --class=AdminUserSeeder --force
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan migrate --force
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan db:seed --force
 
 # 6. Optimizar caché de Laravel
 echo "⚡ Optimizando caché de producción..."
-docker compose -f docker-compose.prod.yml exec backend php artisan config:cache
-docker compose -f docker-compose.prod.yml exec backend php artisan route:cache
-docker compose -f docker-compose.prod.yml exec backend php artisan view:cache
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan config:cache
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan route:cache
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan view:cache
 
 echo "✅ ¡Despliegue completado con éxito! Sepriet está activo en el puerto 80."

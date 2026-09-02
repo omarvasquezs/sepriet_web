@@ -4,6 +4,8 @@ services:
     image: mariadb:10.11
     container_name: sepriet_db
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_password}
       MYSQL_DATABASE: ${DB_DATABASE:-sepriet_prod}
