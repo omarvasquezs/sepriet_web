@@ -8,11 +8,11 @@ use App\Http\Controllers\Api\ComprobanteController;
 use App\Http\Controllers\Api\CajaController;
 use App\Http\Controllers\Api\ReporteController;
 
-// Public route: Login
-Route::post('/auth/login', [AuthController::class, 'login']);
+// Public route: Login with dedicated rate limiter
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login');
 
-// Protected routes (Sanctum Bearer token required)
-Route::middleware('auth:sanctum')->group(function () {
+// Protected routes (Sanctum Bearer token required + API throttle rate limiter)
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Auth & User Profile
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
