@@ -13,6 +13,10 @@ use App\Models\MetodoPago;
 use App\Models\Local;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class ComprobanteController extends Controller
 {
@@ -295,5 +299,176 @@ class ComprobanteController extends Controller
             'metodos_pago' => MetodoPago::where('habilitado', 1)->get(),
             'locales' => Local::where('habilitado', 1)->get(),
         ]);
+    }
+
+    /**
+     * Genera y retorna la información/URL del PDF del comprobante.
+     * Almacenamiento organizado por año/mes: storage/app/public/comprobantes/YYYY/MM/*.pdf
+     */
+    public function generarPdf(Request $request, int $id)
+    {
+        $comprobante = Comprobante::with([
+            'cliente',
+            'estadoComprobante',
+            'estadoRopa',
+            'metodoPago',
+            'usuario',
+            'detalles.servicio'
+        ])->findOrFail($id);
+
+        $force = $request->boolean('force', false);
+        $result = $this->createOrRetrievePdf($comprobante, $force);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Crea o recupera el archivo PDF físico en disco.
+     */
+    private function createOrRetrievePdf(Comprobante $comprobante, bool $force = false): array
+    {
+        $date = Carbon::parse($comprobante->fecha ?? now());
+        $year = $date->format('Y');
+        $month = $date->format('m');
+
+        $safeCode = preg_replace('/[^A-Za-z0-9_\-]/', '_', $comprobante->cod_comprobante);
+        $filename = "{$safeCode}.pdf";
+        $relativeDir = "comprobantes/{$year}/{$month}";
+        $relativePath = "{$relativeDir}/{$filename}";
+
+        $disk = Storage::disk('public');
+
+        // Regenerar si no existe o si se solicita forzar
+        if ($force || !$disk->exists($relativePath)) {
+            $local = Local::where('habilitado', 1)->first();
+
+            $tipoComprobanteNombre = match ($comprobante->tipo_comprobante) {
+                'F' => 'FACTURA DE VENTA',
+                'B' => 'BOLETA DE VENTA',
+                default => 'NOTA DE VENTA',
+            };
+
+            $badgeClass = match ($comprobante->estado_comprobante_id) {
+                1 => 'badge-debe',
+                2 => 'badge-abono',
+                4 => 'badge-cancelado',
+                default => 'badge-debe',
+            };
+
+            $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
+                'comprobante',
+                'local',
+                'tipoComprobanteNombre',
+                'badgeClass'
+            ));
+
+            // Dimensiones estándar ticket térmico 80mm
+            $pdf->setPaper([0, 0, 226.77, 566.93], 'portrait');
+
+            // Asegurar directorio y guardar
+            $disk->makeDirectory($relativeDir);
+            $disk->put($relativePath, $pdf->output());
+        }
+
+        $baseUrl = rtrim(config('app.url') ?: url('/'), '/');
+        $publicUrl = "{$baseUrl}/storage/{$relativePath}";
+
+        return [
+            'success' => true,
+            'comprobante_id' => $comprobante->id,
+            'cod_comprobante' => $comprobante->cod_comprobante,
+            'filename' => $filename,
+            'relative_path' => $relativePath,
+            'url' => $publicUrl,
+            'size' => $disk->exists($relativePath) ? $disk->size($relativePath) : null,
+            'created_at' => $disk->exists($relativePath) ? Carbon::createFromTimestamp($disk->lastModified($relativePath))->toIso8601String() : now()->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Envía el comprobante en PDF y notificación mediante el API de TextMeBot.
+     */
+    public function enviarWhatsAppTextMeBot(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'apikey' => 'nullable|string',
+            'message' => 'nullable|string',
+            'force_regenerate_pdf' => 'nullable|boolean',
+        ]);
+
+        $comprobante = Comprobante::with([
+            'cliente',
+            'estadoComprobante',
+            'estadoRopa',
+            'metodoPago',
+            'usuario',
+            'detalles.servicio'
+        ])->findOrFail($id);
+
+        // 1. Generar o recuperar PDF
+        $force = !empty($validated['force_regenerate_pdf']);
+        $pdfInfo = $this->createOrRetrievePdf($comprobante, $force);
+
+        // 2. Obtener credenciales y parámetros de TextMeBot
+        $apiKey = !empty($validated['apikey'])
+            ? trim($validated['apikey'])
+            : config('services.textmebot.api_key', env('TEXTMEBOT_API_KEY'));
+
+        if (empty($apiKey)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Falta la API Key de TextMeBot. Configúrala en los ajustes o ingrésala en el modal.',
+                'pdf' => $pdfInfo,
+            ], 422);
+        }
+
+        // Limpiar número de teléfono: solo dígitos
+        $cleanPhone = preg_replace('/\D/', '', $validated['phone']);
+        if (strlen($cleanPhone) < 8) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Número de teléfono inválido para WhatsApp.',
+            ], 422);
+        }
+
+        $captionMessage = !empty($validated['message']) ? $validated['message'] : "Comprobante {$comprobante->cod_comprobante}";
+
+        // 3. Ejecutar petición a TextMeBot API (Endpoint oficial de envío de documento con mensaje)
+        try {
+            $apiUrl = 'https://api.textmebot.com/send.php';
+            $response = Http::timeout(25)->get($apiUrl, [
+                'recipient' => $cleanPhone,
+                'apikey' => $apiKey,
+                'document' => $pdfInfo['url'],
+                'text' => $captionMessage,
+            ]);
+
+            $body = $response->body();
+            $status = $response->status();
+
+            if ($response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'PDF enviado exitosamente al cliente por WhatsApp.',
+                    'textmebot_response' => $body,
+                    'pdf' => $pdfInfo,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => "TextMeBot respondió con error (Código {$status}): {$body}",
+                'textmebot_response' => $body,
+                'pdf' => $pdfInfo,
+            ], 400);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de conexión con el API de TextMeBot: ' . $e->getMessage(),
+                'pdf' => $pdfInfo,
+            ], 500);
+        }
     }
 }

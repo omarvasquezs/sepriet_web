@@ -32,6 +32,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);
     Route::post('/comprobantes/{id}/abono', [ComprobanteController::class, 'abono']);
     Route::put('/comprobantes/{id}/estado', [ComprobanteController::class, 'cambiarEstado']);
+    Route::get('/comprobantes/{id}/pdf', [ComprobanteController::class, 'generarPdf']);
+    Route::post('/comprobantes/{id}/send-whatsapp', [ComprobanteController::class, 'enviarWhatsAppTextMeBot']);
 
     // Caja Chica / Turnos
     Route::get('/caja/estado', [CajaController::class, 'estado']);

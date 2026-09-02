@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -219,6 +219,17 @@ export const ComprobantesPage: React.FC = () => {
     }
   };
 
+  const handleDownloadPdf = async (ticketId: number) => {
+    try {
+      const res = await api.get(`/comprobantes/${ticketId}/pdf`);
+      if (res.data?.url) {
+        window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'No se pudo generar el comprobante en PDF');
+    }
+  };
+
   const getBadgeClassPago = (nombre: string) => {
     switch (nombre?.toUpperCase()) {
       case 'CANCELADO': return 'badge-listo';
@@ -356,6 +367,14 @@ export const ComprobantesPage: React.FC = () => {
                           }}
                         >
                           <MessageSquare size={14} />
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '4px 8px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
+                          title="Descargar / Ver PDF"
+                          onClick={() => handleDownloadPdf(t.id)}
+                        >
+                          <FileText size={14} />
                         </button>
                         <button
                           className="btn-secondary"
@@ -718,13 +737,23 @@ export const ComprobantesPage: React.FC = () => {
               <p>* Una vez retirada la prenda, no se aceptarán reclamos. *</p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginTop: '20px' }}>
               <button className="btn-secondary" style={{ background: '#e2e8f0', color: '#000' }} onClick={() => setShowPrintModal(false)}>
                 Cerrar
               </button>
-              <button className="btn-primary" onClick={() => window.print()}>
-                <Printer size={16} /> Imprimir Ticket
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
+                  onClick={() => handleDownloadPdf(selectedTicket.id)}
+                >
+                  <FileText size={15} /> Descargar PDF
+                </button>
+                <button className="btn-primary" onClick={() => window.print()}>
+                  <Printer size={16} /> Imprimir Ticket
+                </button>
+              </div>
             </div>
           </div>
         </div>
