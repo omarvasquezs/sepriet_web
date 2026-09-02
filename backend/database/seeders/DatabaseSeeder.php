@@ -9,131 +9,154 @@ use App\Models\Servicio;
 use App\Models\EstadoComprobante;
 use App\Models\EstadoRopa;
 use App\Models\MetodoPago;
+use App\Models\Local;
+use App\Models\ComprobanteCounter;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Roles
-        $adminRole = Role::create(['nom_rol' => 'Admin']);
-        $cajeroRole = Role::create(['nom_rol' => 'Cajero']);
+        // 1. Roles
+        $adminRole = Role::firstOrCreate(['nom_rol' => 'Admin']);
+        $cajeroRole = Role::firstOrCreate(['nom_rol' => 'Cajero']);
 
-        // Users
-        User::create([
-            'name' => 'Administrador',
-            'username' => 'admin',
-            'email' => 'admin@sepriet.com',
-            'password' => Hash::make('admin123'),
-            'role_id' => $adminRole->id,
-            'habilitado' => true,
-        ]);
+        // 2. Users
+        User::updateOrCreate(
+            ['email' => 'admin@sepriet.com'],
+            [
+                'name' => 'Administrador',
+                'username' => 'admin',
+                'password' => Hash::make('admin123'),
+                'role_id' => $adminRole->id,
+                'habilitado' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'Cajero 1',
-            'username' => 'cajero',
-            'email' => 'cajero@sepriet.com',
-            'password' => Hash::make('cajero123'),
-            'role_id' => $cajeroRole->id,
-            'habilitado' => true,
-        ]);
+        User::updateOrCreate(
+            ['email' => 'cajero@sepriet.com'],
+            [
+                'name' => 'Cajero 1',
+                'username' => 'cajero',
+                'password' => Hash::make('cajero123'),
+                'role_id' => $cajeroRole->id,
+                'habilitado' => true,
+            ]
+        );
 
-        // Payment methods
-        MetodoPago::create(['nom_metodo_pago' => 'Efectivo']);
-        MetodoPago::create(['nom_metodo_pago' => 'Yape']);
-        MetodoPago::create(['nom_metodo_pago' => 'Plin']);
-        MetodoPago::create(['nom_metodo_pago' => 'Tarjeta']);
+        // 3. Payment methods
+        MetodoPago::firstOrCreate(['nom_metodo_pago' => 'Efectivo']);
+        MetodoPago::firstOrCreate(['nom_metodo_pago' => 'Yape']);
+        MetodoPago::firstOrCreate(['nom_metodo_pago' => 'Plin']);
+        MetodoPago::firstOrCreate(['nom_metodo_pago' => 'Tarjeta']);
 
-        // Ticket Statuses
-        EstadoComprobante::create(['nombre' => 'Pendiente']);
-        EstadoComprobante::create(['nombre' => 'En Proceso']);
-        EstadoComprobante::create(['nombre' => 'Listo']);
-        EstadoComprobante::create(['nombre' => 'Entregado']);
-        EstadoComprobante::create(['nombre' => 'Cancelado']);
+        // 4. Ticket Statuses
+        EstadoComprobante::firstOrCreate(['nombre' => 'Pendiente']);
+        EstadoComprobante::firstOrCreate(['nombre' => 'En Proceso']);
+        EstadoComprobante::firstOrCreate(['nombre' => 'Listo']);
+        EstadoComprobante::firstOrCreate(['nombre' => 'Entregado']);
+        EstadoComprobante::firstOrCreate(['nombre' => 'Cancelado']);
 
-        // Clothing Statuses
-        EstadoRopa::create(['nombre' => 'Excelente']);
-        EstadoRopa::create(['nombre' => 'Regular']);
-        EstadoRopa::create(['nombre' => 'Desgastado']);
-        EstadoRopa::create(['nombre' => 'Manchado']);
+        // 5. Clothing Statuses
+        EstadoRopa::firstOrCreate(['nombre' => 'Excelente']);
+        EstadoRopa::firstOrCreate(['nombre' => 'Regular']);
+        EstadoRopa::firstOrCreate(['nombre' => 'Desgastado']);
+        EstadoRopa::firstOrCreate(['nombre' => 'Manchado']);
 
-        // Default Services
-        Servicio::create([
-            'nom_servicio' => 'Lavado por Kilo',
-            'tipo_servicio' => 'Kilo',
-            'precio_kilo' => 5.00,
-            'precio_unidad' => 0.00,
-            'habilitado' => true,
-        ]);
+        // 6. Default Services
+        Servicio::firstOrCreate(
+            ['nom_servicio' => 'Lavado por Kilo'],
+            [
+                'tipo_servicio' => 'Kilo',
+                'precio_kilo' => 5.00,
+                'precio_unidad' => 0.00,
+                'habilitado' => true,
+            ]
+        );
 
-        Servicio::create([
-            'nom_servicio' => 'Lavado de Edredón 2 Plazas',
-            'tipo_servicio' => 'Unidad',
-            'precio_kilo' => 0.00,
-            'precio_unidad' => 25.00,
-            'habilitado' => true,
-        ]);
+        Servicio::firstOrCreate(
+            ['nom_servicio' => 'Lavado de Edredón 2 Plazas'],
+            [
+                'tipo_servicio' => 'Unidad',
+                'precio_kilo' => 0.00,
+                'precio_unidad' => 25.00,
+                'habilitado' => true,
+            ]
+        );
 
-        Servicio::create([
-            'nom_servicio' => 'Lavado de Terno Completo',
-            'tipo_servicio' => 'Unidad',
-            'precio_kilo' => 0.00,
-            'precio_unidad' => 20.00,
-            'habilitado' => true,
-        ]);
+        Servicio::firstOrCreate(
+            ['nom_servicio' => 'Lavado de Terno Completo'],
+            [
+                'tipo_servicio' => 'Unidad',
+                'precio_kilo' => 0.00,
+                'precio_unidad' => 20.00,
+                'habilitado' => true,
+            ]
+        );
 
-        Servicio::create([
-            'nom_servicio' => 'Planchado por Prenda',
-            'tipo_servicio' => 'Unidad',
-            'precio_kilo' => 0.00,
-            'precio_unidad' => 3.50,
-            'habilitado' => true,
-        ]);
+        Servicio::firstOrCreate(
+            ['nom_servicio' => 'Planchado por Prenda'],
+            [
+                'tipo_servicio' => 'Unidad',
+                'precio_kilo' => 0.00,
+                'precio_unidad' => 3.50,
+                'habilitado' => true,
+            ]
+        );
 
-        Servicio::create([
-            'nom_servicio' => 'Lavado de Zapatillas',
-            'tipo_servicio' => 'Unidad',
-            'precio_kilo' => 0.00,
-            'precio_unidad' => 15.00,
-            'habilitado' => true,
-        ]);
+        Servicio::firstOrCreate(
+            ['nom_servicio' => 'Lavado de Zapatillas'],
+            [
+                'tipo_servicio' => 'Unidad',
+                'precio_kilo' => 0.00,
+                'precio_unidad' => 15.00,
+                'habilitado' => true,
+            ]
+        );
 
-        // Default Clients
-        Cliente::create([
-            'nombres' => 'Juan Pérez',
-            'dni' => '12345678',
-            'codigo_pais' => '+51',
-            'telefono' => '987654321',
-            'email' => 'juan@gmail.com',
-            'direccion' => 'Av. Larco 123, Lima',
-        ]);
+        // 7. Default Clients
+        Cliente::firstOrCreate(
+            ['dni' => '12345678'],
+            [
+                'nombres' => 'Juan Pérez',
+                'codigo_pais' => '+51',
+                'telefono' => '987654321',
+                'email' => 'juan@gmail.com',
+                'direccion' => 'Av. Larco 123, Lima',
+            ]
+        );
 
-        Cliente::create([
-            'nombres' => 'María López',
-            'dni' => '87654321',
-            'codigo_pais' => '+51',
-            'telefono' => '912345678',
-            'email' => 'maria@gmail.com',
-            'direccion' => 'Calle Los Olivos 456',
-        ]);
+        Cliente::firstOrCreate(
+            ['dni' => '87654321'],
+            [
+                'nombres' => 'María López',
+                'codigo_pais' => '+51',
+                'telefono' => '912345678',
+                'email' => 'maria@gmail.com',
+                'direccion' => 'Calle Los Olivos 456',
+            ]
+        );
 
-        // Default Local
-        if (\Illuminate\Support\Facades\Schema::hasTable('locales') && \App\Models\Local::count() === 0) {
-            \App\Models\Local::create([
-                'nombre' => 'Oficina Principal',
-                'direccion' => 'Av Agustín de la Rosa Toro 318 SAN LUIS',
-                'telefono' => '913027176',
-                'observaciones' => 'vjslaundry@mypefact.com',
-                'habilitado' => 1,
-            ]);
+        // 8. Default Local
+        if (Schema::hasTable('locales')) {
+            Local::firstOrCreate(
+                ['nombre' => 'Oficina Principal'],
+                [
+                    'direccion' => 'Av Agustín de la Rosa Toro 318 SAN LUIS',
+                    'telefono' => '913027176',
+                    'observaciones' => 'vjslaundry@mypefact.com',
+                    'habilitado' => 1,
+                ]
+            );
         }
 
-        // Default Counters
-        if (\Illuminate\Support\Facades\Schema::hasTable('comprobante_counter') && \App\Models\ComprobanteCounter::count() === 0) {
-            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'N', 'last_value' => 0]);
-            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'B', 'last_value' => 0]);
-            \App\Models\ComprobanteCounter::create(['tipo_comprobante' => 'F', 'last_value' => 0]);
+        // 9. Default Counters
+        if (Schema::hasTable('comprobante_counter')) {
+            ComprobanteCounter::firstOrCreate(['tipo_comprobante' => 'N'], ['last_value' => 0]);
+            ComprobanteCounter::firstOrCreate(['tipo_comprobante' => 'B'], ['last_value' => 0]);
+            ComprobanteCounter::firstOrCreate(['tipo_comprobante' => 'F'], ['last_value' => 0]);
         }
     }
 }
