@@ -24,6 +24,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 
 # 4. Generar APP_KEY si está vacía
 echo "🔑 Verificando APP_KEY de Laravel..."
+chmod 666 .env.production
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan key:generate --force
 
 # 5. Ejecutar migraciones y seeders
