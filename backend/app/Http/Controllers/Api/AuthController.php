@@ -67,6 +67,8 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $roleName = $user->role ? ($user->role->nom_rol ?? $user->role->role_name ?? 'Usuario') : 'Usuario';
+
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
@@ -74,7 +76,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->username,
                 'username' => $user->username,
-                'role' => $user->role ? $user->role->role_name : 'Usuario',
+                'role_id' => $user->role_id,
+                'role' => $roleName,
             ]
         ]);
     }
@@ -91,13 +94,15 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user()->load('role');
+        $roleName = $user->role ? ($user->role->nom_rol ?? $user->role->role_name ?? 'Usuario') : 'Usuario';
 
         return response()->json([
             'user' => [
                 'id' => $user->id,
                 'name' => $user->username,
                 'username' => $user->username,
-                'role' => $user->role ? $user->role->role_name : 'Usuario',
+                'role_id' => $user->role_id,
+                'role' => $roleName,
             ]
         ]);
     }
