@@ -11,6 +11,7 @@ import { ClientesPage } from './pages/ClientesPage';
 import { ServiciosPage } from './pages/ServiciosPage';
 import { CajaPage } from './pages/CajaPage';
 import { ReportesPage } from './pages/ReportesPage';
+import { UsuariosPage } from './pages/UsuariosPage';
 
 const MainLayout: React.FC = () => {
   const { user, isLoading, isAuthTransitioning } = useAuth();
@@ -67,6 +68,7 @@ const MainLayout: React.FC = () => {
     servicios: 'Tarifario de Servicios',
     caja: 'Control de Caja Chica',
     reportes: 'Reportes Financieros y Métricas',
+    usuarios: 'Gestión de Usuarios y Roles',
   };
 
   const showBar = isTransitioning || isAuthTransitioning;
@@ -98,6 +100,7 @@ const MainLayout: React.FC = () => {
             {activeTab === 'servicios' && <ServiciosPage />}
             {activeTab === 'caja' && <CajaPage />}
             {activeTab === 'reportes' && <ReportesPage />}
+            {activeTab === 'usuarios' && <UsuariosPage />}
           </div>
         </div>
       </main>

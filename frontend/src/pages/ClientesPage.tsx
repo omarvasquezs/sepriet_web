@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -8,16 +8,19 @@ export const ClientesPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [editingClienteId, setEditingClienteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState({
+  const initialForm = {
     nombres: '',
     dni: '',
     codigo_pais: '+51',
     telefono: '',
     email: '',
     direccion: ''
-  });
+  };
+
+  const [form, setForm] = useState(initialForm);
 
   const fetchClientes = async () => {
     setLoading(true);
@@ -35,13 +38,48 @@ export const ClientesPage: React.FC = () => {
     fetchClientes();
   }, [search, page]);
 
+  const handleOpenCreate = () => {
+    setEditingClienteId(null);
+    setForm(initialForm);
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (c: any) => {
+    setEditingClienteId(c.id);
+    setForm({
+      nombres: c.nombres || '',
+      dni: c.dni || '',
+      codigo_pais: c.codigo_pais || '+51',
+      telefono: c.telefono || '',
+      email: c.email || '',
+      direccion: c.direccion || ''
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (c: any) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar al cliente "${c.nombres}"?`)) {
+      return;
+    }
+    try {
+      await api.delete(`/clientes/${c.id}`);
+      fetchClientes();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al eliminar cliente');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/clientes', form);
+      if (editingClienteId) {
+        await api.put(`/clientes/${editingClienteId}`, form);
+      } else {
+        await api.post('/clientes', form);
+      }
       setShowModal(false);
-      setForm({ nombres: '', dni: '', codigo_pais: '+51', telefono: '', email: '', direccion: '' });
-      setPage(1);
+      setForm(initialForm);
+      setEditingClienteId(null);
       fetchClientes();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al guardar cliente');
@@ -63,7 +101,7 @@ export const ClientesPage: React.FC = () => {
           />
         </div>
 
-        <button className="btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn-primary" onClick={handleOpenCreate}>
           <Plus size={18} />
           Nuevo Cliente
         </button>
@@ -84,18 +122,39 @@ export const ClientesPage: React.FC = () => {
                   <th>Teléfono</th>
                   <th>Email</th>
                   <th>Dirección</th>
+                  <th style={{ textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {clientesData.data.map((c: any) => (
                   <tr key={c.id} className="row-item">
-                    <td style={{ fontWeight: 600, color: 'white' }}>{c.nombres}</td>
+                    <td style={{ fontWeight: 600, color: '#0f172a' }}>{c.nombres}</td>
                     <td>{c.dni || '-'}</td>
                     <td>
                       {c.telefono ? `${c.codigo_pais || ''} ${c.telefono}` : '-'}
                     </td>
                     <td>{c.email || '-'}</td>
                     <td>{c.direccion || '-'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '4px 8px', color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff' }}
+                          title="Editar Cliente"
+                          onClick={() => handleOpenEdit(c)}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '4px 8px', color: '#ef4444', borderColor: '#fecaca', background: '#fef2f2' }}
+                          title="Eliminar Cliente"
+                          onClick={() => handleDelete(c)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -133,7 +192,9 @@ export const ClientesPage: React.FC = () => {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>Registrar Nuevo Cliente</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>
+              {editingClienteId ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
+            </h3>
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -207,7 +268,9 @@ export const ClientesPage: React.FC = () => {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Cliente</button>
+                <button type="submit" className="btn-primary">
+                  {editingClienteId ? 'Guardar Cambios' : 'Guardar Cliente'}
+                </button>
               </div>
             </form>
           </div>

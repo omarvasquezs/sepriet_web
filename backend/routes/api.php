@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\ComprobanteController;
 use App\Http\Controllers\Api\CajaController;
 use App\Http\Controllers\Api\ReporteController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\RoleController;
 
 // Public route: Login with dedicated rate limiter
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login');
@@ -16,6 +18,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Auth & User Profile
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+
+    // Users & Roles Management
+    Route::apiResource('users', UserController::class);
+    Route::apiResource('roles', RoleController::class);
 
     // Catalogos
     Route::get('/catalogos', [ComprobanteController::class, 'catalogos']);

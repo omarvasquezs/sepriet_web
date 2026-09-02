@@ -6,7 +6,8 @@ import {
   Shirt, 
   Wallet, 
   TrendingUp, 
-  LogOut 
+  LogOut,
+  Shield 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +18,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { user, logout } = useAuth();
+  const isAdmin = user?.role?.toUpperCase().includes('ADMIN') || user?.role_id === 1;
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -25,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'servicios', label: 'Servicios', icon: Shirt },
     { id: 'caja', label: 'Caja Chica', icon: Wallet },
     { id: 'reportes', label: 'Reportes', icon: TrendingUp },
+    ...(isAdmin ? [{ id: 'usuarios', label: 'Usuarios y Roles', icon: Shield }] : []),
   ];
 
   return (
