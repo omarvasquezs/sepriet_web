@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Receipt, Users, Wallet, TrendingUp, PlusCircle } from 'lucide-react';
 import api from '../api/axios';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface DashboardPageProps {
   onNavigate: (tab: string) => void;
@@ -66,7 +67,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               <Receipt size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: 'white' }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: '#0f172a' }}>
             {stats.totalTickets}
           </h3>
           <span style={{ fontSize: '0.75rem', color: 'var(--accent-success)' }}>Historial completo</span>
@@ -75,11 +76,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>Clientes Registrados</span>
-            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', color: '#d97706' }}>
               <Users size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: 'white' }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: '#0f172a' }}>
             {stats.clientesCount}
           </h3>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Base de datos activa</span>
@@ -88,11 +89,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>Caja Chica</span>
-            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee' }}>
+            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(2, 132, 199, 0.12)', color: '#0284c7' }}>
               <Wallet size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: 'white' }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: '#0f172a' }}>
             S/ {stats.cajaSaldo.toFixed(2)}
           </h3>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Saldo estimado turno</span>
@@ -101,11 +102,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>Total Muestra</span>
-            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>
+            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(5, 150, 105, 0.12)', color: '#059669' }}>
               <TrendingUp size={20} />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: 'white' }}>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '12px', color: '#0f172a' }}>
             S/ {stats.montoTotal.toFixed(2)}
           </h3>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Últimos tickets</span>
@@ -113,7 +114,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>Comprobantes Recientes</h3>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>Comprobantes Recientes</h3>
         <button onClick={() => onNavigate('comprobantes')} className="btn-primary">
           <PlusCircle size={18} />
           Nuevo Comprobante
@@ -122,7 +123,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
       <div className="glass-panel" style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>Cargando datos...</p>
+          <LoadingSpinner text="Cargando estadísticas y tickets..." />
         ) : recentTickets.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>No hay comprobantes registrados aún.</p>
         ) : (

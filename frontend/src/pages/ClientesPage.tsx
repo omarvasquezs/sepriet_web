@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const ClientesPage: React.FC = () => {
   const [clientesData, setClientesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
@@ -70,7 +71,7 @@ export const ClientesPage: React.FC = () => {
 
       <div className="glass-panel" style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>Cargando directorio de clientes...</p>
+          <LoadingSpinner text="Cargando directorio de clientes..." />
         ) : clientesData.data.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron clientes.</p>
         ) : (
@@ -132,7 +133,7 @@ export const ClientesPage: React.FC = () => {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '20px' }}>Registrar Nuevo Cliente</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>Registrar Nuevo Cliente</h3>
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">

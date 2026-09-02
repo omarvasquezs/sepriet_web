@@ -5,7 +5,8 @@ export interface User {
   id: number;
   name: string;
   username: string;
-  email: string;
+  email?: string;
+  role_id?: number;
   role: string;
 }
 
@@ -15,6 +16,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isLoading: boolean;
+  isAuthTransitioning: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthTransitioning, setIsAuthTransitioning] = useState<boolean>(false);
 
   useEffect(() => {
     if (token) {
@@ -44,13 +47,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [token]);
 
   const login = (newToken: string, newUser: User) => {
+    setIsAuthTransitioning(true);
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
+    setTimeout(() => {
+      setIsAuthTransitioning(false);
+    }, 250);
   };
 
   const logout = () => {
+    setIsAuthTransitioning(true);
     if (token) {
       api.post('/auth/logout').catch(() => {});
     }
@@ -58,10 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    setTimeout(() => {
+      setIsAuthTransitioning(false);
+    }, 250);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, isAuthTransitioning }}>
       {children}
     </AuthContext.Provider>
   );

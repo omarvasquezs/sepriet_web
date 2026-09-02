@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import { WhatsAppModal } from '../components/WhatsAppModal';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+
+const toDateTimeLocal = (d: Date = new Date()) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 export const ComprobantesPage: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = (user?.role_id === 1) || Boolean(user?.role && user.role.toLowerCase().includes('admin'));
+
   const [comprobantesData, setComprobantesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
   const [clientes, setClientes] = useState<any[]>([]);
   const [servicios, setServicios] = useState<any[]>([]);
@@ -19,6 +30,15 @@ export const ComprobantesPage: React.FC = () => {
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+
+  // WhatsApp Modal State
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsAppTicket, setWhatsAppTicket] = useState<any>(null);
+  const [whatsAppActionType, setWhatsAppActionType] = useState<'ticket' | 'listo' | 'recogido'>('ticket');
+
+  // Operation Dates (Admin only)
+  const [fechaOperacionCreate, setFechaOperacionCreate] = useState(toDateTimeLocal());
+  const [fechaOperacionAbono, setFechaOperacionAbono] = useState(toDateTimeLocal());
 
   // Abono Form
   const [abonoAmount, setAbonoAmount] = useState('');
@@ -115,7 +135,7 @@ export const ComprobantesPage: React.FC = () => {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/comprobantes', {
+      const payload: any = {
         ...createForm,
         cliente_id: Number(createForm.cliente_id),
         metodo_pago_id: Number(createForm.metodo_pago_id),
@@ -126,11 +146,23 @@ export const ComprobantesPage: React.FC = () => {
           peso_kg: Number(d.peso_kg),
           costo_kilo: Number(d.costo_kilo),
         }))
-      });
+      };
+
+      if (isAdmin && fechaOperacionCreate) {
+        payload.fecha_operacion = fechaOperacionCreate;
+      }
+
+      const res = await api.post('/comprobantes', payload);
+      const createdTicket = res.data;
 
       setShowCreateModal(false);
       setPage(1);
       fetchData();
+
+      // Open WhatsApp sending dialog with the new ticket details
+      setWhatsAppTicket(createdTicket);
+      setWhatsAppActionType('ticket');
+      setShowWhatsAppModal(true);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar comprobante');
     }
@@ -140,22 +172,48 @@ export const ComprobantesPage: React.FC = () => {
     e.preventDefault();
     if (!selectedTicket) return;
     try {
-      await api.post(`/comprobantes/${selectedTicket.id}/abono`, {
+      const payload: any = {
         monto_abonado: Number(abonoAmount),
         metodo_pago_id: Number(abonoMetodoPago)
-      });
+      };
+
+      if (isAdmin && fechaOperacionAbono) {
+        payload.fecha_operacion = fechaOperacionAbono;
+      }
+
+      const res = await api.post(`/comprobantes/${selectedTicket.id}/abono`, payload);
+      const updatedTicket = res.data;
+
       setShowAbonoModal(false);
       setAbonoAmount('');
       fetchData();
+
+      // Offer WhatsApp receipt update
+      setWhatsAppTicket(updatedTicket);
+      setWhatsAppActionType('ticket');
+      setShowWhatsAppModal(true);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar abono');
     }
   };
 
-  const handleEstadoRopaChange = async (ticketId: number, estadoRopaId: string) => {
+  const handleEstadoRopaChange = async (ticket: any, estadoRopaId: string) => {
     try {
-      await api.put(`/comprobantes/${ticketId}/estado`, { estado_ropa_id: Number(estadoRopaId) });
+      const numericEstado = Number(estadoRopaId);
+      const res = await api.put(`/comprobantes/${ticket.id}/estado`, { estado_ropa_id: numericEstado });
+      const updated = res.data;
       fetchData();
+
+      // If marked as Listo (id=3) or Entregado/Recogido (id=4), prompt for WhatsApp notification
+      if (numericEstado === 3) {
+        setWhatsAppTicket(updated);
+        setWhatsAppActionType('listo');
+        setShowWhatsAppModal(true);
+      } else if (numericEstado === 4) {
+        setWhatsAppTicket(updated);
+        setWhatsAppActionType('recogido');
+        setShowWhatsAppModal(true);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -170,8 +228,6 @@ export const ComprobantesPage: React.FC = () => {
       default: return 'badge-pendiente';
     }
   };
-
-
 
   return (
     <div style={{ padding: '28px' }}>
@@ -196,7 +252,7 @@ export const ComprobantesPage: React.FC = () => {
           >
             <option value="">Pago: Todos</option>
             {catalogos.estados_pago.map((ep: any) => (
-              <option key={ep.id} value={ep.id}>{ep.nom_estado}</option>
+              <option key={ep.id} value={ep.id}>{ep.nom_estado || ep.nombre}</option>
             ))}
           </select>
 
@@ -207,19 +263,25 @@ export const ComprobantesPage: React.FC = () => {
           >
             <option value="">Prendas: Todos</option>
             {catalogos.estados_ropa.map((er: any) => (
-              <option key={er.id} value={er.id}>{er.nom_estado_ropa}</option>
+              <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
             ))}
           </select>
         </div>
 
-        <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+        <button
+          className="btn-primary"
+          onClick={() => {
+            setFechaOperacionCreate(toDateTimeLocal());
+            setShowCreateModal(true);
+          }}
+        >
           <Plus size={18} /> Registrar Comprobante
         </button>
       </div>
 
       <div className="glass-panel" style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>Cargando comprobantes...</p>
+          <LoadingSpinner text="Cargando comprobantes y tickets..." />
         ) : comprobantesData.data.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron comprobantes con esos filtros.</p>
         ) : (
@@ -241,12 +303,12 @@ export const ComprobantesPage: React.FC = () => {
               <tbody>
                 {comprobantesData.data.map((t: any) => (
                   <tr key={t.id} className="row-item">
-                    <td style={{ fontWeight: 700, color: '#818cf8' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
-                    <td style={{ fontWeight: 600, color: 'white' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
+                    <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
+                    <td style={{ fontWeight: 600, color: '#0f172a' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
                     <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
                     <td>
-                      <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado)}`}>
-                        {t.estado_comprobante?.nom_estado || 'DEBE'}
+                      <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre)}`}>
+                        {t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre || 'DEBE'}
                       </span>
                     </td>
                     <td>
@@ -254,20 +316,20 @@ export const ComprobantesPage: React.FC = () => {
                         className="form-select"
                         style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 600 }}
                         value={t.estado_ropa_id || 1}
-                        onChange={(e) => handleEstadoRopaChange(t.id, e.target.value)}
+                        onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
                       >
                         {catalogos.estados_ropa.map((er: any) => (
-                          <option key={er.id} value={er.id}>{er.nom_estado_ropa}</option>
+                          <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
                         ))}
                       </select>
                     </td>
-                    <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total).toFixed(2)}</td>
-                    <td style={{ color: '#34d399', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
-                    <td style={{ color: Number(t.monto_restante) > 0 ? '#fca5a5' : '#34d399', fontWeight: 700 }}>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
+                    <td style={{ color: '#059669', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
+                    <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700 }}>
                       S/ {Number(t.monto_restante).toFixed(2)}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
                         {Number(t.monto_restante) > 0 && (
                           <button
                             className="btn-secondary"
@@ -275,13 +337,26 @@ export const ComprobantesPage: React.FC = () => {
                             title="Registrar Abono"
                             onClick={() => {
                               setSelectedTicket(t);
+                              setFechaOperacionAbono(toDateTimeLocal());
                               setAbonoMetodoPago('4');
                               setShowAbonoModal(true);
                             }}
                           >
-                            <DollarSign size={14} color="#34d399" /> Abono
+                            <DollarSign size={14} color="#059669" /> Abono
                           </button>
                         )}
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '4px 8px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4' }}
+                          title="Enviar por WhatsApp"
+                          onClick={() => {
+                            setWhatsAppTicket(t);
+                            setWhatsAppActionType('ticket');
+                            setShowWhatsAppModal(true);
+                          }}
+                        >
+                          <MessageSquare size={14} />
+                        </button>
                         <button
                           className="btn-secondary"
                           style={{ padding: '4px 8px' }}
@@ -333,10 +408,10 @@ export const ComprobantesPage: React.FC = () => {
       {showCreateModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '850px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '20px' }}>Registrar Nuevo Comprobante</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>Registrar Nuevo Comprobante</h3>
 
             <form onSubmit={handleCreateSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1.5fr 1.5fr' : '1fr 2fr', gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Tipo de Comprobante *</label>
                   <select
@@ -364,6 +439,20 @@ export const ComprobantesPage: React.FC = () => {
                     ))}
                   </select>
                 </div>
+
+                {isAdmin && (
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5' }}>
+                      <Calendar size={14} /> Fecha de Operación (Admin)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="form-input"
+                      value={fechaOperacionCreate}
+                      onChange={(e) => setFechaOperacionCreate(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
 
               {createForm.tipo_comprobante === 'F' && (
@@ -391,10 +480,10 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               )}
 
-              <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', marginTop: '16px', marginBottom: '12px' }}>Detalles de Servicios</h4>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginTop: '16px', marginBottom: '12px' }}>Detalles de Servicios</h4>
 
               {createForm.detalles.map((det, idx) => (
-                <div key={idx} className="glass-card" style={{ padding: '14px', marginBottom: '12px' }}>
+                <div key={idx} className="glass-card" style={{ padding: '14px', marginBottom: '12px', background: '#f8fafc' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
                     <select
                       className="form-select"
@@ -405,7 +494,7 @@ export const ComprobantesPage: React.FC = () => {
                       <option value="">Seleccionar Servicio...</option>
                       {servicios.map(s => (
                         <option key={s.id} value={s.id}>
-                          {s.nom_servicio} ({s.tipo_servicio === 'k' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo).toFixed(2)}
+                          {s.nom_servicio} ({s.tipo_servicio === 'k' || s.tipo_servicio === 'Kilo' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo || s.precio_unidad).toFixed(2)}
                         </option>
                       ))}
                     </select>
@@ -436,14 +525,14 @@ export const ComprobantesPage: React.FC = () => {
                       }}
                     />
 
-                    <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.95rem', textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700, color: '#059669', fontSize: '0.95rem', textAlign: 'right' }}>
                       S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleRemoveDetalle(idx)}
-                      style={{ background: 'transparent', border: 'none', color: '#fca5a5', cursor: 'pointer' }}
+                      style={{ background: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer' }}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -455,7 +544,7 @@ export const ComprobantesPage: React.FC = () => {
                 + Agregar Fila
               </button>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', background: '#f8fafc', border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Descuento (S/)</label>
                   <input
@@ -504,8 +593,8 @@ export const ComprobantesPage: React.FC = () => {
               </div>
 
               <div style={{ textAlign: 'right', marginBottom: '24px' }}>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white' }}>
-                  Total a Pagar: <span style={{ color: '#818cf8' }}>S/ {calculateTotal().toFixed(2)}</span>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                  Total a Pagar: <span style={{ color: '#4f46e5' }}>S/ {calculateTotal().toFixed(2)}</span>
                 </span>
               </div>
 
@@ -522,11 +611,11 @@ export const ComprobantesPage: React.FC = () => {
       {showAbonoModal && selectedTicket && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
               Registrar Abono a {selectedTicket.cod_comprobante}
             </h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Monto pendiente: <b style={{ color: '#fca5a5' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
+              Monto pendiente: <b style={{ color: '#dc2626' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
             </p>
 
             <form onSubmit={handleAbonoSubmit}>
@@ -543,7 +632,7 @@ export const ComprobantesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
+              <div className="form-group">
                 <label className="form-label">Método de Pago *</label>
                 <select
                   className="form-select"
@@ -557,6 +646,20 @@ export const ComprobantesPage: React.FC = () => {
                 </select>
               </div>
 
+              {isAdmin && (
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5' }}>
+                    <Calendar size={14} /> Fecha de Operación (Admin)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="form-input"
+                    value={fechaOperacionAbono}
+                    onChange={(e) => setFechaOperacionAbono(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowAbonoModal(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Confirmar Abono</button>
@@ -566,13 +669,13 @@ export const ComprobantesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Print Preview Mockup */}
+      {/* Modal Print Preview */}
       {showPrintModal && selectedTicket && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ background: '#ffffff', color: '#000000', fontFamily: 'monospace' }}>
+          <div className="modal-content" style={{ background: '#ffffff', color: '#000000', fontFamily: 'monospace', maxWidth: '480px' }}>
             <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: '12px', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>SEPRIET LAUNDRY</h2>
-              <p style={{ fontSize: '0.8rem' }}>Av Agustín de la Rosa Toro 318 SAN LUIS</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>LAVANDERIA SEPRIET</h2>
+              <p style={{ fontSize: '0.8rem' }}>Enrique Nerini 995, San Luis 15021</p>
               <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '6px' }}>{selectedTicket.cod_comprobante || `Ticket #${selectedTicket.id}`}</p>
             </div>
 
@@ -580,8 +683,8 @@ export const ComprobantesPage: React.FC = () => {
               <p><b>CLIENTE:</b> {selectedTicket.cliente?.nombres}</p>
               <p><b>DNI/DOC:</b> {selectedTicket.cliente?.dni || 'N/A'}</p>
               <p><b>FECHA:</b> {new Date(selectedTicket.fecha).toLocaleString('es-PE')}</p>
-              <p><b>ESTADO PAGO:</b> {selectedTicket.estado_comprobante?.nom_estado}</p>
-              <p><b>ESTADO PRENDA:</b> {selectedTicket.estado_ropa?.nom_estado_ropa}</p>
+              <p><b>ESTADO PAGO:</b> {selectedTicket.estado_comprobante?.nom_estado || selectedTicket.estado_comprobante?.nombre}</p>
+              <p><b>ESTADO PRENDA:</b> {selectedTicket.estado_ropa?.nom_estado_ropa || selectedTicket.estado_ropa?.nombre}</p>
             </div>
 
             <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse', marginBottom: '12px' }}>
@@ -597,7 +700,7 @@ export const ComprobantesPage: React.FC = () => {
                   <tr key={idx}>
                     <td>{d.peso_kg}</td>
                     <td>{d.servicio?.nom_servicio || 'Servicio'}</td>
-                    <td style={{ textAlign: 'right' }}>S/ {Number(d.subtotal).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right' }}>S/ {Number(d.subtotal || (d.peso_kg * d.costo_kilo)).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -609,9 +712,10 @@ export const ComprobantesPage: React.FC = () => {
               <p style={{ fontWeight: 800 }}>PENDIENTE: S/ {Number(selectedTicket.monto_restante).toFixed(2)}</p>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <p style={{ fontSize: '0.75rem' }}>¡Gracias por su preferencia!</p>
-              <p style={{ fontSize: '0.7rem', color: '#666' }}>Conserve este ticket para retirar sus prendas.</p>
+            <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.72rem', color: '#444' }}>
+              <p>* El tiempo máximo para recoger su prenda es de 30 días. *</p>
+              <p>* De no recoger en 30 días se aplicará penalidad. *</p>
+              <p>* Una vez retirada la prenda, no se aceptarán reclamos. *</p>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
@@ -625,6 +729,15 @@ export const ComprobantesPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Enviar por WhatsApp */}
+      <WhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        ticket={whatsAppTicket}
+        actionType={whatsAppActionType}
+      />
     </div>
   );
 };
+

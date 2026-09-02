@@ -30,8 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   return (
     <aside style={{
       width: '260px',
-      background: 'rgba(15, 23, 42, 0.8)',
-      backdropFilter: 'blur(10px)',
+      background: '#ffffff',
       borderRight: '1px solid var(--border-color)',
       display: 'flex',
       flexDirection: 'column',
@@ -39,26 +38,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       padding: '24px 16px',
       height: '100vh',
       position: 'sticky',
-      top: 0
+      top: 0,
+      boxShadow: '2px 0 10px rgba(0, 0, 0, 0.02)',
+      zIndex: 10
     }}>
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '36px', paddingLeft: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', paddingLeft: '8px' }}>
           <div style={{
             width: '40px',
             height: '40px',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+            background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 800,
             fontSize: '1.2rem',
-            color: 'white'
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
           }}>
             S
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>SEPRIET</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>SEPRIET</h1>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sistema de Lavandería</p>
           </div>
         </div>
@@ -78,17 +80,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   padding: '12px 16px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: isActive ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%)' : 'transparent',
-                  color: isActive ? '#818cf8' : 'var(--text-muted)',
-                  borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                  background: isActive ? '#eef2ff' : 'transparent',
+                  color: isActive ? '#4f46e5' : '#475569',
+                  borderLeft: isActive ? '3px solid #4f46e5' : '3px solid transparent',
                   fontWeight: isActive ? 700 : 500,
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.15s ease'
                 }}
               >
-                <Icon size={20} color={isActive ? '#818cf8' : 'var(--text-muted)'} />
+                <Icon size={19} color={isActive ? '#4f46e5' : '#64748b'} />
                 {item.label}
               </button>
             );
@@ -102,17 +104,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             width: '36px',
             height: '36px',
             borderRadius: '50%',
-            background: 'var(--bg-card-hover)',
+            background: '#e0e7ff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 700,
-            color: 'var(--accent-primary)'
+            color: '#4f46e5'
           }}>
-            {user?.name.charAt(0) || 'U'}
+            {user?.name?.charAt(0) || 'U'}
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
               {user?.name}
             </p>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user?.role}</p>
@@ -122,9 +124,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         <button
           onClick={logout}
           className="btn-secondary"
-          style={{ width: '100%', justifyContent: 'center', color: '#fca5a5', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          style={{ width: '100%', justifyContent: 'center', color: '#dc2626', borderColor: '#fecaca', background: '#fff1f2' }}
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
           Cerrar Sesión
         </button>
       </div>
