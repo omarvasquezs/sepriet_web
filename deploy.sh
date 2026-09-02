@@ -11,21 +11,23 @@ if [ ! -f ".env.production" ]; then
     exit 1
 fi
 
-# 2. Compilar Frontend
+# 2. Generar APP_KEY en .env.production si no existe
+if ! grep -q "^APP_KEY=base64:" .env.production; then
+    echo "🔑 Generando APP_KEY segura para Laravel en .env.production..."
+    RAND_KEY="base64:$(openssl rand -base64 32)"
+    sed -i "s|^APP_KEY=.*|APP_KEY=${RAND_KEY}|" .env.production
+fi
+
+# 3. Compilar Frontend
 echo "📦 Compilando Frontend React / Vite..."
 cd frontend
 npm ci
 npm run build
 cd ..
 
-# 3. Levantar contenedores Docker
+# 4. Levantar contenedores Docker
 echo "🐳 Levantando contenedores Docker..."
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
-
-# 4. Generar APP_KEY si está vacía
-echo "🔑 Verificando APP_KEY de Laravel..."
-chmod 666 .env.production
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan key:generate --force
 
 # 5. Ejecutar migraciones y seeders
 echo "🗄️  Ejecutando migraciones de base de datos..."
@@ -38,4 +40,4 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec backen
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan route:cache
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan view:cache
 
-echo "✅ ¡Despliegue completado con éxito! Sepriet está activo en el puerto 80."
+echo "✅ ¡Despliegue completado con éxito! Sepriet está activo en producción."
