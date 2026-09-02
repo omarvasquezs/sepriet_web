@@ -25,6 +25,12 @@ npm ci
 npm run build
 cd ..
 
+# Si existe el certificado SSL, asegurar configuración HTTPS
+if [ -f "/etc/letsencrypt/live/app.sepriet.com/fullchain.pem" ]; then
+    echo "🔒 Certificado SSL detectado, activando configuración HTTPS en Nginx..."
+    cp docker/nginx/ssl.conf docker/nginx/default.conf
+fi
+
 # 4. Levantar contenedores Docker
 echo "🐳 Levantando contenedores Docker..."
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
