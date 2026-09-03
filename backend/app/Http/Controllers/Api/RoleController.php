@@ -24,7 +24,21 @@ class RoleController extends Controller
             'habilitado' => 'boolean',
         ]);
 
-        $name = $validated['nombre'] ?? $validated['nom_rol'] ?? $validated['role_name'] ?? 'Nuevo Rol';
+        $name = trim($validated['nombre'] ?? $validated['nom_rol'] ?? $validated['role_name'] ?? 'Nuevo Rol');
+
+        // Check if role with same name already exists
+        $existing = null;
+        if (Schema::hasColumn('roles', 'nom_rol')) {
+            $existing = Role::whereRaw('LOWER(nom_rol) = ?', [strtolower($name)])->first();
+        } elseif (Schema::hasColumn('roles', 'role_name')) {
+            $existing = Role::whereRaw('LOWER(role_name) = ?', [strtolower($name)])->first();
+        }
+
+        if ($existing) {
+            return response()->json([
+                'message' => 'Ya existe un rol con ese nombre.'
+            ], 422);
+        }
 
         $data = [
             'habilitado' => $request->boolean('habilitado', true),
@@ -63,8 +77,25 @@ class RoleController extends Controller
             $data['habilitado'] = $request->boolean('habilitado');
         }
 
-        $name = $validated['nombre'] ?? $validated['nom_rol'] ?? $validated['role_name'] ?? null;
+        $name = isset($validated['nombre']) || isset($validated['nom_rol']) || isset($validated['role_name'])
+            ? trim($validated['nombre'] ?? $validated['nom_rol'] ?? $validated['role_name'])
+            : null;
+
         if ($name) {
+            // Check uniqueness except current role
+            $existing = null;
+            if (Schema::hasColumn('roles', 'nom_rol')) {
+                $existing = Role::where('id', '!=', $id)->whereRaw('LOWER(nom_rol) = ?', [strtolower($name)])->first();
+            } elseif (Schema::hasColumn('roles', 'role_name')) {
+                $existing = Role::where('id', '!=', $id)->whereRaw('LOWER(role_name) = ?', [strtolower($name)])->first();
+            }
+
+            if ($existing) {
+                return response()->json([
+                    'message' => 'Ya existe otro rol con ese nombre.'
+                ], 422);
+            }
+
             if (Schema::hasColumn('roles', 'nom_rol')) {
                 $data['nom_rol'] = $name;
             }
