@@ -241,16 +241,16 @@ export const ComprobantesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '28px' }}>
+    <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', gap: '12px', flex: 1, maxWidth: '750px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', minWidth: '260px', flex: 1 }}>
+          <div style={{ position: 'relative', minWidth: '220px', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
             <input
               type="text"
               className="form-input"
               style={{ width: '100%', paddingLeft: '42px' }}
-              placeholder="Buscar ticket (NV001-...), DNI, cliente..."
+              placeholder="Buscar ticket, DNI, cliente..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -290,13 +290,13 @@ export const ComprobantesPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="glass-panel" style={{ padding: '20px' }}>
+      <div className="glass-panel" style={{ padding: '16px' }}>
         {loading ? (
           <LoadingSpinner text="Cargando comprobantes y tickets..." />
         ) : comprobantesData.data.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron comprobantes con esos filtros.</p>
         ) : (
-          <div>
+          <div className="table-responsive">
             <table className="custom-table">
               <thead>
                 <tr>

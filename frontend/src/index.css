@@ -374,3 +374,192 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Responsive Utilities & Table Wrappers */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 8px;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 5px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.grid-responsive-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Sidebar Drawer Overlay */
+.sidebar-overlay {
+  display: none;
+}
+
+/* Mobile Bottom Navigation Bar */
+.bottom-nav {
+  display: none;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+/* Tablet & Mobile (max-width: 1023px) */
+@media (max-width: 1023px) {
+  .page-container {
+    padding: 16px 14px;
+  }
+
+  /* Off-canvas mobile sidebar drawer */
+  .sidebar-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .sidebar-container.sidebar-open {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: modalFadeIn 0.2s ease-out;
+  }
+
+  .navbar-hamburger-btn {
+    display: flex !important;
+  }
+
+  .grid-responsive-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Mobile Small Devices (max-width: 767px) */
+@media (max-width: 767px) {
+  .page-container {
+    padding: 12px 10px 80px 10px; /* extra bottom padding for bottom nav */
+  }
+
+  .grid-responsive-2,
+  .grid-responsive-3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .grid-responsive-4 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .modal-overlay {
+    padding: 12px 8px;
+    align-items: flex-end; /* Bottom sheet on phone */
+  }
+
+  .modal-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    padding: 20px 16px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 9px 14px;
+    font-size: 0.86rem;
+  }
+
+  .custom-table th, .custom-table td {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Bottom Navigation Bar on Mobile */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+    z-index: 900;
+    justify-content: space-around;
+    align-items: center;
+    padding: 4px 8px;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+    transition: color 0.15s ease;
+  }
+
+  .bottom-nav-item.active {
+    color: #4f46e5;
+    font-weight: 700;
+  }
+}

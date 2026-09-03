@@ -7,16 +7,19 @@ import {
   Wallet, 
   TrendingUp, 
   LogOut,
-  Shield 
+  Shield,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen = false, onClose }) => {
   const { user, logout } = useAuth();
   const isAdmin = user?.role?.toUpperCase().includes('ADMIN') || user?.role_id === 1;
 
@@ -30,43 +33,73 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     ...(isAdmin ? [{ id: 'usuarios', label: 'Usuarios y Roles', icon: Shield }] : []),
   ];
 
+  const handleSelectTab = (tabId: string) => {
+    setActiveTab(tabId);
+    if (onClose) onClose();
+  };
+
   return (
-    <aside style={{
-      width: '260px',
-      background: '#ffffff',
-      borderRight: '1px solid var(--border-color)',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '24px 16px',
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
-      boxShadow: '2px 0 10px rgba(0, 0, 0, 0.02)',
-      zIndex: 10
-    }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', paddingLeft: '8px' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '1.2rem',
-            color: 'white',
-            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
-          }}>
-            S
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
+
+      <aside className={`sidebar-container ${isOpen ? 'sidebar-open' : ''}`} style={{
+        width: '260px',
+        background: '#ffffff',
+        borderRight: '1px solid var(--border-color)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '24px 16px',
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        boxShadow: '2px 0 10px rgba(0, 0, 0, 0.02)',
+        zIndex: 1000
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', paddingLeft: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '1.2rem',
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
+              }}>
+                S
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>SEPRIET</h1>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sistema de Lavandería</p>
+              </div>
+            </div>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary navbar-hamburger-btn"
+                style={{
+                  display: 'none',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#f1f5f9',
+                  color: '#64748b',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={20} />
+              </button>
+            )}
           </div>
-          <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>SEPRIET</h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sistema de Lavandería</p>
-          </div>
-        </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {menuItems.map((item) => {
@@ -75,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleSelectTab(item.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -134,5 +167,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         </button>
       </div>
     </aside>
+    </>
   );
 };

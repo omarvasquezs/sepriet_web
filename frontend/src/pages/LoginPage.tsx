@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
       <div className="glass-panel page-transition" style={{
         width: '100%',
         maxWidth: '440px',
-        padding: '40px',
+        padding: 'clamp(24px, 5vw, 40px)',
         background: '#ffffff',
         boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 10px 20px -5px rgba(15, 23, 42, 0.04)',
         borderRadius: '20px'

@@ -82,9 +82,9 @@ export const ServiciosPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '28px' }}>
+    <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '8px', background: '#ffffff', border: '1px solid var(--border-color)', padding: '4px', borderRadius: '10px' }}>
+        <div style={{ display: 'flex', gap: '6px', background: '#ffffff', border: '1px solid var(--border-color)', padding: '4px', borderRadius: '10px', flexWrap: 'wrap' }}>
           {[
             { id: 'all', label: 'Todos' },
             { id: 'k', label: 'Por Kilo' },
@@ -98,10 +98,10 @@ export const ServiciosPage: React.FC = () => {
                 background: activeTipo === tab.id ? 'var(--accent-primary)' : 'transparent',
                 color: activeTipo === tab.id ? 'white' : 'var(--text-muted)',
                 border: 'none',
-                padding: '8px 16px',
+                padding: '6px 14px',
                 borderRadius: '8px',
                 fontWeight: 600,
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 cursor: 'pointer'
               }}
             >
@@ -121,7 +121,7 @@ export const ServiciosPage: React.FC = () => {
       ) : filteredServicios.length === 0 ? (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>No hay servicios en esta categoría.</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
           {filteredServicios.map((s) => (
             <div key={s.id} className="glass-card" style={{ padding: '20px', position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>

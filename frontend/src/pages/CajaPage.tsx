@@ -75,14 +75,14 @@ export const CajaPage: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner text="Consultando estado de caja..." />;
-
   const caja = cajaInfo?.caja;
 
   return (
-    <div style={{ padding: '28px' }}>
-      {!caja ? (
-        <div className="glass-panel" style={{ maxWidth: '500px', margin: '40px auto', padding: '36px', textAlign: 'center' }}>
+    <div className="page-container">
+      {loading ? (
+        <LoadingSpinner text="Consultando estado de caja..." />
+      ) : !caja ? (
+        <div className="glass-panel" style={{ maxWidth: '500px', margin: '40px auto', padding: 'clamp(20px, 5vw, 40px)', textAlign: 'center' }}>
           <div style={{
             width: '64px',
             height: '64px',
@@ -120,7 +120,7 @@ export const CajaPage: React.FC = () => {
         </div>
       ) : (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+          <div className="grid-responsive-4" style={{ marginBottom: '28px' }}>
             <div className="glass-card" style={{ padding: '20px' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Monto Apertura</span>
               <h3 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', marginTop: '8px' }}>
@@ -156,8 +156,8 @@ export const CajaPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>Egresos / Gastos de Caja Chica</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Egresos / Gastos de Caja Chica</h3>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button className="btn-secondary" onClick={() => setShowEgresoModal(true)}>
                 <MinusCircle size={18} color="#dc2626" />
@@ -166,32 +166,34 @@ export const CajaPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="glass-panel" style={{ padding: '20px', marginBottom: '36px' }}>
+          <div className="glass-panel" style={{ padding: '16px', marginBottom: '36px' }}>
             {!caja.egresos || caja.egresos.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay egresos registrados en esta sesión de caja.</p>
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No hay egresos registrados en esta sesión de caja.</p>
             ) : (
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Descripción / Motivo</th>
-                    <th>Método Pago</th>
-                    <th>Usuario</th>
-                    <th>Monto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {caja.egresos.map((eg: any) => (
-                    <tr key={eg.id} className="row-item">
-                      <td>{new Date(eg.fecha).toLocaleTimeString('es-PE')}</td>
-                      <td style={{ fontWeight: 600, color: '#0f172a' }}>{eg.descripcion}</td>
-                      <td>{eg.metodo_pago?.nom_metodo_pago || 'Efectivo'}</td>
-                      <td>{eg.usuario?.name}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>- S/ {Number(eg.monto).toFixed(2)}</td>
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Descripción / Motivo</th>
+                      <th>Método Pago</th>
+                      <th>Usuario</th>
+                      <th>Monto</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {caja.egresos.map((eg: any) => (
+                      <tr key={eg.id} className="row-item">
+                        <td>{new Date(eg.fecha).toLocaleTimeString('es-PE')}</td>
+                        <td style={{ fontWeight: 600, color: '#0f172a' }}>{eg.descripcion}</td>
+                        <td>{eg.metodo_pago?.nom_metodo_pago || 'Efectivo'}</td>
+                        <td>{eg.usuario?.name}</td>
+                        <td style={{ color: '#dc2626', fontWeight: 700 }}>- S/ {Number(eg.monto).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -239,7 +241,7 @@ export const CajaPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="grid-responsive-2">
                 <div className="form-group">
                   <label className="form-label">Monto (S/) *</label>
                   <input

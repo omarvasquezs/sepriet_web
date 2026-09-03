@@ -212,7 +212,7 @@ export const UsuariosPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '28px' }}>
+    <div className="page-container">
       {/* Header and Tab Controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -303,13 +303,13 @@ export const UsuariosPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="glass-panel" style={{ padding: '20px' }}>
+          <div className="glass-panel" style={{ padding: '16px' }}>
             {loadingUsers ? (
               <LoadingSpinner text="Cargando usuarios del sistema..." />
             ) : usersData.data.length === 0 ? (
               <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No se encontraron usuarios.</p>
             ) : (
-              <div>
+              <div className="table-responsive">
                 <table className="custom-table">
                   <thead>
                     <tr>
@@ -462,77 +462,80 @@ export const UsuariosPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="glass-panel" style={{ padding: '20px' }}>
+          <div className="glass-panel" style={{ padding: '16px' }}>
             {loadingRoles ? (
-              <LoadingSpinner text="Cargando roles..." />
+              <LoadingSpinner text="Cargando roles del sistema..." />
             ) : roles.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No hay roles registrados.</p>
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No hay roles registrados.</p>
             ) : (
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre del Rol</th>
-                    <th>Usuarios con este Rol</th>
-                    <th style={{ textAlign: 'center' }}>Estado</th>
-                    <th style={{ textAlign: 'center' }}>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roles.map((r: any) => {
-                    const roleName = r.nombre || r.nom_rol || r.role_name;
-                    return (
-                      <tr key={r.id} className="row-item">
-                        <td style={{ fontWeight: 600, color: '#64748b' }}>#{r.id}</td>
-                        <td style={{ fontWeight: 700, color: '#0f172a' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            <Shield size={16} color="#4f46e5" />
-                            {roleName}
-                          </span>
-                        </td>
-                        <td>
-                          <span style={{ padding: '3px 10px', background: '#f1f5f9', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
-                            {r.users_count || 0} usuario(s)
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          {r.habilitado !== false ? (
-                            <span style={{ color: '#16a34a', fontSize: '0.8rem', fontWeight: 600 }}>Activo</span>
-                          ) : (
-                            <span style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}>Inactivo</span>
-                          )}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                            <button
-                              className="btn-secondary"
-                              style={{ padding: '4px 8px', color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff' }}
-                              title="Editar Rol"
-                              onClick={() => handleOpenEditRole(r)}
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              className="btn-secondary"
-                              style={{
-                                padding: '4px 8px',
-                                color: (r.users_count || 0) > 0 ? '#94a3b8' : '#ef4444',
-                                borderColor: (r.users_count || 0) > 0 ? '#e2e8f0' : '#fecaca',
-                                background: (r.users_count || 0) > 0 ? '#f8fafc' : '#fef2f2',
-                                cursor: (r.users_count || 0) > 0 ? 'not-allowed' : 'pointer',
-                              }}
-                              title={(r.users_count || 0) > 0 ? 'No se puede eliminar rol con usuarios asociados' : 'Eliminar Rol'}
-                              onClick={() => handleDeleteRole(r)}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="table-responsive">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre del Rol</th>
+                      <th>Usuarios con este Rol</th>
+                      <th style={{ textAlign: 'center' }}>Estado</th>
+                      <th style={{ textAlign: 'center' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roles.map((r: any) => {
+                      const roleName = r.nombre || r.nom_rol || r.role_name;
+                      return (
+                        <tr key={r.id} className="row-item">
+                          <td style={{ fontWeight: 600, color: '#64748b' }}>#{r.id}</td>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <Shield size={16} color="#4f46e5" />
+                              {roleName}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ padding: '3px 10px', background: '#f1f5f9', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
+                              {r.users_count || 0} usuario(s)
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {r.habilitado !== false ? (
+                              <span style={{ color: '#16a34a', fontSize: '0.8rem', fontWeight: 600 }}>Activo</span>
+                            ) : (
+                              <span style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}>Inactivo</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                              <button
+                                className="btn-secondary"
+                                style={{ padding: '4px 8px', color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff' }}
+                                title="Editar Rol"
+                                onClick={() => handleOpenEditRole(r)}
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                className="btn-secondary"
+                                style={{
+                                  padding: '4px 8px',
+                                  color: (r.users_count || 0) > 0 ? '#94a3b8' : '#dc2626',
+                                  borderColor: (r.users_count || 0) > 0 ? '#e2e8f0' : '#fecaca',
+                                  background: (r.users_count || 0) > 0 ? '#f8fafc' : '#fef2f2',
+                                  cursor: (r.users_count || 0) > 0 ? 'not-allowed' : 'pointer'
+                                }}
+                                title={(r.users_count || 0) > 0 ? 'No se puede eliminar: tiene usuarios asignados' : 'Eliminar Rol'}
+                                disabled={(r.users_count || 0) > 0}
+                                onClick={() => handleDeleteRole(r)}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -540,8 +543,8 @@ export const UsuariosPage: React.FC = () => {
 
       {/* MODAL USUARIO */}
       {showUserModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '520px' }}>
+        <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserIcon size={20} color="#4f46e5" />
               {editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}
@@ -560,7 +563,7 @@ export const UsuariosPage: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="grid-responsive-2">
                 <div className="form-group">
                   <label className="form-label">Nombre de Usuario *</label>
                   <input

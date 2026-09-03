@@ -13,13 +13,17 @@ import { CajaPage } from './pages/CajaPage';
 import { ReportesPage } from './pages/ReportesPage';
 import { UsuariosPage } from './pages/UsuariosPage';
 
+import { LayoutDashboard, Receipt, Users, Wallet, Menu } from 'lucide-react';
+
 const MainLayout: React.FC = () => {
   const { user, isLoading, isAuthTransitioning } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [progressWidth, setProgressWidth] = useState(0);
 
   const handleTabChange = (newTab: string) => {
+    setIsSidebarOpen(false);
     if (newTab === activeTab) return;
     setIsTransitioning(true);
     setProgressWidth(30);
@@ -63,11 +67,11 @@ const MainLayout: React.FC = () => {
 
   const titles: Record<string, string> = {
     dashboard: 'Dashboard Principal',
-    comprobantes: 'Gestión de Comprobantes y Tickets',
+    comprobantes: 'Gestión de Comprobantes',
     clientes: 'Directorio de Clientes',
     servicios: 'Tarifario de Servicios',
     caja: 'Control de Caja Chica',
-    reportes: 'Reportes Financieros y Métricas',
+    reportes: 'Reportes Financieros',
     usuarios: 'Gestión de Usuarios y Roles',
   };
 
@@ -87,10 +91,18 @@ const MainLayout: React.FC = () => {
         />
       </div>
 
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Navbar title={titles[activeTab] || 'Sepriet System'} />
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '20px' }}>
+        <Navbar
+          title={titles[activeTab] || 'Sepriet System'}
+          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        />
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div key={activeTab} className="page-transition">
@@ -103,6 +115,50 @@ const MainLayout: React.FC = () => {
             {activeTab === 'usuarios' && <UsuariosPage />}
           </div>
         </div>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <nav className="bottom-nav">
+          <button
+            type="button"
+            className={`bottom-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => handleTabChange('dashboard')}
+          >
+            <LayoutDashboard size={20} />
+            <span>Inicio</span>
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-item ${activeTab === 'comprobantes' ? 'active' : ''}`}
+            onClick={() => handleTabChange('comprobantes')}
+          >
+            <Receipt size={20} />
+            <span>Tickets</span>
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-item ${activeTab === 'clientes' ? 'active' : ''}`}
+            onClick={() => handleTabChange('clientes')}
+          >
+            <Users size={20} />
+            <span>Clientes</span>
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-item ${activeTab === 'caja' ? 'active' : ''}`}
+            onClick={() => handleTabChange('caja')}
+          >
+            <Wallet size={20} />
+            <span>Caja</span>
+          </button>
+          <button
+            type="button"
+            className="bottom-nav-item"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <Menu size={20} />
+            <span>Más</span>
+          </button>
+        </nav>
       </main>
 
       <ResilienceBanner />

@@ -58,8 +58,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div style={{ padding: '28px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+    <div className="page-container">
+      <div className="grid-responsive-4" style={{ marginBottom: '28px' }}>
         <div className="glass-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>Comprobantes Registrados</span>
@@ -113,50 +113,52 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>Comprobantes Recientes</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Comprobantes Recientes</h3>
         <button onClick={() => onNavigate('comprobantes')} className="btn-primary">
           <PlusCircle size={18} />
           Nuevo Comprobante
         </button>
       </div>
 
-      <div className="glass-panel" style={{ padding: '20px' }}>
+      <div className="glass-panel" style={{ padding: '16px' }}>
         {loading ? (
           <LoadingSpinner text="Cargando estadísticas y tickets..." />
         ) : recentTickets.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>No hay comprobantes registrados aún.</p>
         ) : (
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Cliente</th>
-                <th>Fecha</th>
-                <th>Estado Pago</th>
-                <th>Total</th>
-                <th>Restante</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTickets.map((t) => (
-                <tr key={t.id} className="row-item">
-                  <td style={{ fontWeight: 700, color: '#818cf8' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
-                  <td>{t.cliente?.nombres || 'Cliente'}</td>
-                  <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
-                  <td>
-                    <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado)}`}>
-                      {t.estado_comprobante?.nom_estado || 'DEBE'}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total).toFixed(2)}</td>
-                  <td style={{ color: Number(t.monto_restante) > 0 ? '#fca5a5' : '#34d399', fontWeight: 600 }}>
-                    S/ {Number(t.monto_restante).toFixed(2)}
-                  </td>
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Cliente</th>
+                  <th>Fecha</th>
+                  <th>Estado Pago</th>
+                  <th>Total</th>
+                  <th>Restante</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentTickets.map((t) => (
+                  <tr key={t.id} className="row-item">
+                    <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
+                    <td style={{ fontWeight: 600, color: '#0f172a' }}>{t.cliente?.nombres || 'Cliente'}</td>
+                    <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
+                    <td>
+                      <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado)}`}>
+                        {t.estado_comprobante?.nom_estado || 'DEBE'}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total).toFixed(2)}</td>
+                    <td style={{ color: Number(t.monto_restante) > 0 ? '#ef4444' : '#16a34a', fontWeight: 600 }}>
+                      S/ {Number(t.monto_restante).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

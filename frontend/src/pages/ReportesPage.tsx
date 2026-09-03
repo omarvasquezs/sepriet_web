@@ -30,33 +30,32 @@ export const ReportesPage: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ padding: '28px' }}>
-      <div className="glass-panel" style={{ padding: '20px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Calendar size={18} color="var(--accent-primary)" />
-          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Desde:</span>
-          <input
-            type="date"
-            className="form-input"
-            value={fechaInicio}
-            onChange={(e) => setFechaInicio(e.target.value)}
-          />
+    <div className="page-container">
+      <div className="glass-panel" style={{ padding: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar size={18} color="var(--accent-primary)" />
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Desde:</span>
+            <input
+              type="date"
+              className="form-input"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Hasta:</span>
+            <input
+              type="date"
+              className="form-input"
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
+            />
+          </div>
+          <button className="btn-primary" onClick={fetchReporte}>
+            <Filter size={18} /> Filtrar Reporte
+          </button>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Calendar size={18} color="var(--accent-primary)" />
-          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Hasta:</span>
-          <input
-            type="date"
-            className="form-input"
-            value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
-          />
-        </div>
-
-        <button className="btn-primary" onClick={fetchReporte}>
-          <Filter size={18} /> Filtrar Reporte
-        </button>
       </div>
 
       {loading ? (
@@ -65,7 +64,7 @@ export const ReportesPage: React.FC = () => {
         <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay información para mostrar.</p>
       ) : (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+          <div className="grid-responsive-3" style={{ marginBottom: '28px' }}>
             <div className="glass-card" style={{ padding: '20px' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Total Ingresos</span>
               <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669', marginTop: '8px' }}>
@@ -88,8 +87,8 @@ export const ReportesPage: React.FC = () => {
             </div>
           </div>
 
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px' }}>Ingresos por Método de Pago</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px' }}>Ingresos por Método de Pago</h3>
+          <div className="grid-responsive-4" style={{ marginBottom: '32px' }}>
             {reporte.por_metodo_pago.map((mp: any) => (
               <div key={mp.metodo_pago_id} className="glass-card" style={{ padding: '16px' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -102,30 +101,34 @@ export const ReportesPage: React.FC = () => {
             ))}
           </div>
 
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px' }}>Detalle de Transacciones</h3>
-          <div className="glass-panel" style={{ padding: '20px' }}>
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Comprobante</th>
-                  <th>Cliente</th>
-                  <th>Método Pago</th>
-                  <th>Fecha</th>
-                  <th>Monto Abonado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporte.listado_ingresos.map((ing: any) => (
-                  <tr key={ing.id} className="row-item">
-                    <td style={{ fontWeight: 700, color: '#4f46e5' }}>{ing.cod_comprobante}</td>
-                    <td style={{ fontWeight: 600, color: '#0f172a' }}>{ing.cliente?.nombres}</td>
-                    <td>{ing.metodo_pago?.nom_metodo_pago}</td>
-                    <td>{new Date(ing.fecha).toLocaleString('es-PE')}</td>
-                    <td style={{ color: '#059669', fontWeight: 700 }}>+ S/ {Number(ing.monto_abonado).toFixed(2)}</td>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px' }}>Detalle de Transacciones</h3>
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <div className="table-responsive">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Comprobante</th>
+                    <th>Cliente</th>
+                    <th>Método Pago</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Abonado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reporte.listado_ingresos.map((t: any) => (
+                    <tr key={t.id} className="row-item">
+                      <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante}</td>
+                      <td>{t.cliente?.nombres || 'Cliente'}</td>
+                      <td>{t.metodo_pago?.nom_metodo_pago || 'Efectivo'}</td>
+                      <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
+                      <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total || 0).toFixed(2)}</td>
+                      <td style={{ color: '#059669', fontWeight: 700 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

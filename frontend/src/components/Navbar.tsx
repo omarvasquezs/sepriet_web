@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, ShieldCheck, Wallet } from 'lucide-react';
+import { Clock, ShieldCheck, Wallet, Menu } from 'lucide-react';
 import api from '../api/axios';
 
 interface NavbarProps {
   title: string;
+  onToggleSidebar?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ title }) => {
+export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar }) => {
   const [cajaAbierta, setCajaAbierta] = useState<boolean>(false);
   const [time, setTime] = useState<string>('');
 
@@ -28,56 +29,78 @@ export const Navbar: React.FC<NavbarProps> = ({ title }) => {
 
   return (
     <header style={{
-      height: '70px',
+      height: '64px',
       borderBottom: '1px solid var(--border-color)',
-      padding: '0 28px',
+      padding: '0 16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       background: '#ffffff',
       position: 'sticky',
       top: 0,
-      zIndex: 5,
+      zIndex: 100,
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
     }}>
-      <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>{title}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="btn-secondary navbar-hamburger-btn"
+            onClick={onToggleSidebar}
+            style={{
+              display: 'none',
+              padding: '8px',
+              borderRadius: '8px',
+              background: '#f8fafc',
+              borderColor: '#e2e8f0',
+              cursor: 'pointer'
+            }}
+            title="Abrir menú"
+          >
+            <Menu size={20} color="#0f172a" />
+          </button>
+        )}
+        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px', margin: 0 }}>
+          {title}
+        </h2>
+      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 14px',
-          borderRadius: '20px',
-          background: cajaAbierta ? '#dcfce7' : '#fee2e2',
-          border: `1px solid ${cajaAbierta ? '#bbf7d0' : '#fecaca'}`,
-          fontSize: '0.82rem',
-          fontWeight: 700,
-          color: cajaAbierta ? '#15803d' : '#b91c1c'
-        }}>
-          <Wallet size={15} />
-          {cajaAbierta ? 'Caja Abierta' : 'Caja Cerrada'}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>
-          <Clock size={15} />
-          {time}
-        </div>
-
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          fontSize: '0.8rem',
+          padding: '5px 10px',
+          borderRadius: '20px',
+          background: cajaAbierta ? '#dcfce7' : '#fee2e2',
+          border: `1px solid ${cajaAbierta ? '#bbf7d0' : '#fecaca'}`,
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          color: cajaAbierta ? '#15803d' : '#b91c1c'
+        }}>
+          <Wallet size={14} />
+          <span>{cajaAbierta ? 'Caja Abierta' : 'Caja Cerrada'}</span>
+        </div>
+
+        <div className="hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 500 }}>
+          <Clock size={14} />
+          {time}
+        </div>
+
+        <div className="hide-on-mobile" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.78rem',
           fontWeight: 700,
           color: '#4338ca',
           background: '#e0e7ff',
           border: '1px solid #c7d2fe',
-          padding: '6px 12px',
+          padding: '5px 10px',
           borderRadius: '20px'
         }}>
-          <ShieldCheck size={15} />
-          Token Sanctum Activo
+          <ShieldCheck size={14} />
+          Sanctum
         </div>
       </div>
     </header>

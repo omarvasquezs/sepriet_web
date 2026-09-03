@@ -87,9 +87,9 @@ export const ClientesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '28px' }}>
+    <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ position: 'relative', width: '360px' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
           <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
           <input
             type="text"
@@ -107,13 +107,13 @@ export const ClientesPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="glass-panel" style={{ padding: '20px' }}>
+      <div className="glass-panel" style={{ padding: '16px' }}>
         {loading ? (
           <LoadingSpinner text="Cargando directorio de clientes..." />
         ) : clientesData.data.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron clientes.</p>
         ) : (
-          <div>
+          <div className="table-responsive">
             <table className="custom-table">
               <thead>
                 <tr>
