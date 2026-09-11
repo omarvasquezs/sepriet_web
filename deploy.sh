@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando despliegue de Sepriet en Producción..."
+echo "🚀 Iniciando despliegue de Sepriet (Producción & Staging)..."
 
 # 1. Verificar .env.production
 if [ ! -f ".env.production" ]; then
@@ -18,7 +18,19 @@ if ! grep -q "^APP_KEY=base64:" .env.production; then
     sed -i "s|^APP_KEY=.*|APP_KEY=${RAND_KEY}|" .env.production
 fi
 
-# 3. Compilar Frontend
+# 3. Verificar .env.staging
+if [ ! -f ".env.staging" ] && [ -f ".env.staging.example" ]; then
+    echo "⚙️  Creando .env.staging a partir de .env.staging.example..."
+    cp .env.staging.example .env.staging
+fi
+
+if [ -f ".env.staging" ] && ! grep -q "^APP_KEY=base64:" .env.staging; then
+    echo "🔑 Generando APP_KEY segura para Laravel en .env.staging..."
+    RAND_KEY_STAGE="base64:$(openssl rand -base64 32)"
+    sed -i "s|^APP_KEY=.*|APP_KEY=${RAND_KEY_STAGE}|" .env.staging
+fi
+
+# 4. Compilar Frontend
 echo "📦 Compilando Frontend React / Vite..."
 cd frontend
 npm ci
@@ -31,19 +43,31 @@ if [ -f "/etc/letsencrypt/live/app.sepriet.com/fullchain.pem" ]; then
     cp docker/nginx/ssl.conf docker/nginx/default.conf
 fi
 
-# 4. Levantar contenedores Docker
+# 5. Levantar contenedores Docker
 echo "🐳 Levantando contenedores Docker..."
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 
-# 5. Ejecutar migraciones y seeders
-echo "🗄️  Ejecutando migraciones de base de datos..."
+# 6. Ejecutar migraciones y seeders en Producción
+echo "🗄️  Ejecutando migraciones de base de datos en Producción..."
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan migrate --force
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan db:seed --force
 
-# 6. Optimizar caché de Laravel
-echo "⚡ Optimizando caché de producción..."
+# 7. Optimizar caché de Producción
+echo "⚡ Optimizando caché de Producción..."
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan config:cache
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan route:cache
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend php artisan view:cache
 
-echo "✅ ¡Despliegue completado con éxito! Sepriet está activo en producción."
+# 8. Si existe staging, ejecutar migraciones y optimizar caché
+if docker compose --env-file .env.production -f docker-compose.prod.yml ps | grep -q "sepriet_backend_stage"; then
+    echo "🗄️  Ejecutando migraciones en Staging..."
+    docker compose --env-file .env.production -f docker-compose.prod.yml exec backend_stage php artisan migrate --force || true
+    echo "⚡ Optimizando caché de Staging..."
+    docker compose --env-file .env.production -f docker-compose.prod.yml exec backend_stage php artisan config:cache
+    docker compose --env-file .env.production -f docker-compose.prod.yml exec backend_stage php artisan route:cache
+    docker compose --env-file .env.production -f docker-compose.prod.yml exec backend_stage php artisan view:cache
+fi
+
+echo "✅ ¡Despliegue completado con éxito!"
+echo "👉 Producción: https://app.sepriet.com"
+echo "👉 Staging: https://stage.sepriet.com"

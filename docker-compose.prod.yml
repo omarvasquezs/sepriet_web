@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend Service (PHP 8.3-FPM + Laravel 11)
+  # Backend Service (PHP 8.3-FPM + Laravel 11) - Production
   backend:
     build:
       context: .
@@ -39,6 +39,24 @@ services:
     networks:
       - sepriet_network
 
+  # Backend Service (PHP 8.3-FPM + Laravel 11) - Staging
+  backend_stage:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: sepriet_backend_stage
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.staging
+    volumes:
+      - storage_stage_data:/var/www/html/storage
+      - ./.env.staging:/var/www/html/.env
+    networks:
+      - sepriet_network
+
   # Web Server (Nginx Reverse Proxy + Static Frontend)
   web:
     image: nginx:alpine
@@ -52,8 +70,10 @@ services:
       - ./frontend/dist:/var/www/frontend:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - storage_data:/var/www/html/storage:ro
+      - storage_stage_data:/var/www/html/storage_stage:ro
     depends_on:
       - backend
+      - backend_stage
     networks:
       - sepriet_network
 
@@ -61,6 +81,8 @@ volumes:
   db_data:
     driver: local
   storage_data:
+    driver: local
+  storage_stage_data:
     driver: local
 
 networks:
