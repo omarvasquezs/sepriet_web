@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -426,12 +426,28 @@ export const ComprobantesPage: React.FC = () => {
       {/* Modal Registrar Comprobante */}
       {showCreateModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '850px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>Registrar Nuevo Comprobante</h3>
+          <div className="modal-content" style={{ maxWidth: '900px', padding: '24px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus size={20} color="var(--primary-color)" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Registrar Nuevo Comprobante
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowCreateModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <form onSubmit={handleCreateSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1.5fr 1.5fr' : '1fr 2fr', gap: '16px' }}>
-                <div className="form-group">
+              {/* Bloque 1: Cabecera y Cliente */}
+              <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 2fr', gap: '14px', marginBottom: '14px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Tipo de Comprobante *</label>
                   <select
                     className="form-select"
@@ -444,7 +460,7 @@ export const ComprobantesPage: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Cliente *</label>
                   <select
                     className="form-select"
@@ -460,9 +476,9 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
 
                 {isAdmin && (
-                  <div className="form-group">
+                  <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5' }}>
-                      <Calendar size={14} /> Fecha de Operación (Admin)
+                      <Calendar size={14} /> Fecha Operación (Admin)
                     </label>
                     <input
                       type="datetime-local"
@@ -475,23 +491,25 @@ export const ComprobantesPage: React.FC = () => {
               </div>
 
               {createForm.tipo_comprobante === 'F' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
-                  <div className="form-group">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">RUC *</label>
                     <input
                       type="text"
                       className="form-input"
                       required
+                      placeholder="11 dígitos"
                       value={createForm.num_ruc}
                       onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value })}
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">Razón Social *</label>
                     <input
                       type="text"
                       className="form-input"
                       required
+                      placeholder="Nombre o razón comercial"
                       value={createForm.razon_social}
                       onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value })}
                     />
@@ -499,76 +517,125 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               )}
 
-              <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginTop: '16px', marginBottom: '12px' }}>Detalles de Servicios</h4>
-
-              {createForm.detalles.map((det, idx) => (
-                <div key={idx} className="glass-card" style={{ padding: '14px', marginBottom: '12px', background: '#f8fafc' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
-                    <select
-                      className="form-select"
-                      required
-                      value={det.servicio_id}
-                      onChange={(e) => handleSelectServicio(idx, e.target.value)}
-                    >
-                      <option value="">Seleccionar Servicio...</option>
-                      {servicios.map(s => (
-                        <option key={s.id} value={s.id}>
-                          {s.nom_servicio} ({s.tipo_servicio === 'k' || s.tipo_servicio === 'Kilo' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo || s.precio_unidad).toFixed(2)}
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      placeholder="Peso / Cant"
-                      value={det.peso_kg}
-                      onChange={(e) => {
-                        const newD = [...createForm.detalles];
-                        newD[idx].peso_kg = e.target.value;
-                        setCreateForm({ ...createForm, detalles: newD });
-                      }}
-                    />
-
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      placeholder="Precio Unit"
-                      value={det.costo_kilo}
-                      onChange={(e) => {
-                        const newD = [...createForm.detalles];
-                        newD[idx].costo_kilo = e.target.value;
-                        setCreateForm({ ...createForm, detalles: newD });
-                      }}
-                    />
-
-                    <div style={{ fontWeight: 700, color: '#059669', fontSize: '0.95rem', textAlign: 'right' }}>
-                      S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDetalle(idx)}
-                      style={{ background: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+              {/* Bloque 2: Detalles de Servicios */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    Detalles de Servicios / Prendas
+                  </h4>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleAddDetalle}
+                    style={{ padding: '4px 10px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Plus size={14} /> Agregar Servicio
+                  </button>
                 </div>
-              ))}
 
-              <button type="button" className="btn-secondary" onClick={handleAddDetalle} style={{ marginBottom: '20px' }}>
-                + Agregar Fila
-              </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {createForm.detalles.map((det, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(200px, 3fr) minmax(80px, 1fr) minmax(90px, 1.2fr) minmax(80px, 1fr) auto',
+                        gap: '8px',
+                        alignItems: 'center',
+                        background: '#f8fafc',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <select
+                        className="form-select"
+                        required
+                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                        value={det.servicio_id}
+                        onChange={(e) => handleSelectServicio(idx, e.target.value)}
+                      >
+                        <option value="">Seleccionar Servicio...</option>
+                        {servicios.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.nom_servicio} ({s.tipo_servicio === 'k' || s.tipo_servicio === 'Kilo' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo || s.precio_unidad).toFixed(2)}
+                          </option>
+                        ))}
+                      </select>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', background: '#f8fafc', border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        className="form-input"
+                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                        placeholder="Peso / Cant"
+                        value={det.peso_kg}
+                        onChange={(e) => {
+                          const newD = [...createForm.detalles];
+                          newD[idx].peso_kg = e.target.value;
+                          setCreateForm({ ...createForm, detalles: newD });
+                        }}
+                      />
+
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-input"
+                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                        placeholder="Precio Unit (S/)"
+                        value={det.costo_kilo}
+                        onChange={(e) => {
+                          const newD = [...createForm.detalles];
+                          newD[idx].costo_kilo = e.target.value;
+                          setCreateForm({ ...createForm, detalles: newD });
+                        }}
+                      />
+
+                      <div style={{ fontWeight: 800, color: '#059669', fontSize: '0.92rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDetalle(idx)}
+                        disabled={createForm.detalles.length <= 1}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: createForm.detalles.length <= 1 ? '#cbd5e1' : '#dc2626',
+                          cursor: createForm.detalles.length <= 1 ? 'default' : 'pointer',
+                          padding: '4px',
+                        }}
+                        title="Eliminar fila"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bloque 3: Finanzas y Descuento */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '12px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  marginBottom: '14px',
+                }}
+              >
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Descuento (S/)</label>
+                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Descuento (S/)</label>
                   <input
                     type="number"
                     step="0.50"
+                    min="0"
                     className="form-input"
                     value={createForm.descuento}
                     onChange={(e) => setCreateForm({ ...createForm, descuento: e.target.value })}
@@ -576,10 +643,11 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Monto Abonado (S/)</label>
+                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Monto Abonado (S/)</label>
                   <input
                     type="number"
                     step="0.50"
+                    min="0"
                     className="form-input"
                     value={createForm.monto_abonado}
                     onChange={(e) => setCreateForm({ ...createForm, monto_abonado: e.target.value })}
@@ -587,7 +655,7 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Método de Pago</label>
+                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Método de Pago</label>
                   <select
                     className="form-select"
                     value={createForm.metodo_pago_id}
@@ -600,26 +668,55 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Observaciones</label>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Notas adicionales..."
+                  placeholder="Observaciones o notas adicionales (opcional)..."
                   value={createForm.observaciones}
                   onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value })}
                 />
               </div>
 
-              <div style={{ textAlign: 'right', marginBottom: '24px' }}>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-                  Total a Pagar: <span style={{ color: '#4f46e5' }}>S/ {calculateTotal().toFixed(2)}</span>
-                </span>
-              </div>
+              {/* Totales y Botones de Acción */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '1px solid #e2e8f0',
+                  paddingTop: '16px',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '0.9rem', color: '#475569' }}>
+                    Total a Pagar:{' '}
+                    <strong style={{ fontSize: '1.25rem', color: '#4f46e5' }}>
+                      S/ {calculateTotal().toFixed(2)}
+                    </strong>
+                  </div>
+                  {Number(createForm.monto_abonado) > 0 && (
+                    <div style={{ fontSize: '0.85rem', color: '#059669' }}>
+                      Abono: <strong>S/ {Number(createForm.monto_abonado).toFixed(2)}</strong>
+                    </div>
+                  )}
+                  {Math.max(0, calculateTotal() - Number(createForm.monto_abonado || 0)) > 0 && (
+                    <div style={{ fontSize: '0.85rem', color: '#dc2626' }}>
+                      Pendiente: <strong>S/ {Math.max(0, calculateTotal() - Number(createForm.monto_abonado || 0)).toFixed(2)}</strong>
+                    </div>
+                  )}
+                </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Generar Comprobante</button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ padding: '10px 20px', fontWeight: 700 }}>
+                    Generar Comprobante
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -629,29 +726,42 @@ export const ComprobantesPage: React.FC = () => {
       {/* Modal Abono */}
       {showAbonoModal && selectedTicket && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
-              Registrar Abono a {selectedTicket.cod_comprobante}
-            </h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Monto pendiente: <b style={{ color: '#dc2626' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
+          <div className="modal-content" style={{ maxWidth: '480px', padding: '24px' }}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Registrar Abono a {selectedTicket.cod_comprobante}
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowAbonoModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '0.9rem' }}>
+              Monto pendiente por cobrar: <b style={{ color: '#dc2626' }}>S/ {Number(selectedTicket.monto_restante).toFixed(2)}</b>
             </p>
 
             <form onSubmit={handleAbonoSubmit}>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '14px' }}>
                 <label className="form-label">Monto a Abonar (S/) *</label>
                 <input
                   type="number"
                   step="0.10"
+                  min="0.10"
                   className="form-input"
                   required
+                  autoFocus
                   max={selectedTicket.monto_restante}
                   value={abonoAmount}
                   onChange={(e) => setAbonoAmount(e.target.value)}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '14px' }}>
                 <label className="form-label">Método de Pago *</label>
                 <select
                   className="form-select"
@@ -679,9 +789,13 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowAbonoModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Confirmar Abono</button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowAbonoModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" style={{ fontWeight: 700 }}>
+                  Confirmar Abono
+                </button>
               </div>
             </form>
           </div>

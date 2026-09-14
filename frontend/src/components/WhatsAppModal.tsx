@@ -316,16 +316,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px',
-            borderBottom: '1px solid var(--border-color)',
-            paddingBottom: '12px',
-          }}
-        >
+        <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
@@ -354,14 +345,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
+            className="modal-close-btn"
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
+            title="Cerrar"
           >
             <X size={20} />
           </button>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, Edit2, Trash2, X } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -190,11 +190,21 @@ export const ClientesPage: React.FC = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px' }}>
-              {editingClienteId ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
-            </h3>
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '580px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                {editingClienteId ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">

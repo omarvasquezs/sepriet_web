@@ -10,6 +10,7 @@ import {
   FileText,
   Eye,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -629,28 +630,40 @@ export const CajaPage: React.FC = () => {
 
       {/* Modal 2: Registrar Egreso / Gasto (Matches Screenshot 5) */}
       {showEgresoModal && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => setShowEgresoModal(false)}>
           <div
             className="glass-panel modal-content"
             style={{
               maxWidth: '480px',
               width: '90%',
-              padding: '24px',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <h3
-              style={{
-                fontSize: '1.2rem',
-                fontWeight: 800,
-                color: '#0f172a',
-                marginBottom: '20px',
-                borderBottom: '1px solid #e2e8f0',
-                paddingBottom: '12px',
-              }}
-            >
-              Registrar Egreso / Gasto
-            </h3>
+            <div className="modal-header">
+              <h3
+                style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  color: '#0f172a',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <MinusCircle size={20} color="#dc2626" />
+                Registrar Egreso / Gasto
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowEgresoModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <form onSubmit={handleEgresoSubmit}>
               <div className="form-group" style={{ marginBottom: '16px' }}>
@@ -775,31 +788,39 @@ export const CajaPage: React.FC = () => {
 
       {/* Modal 3: Cerrar Caja */}
       {showCierreModal && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => setShowCierreModal(false)}>
           <div
             className="glass-panel modal-content"
             style={{
               maxWidth: '480px',
               width: '90%',
-              padding: '24px',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <h3
-              style={{
-                fontSize: '1.2rem',
-                fontWeight: 800,
-                color: '#dc2626',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                borderBottom: '1px solid #e2e8f0',
-                paddingBottom: '12px',
-              }}
-            >
-              <Lock size={20} /> Cierre de Caja
-            </h3>
+            <div className="modal-header">
+              <h3
+                style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  color: '#dc2626',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Lock size={20} /> Cierre de Caja
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowCierreModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <div
               style={{

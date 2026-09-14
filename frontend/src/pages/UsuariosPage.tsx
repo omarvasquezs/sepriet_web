@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Shield, User as UserIcon, CheckCircle2, XCircle, KeyRound, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Shield, User as UserIcon, CheckCircle2, XCircle, KeyRound, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
@@ -545,10 +545,20 @@ export const UsuariosPage: React.FC = () => {
       {showUserModal && (
         <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
           <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserIcon size={20} color="#4f46e5" />
-              {editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}
-            </h3>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserIcon size={20} color="#4f46e5" />
+                {editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowUserModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmitUser}>
               <div className="form-group">
@@ -649,12 +659,22 @@ export const UsuariosPage: React.FC = () => {
 
       {/* MODAL ROL */}
       {showRoleModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '440px' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Shield size={20} color="#4f46e5" />
-              {editingRoleId ? 'Editar Rol' : 'Nuevo Rol'}
-            </h3>
+        <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={20} color="#4f46e5" />
+                {editingRoleId ? 'Editar Rol' : 'Nuevo Rol'}
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowRoleModal(false)}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmitRole}>
               <div className="form-group">
