@@ -12,6 +12,11 @@ class ServicioController extends Controller
     {
         $query = Servicio::query();
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('nom_servicio', 'like', "%{$search}%");
+        }
+
         if ($request->has('tipo') && $request->tipo != '') {
             $query->where('tipo_servicio', $request->tipo);
         }
@@ -20,7 +25,14 @@ class ServicioController extends Controller
             $query->where('habilitado', $request->habilitado == 'true' || $request->habilitado == '1');
         }
 
-        return response()->json($query->orderBy('nom_servicio')->get());
+        $query->orderBy('nom_servicio');
+
+        if ($request->has('page') || $request->has('per_page')) {
+            $perPage = (int)$request->get('per_page', 20);
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { AsyncSelect2, type SelectOption } from '../components/AsyncSelect2';
 
 const toDateTimeLocal = (d: Date = new Date()) => {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -15,8 +16,6 @@ export const ComprobantesPage: React.FC = () => {
   const isAdmin = (user?.role_id === 1) || Boolean(user?.role && user.role.toLowerCase().includes('admin'));
 
   const [comprobantesData, setComprobantesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [servicios, setServicios] = useState<any[]>([]);
   const [catalogos, setCatalogos] = useState<any>({ estados_pago: [], estados_ropa: [], metodos_pago: [] });
 
   const [search, setSearch] = useState('');
@@ -44,8 +43,11 @@ export const ComprobantesPage: React.FC = () => {
   const [abonoAmount, setAbonoAmount] = useState('');
   const [abonoMetodoPago, setAbonoMetodoPago] = useState('4');
 
+  // Selected Cliente Option for AsyncSelect2
+  const [selectedClienteOption, setSelectedClienteOption] = useState<SelectOption | null>(null);
+
   // Create Form State
-  const [createForm, setCreateForm] = useState({
+  const initialCreateForm = {
     tipo_comprobante: 'N',
     cliente_id: '',
     metodo_pago_id: '4', // Efectivo
@@ -55,14 +57,16 @@ export const ComprobantesPage: React.FC = () => {
     num_ruc: '',
     razon_social: '',
     detalles: [
-      { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00' }
+      { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00', selectedOption: null as SelectOption | null }
     ]
-  });
+  };
+
+  const [createForm, setCreateForm] = useState(initialCreateForm);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [compRes, cliRes, servRes, catRes] = await Promise.all([
+      const [compRes, catRes] = await Promise.all([
         api.get('/comprobantes', {
           params: {
             search,
@@ -71,14 +75,10 @@ export const ComprobantesPage: React.FC = () => {
             page
           }
         }),
-        api.get('/clientes', { params: { per_page: 100 } }),
-        api.get('/servicios', { params: { habilitado: true } }),
         api.get('/catalogos')
       ]);
 
       setComprobantesData(compRes.data);
-      setClientes(cliRes.data.data || cliRes.data);
-      setServicios(servRes.data);
       setCatalogos(catRes.data);
     } catch (err) {
       console.error(err);
@@ -91,12 +91,62 @@ export const ComprobantesPage: React.FC = () => {
     fetchData();
   }, [search, estadoPagoFilter, estadoRopaFilter, page]);
 
+  // Loaders for Select2 with search & lazy loading
+  const loadClienteOptions = useCallback(async (query: string, pageNum: number) => {
+    const res = await api.get('/clientes', {
+      params: { search: query, page: pageNum, per_page: 20 }
+    });
+    const items = res.data?.data || [];
+    const hasMore = res.data ? res.data.current_page < res.data.last_page : false;
+    return {
+      data: items.map((c: any) => ({
+        id: c.id,
+        label: c.nombres,
+        sublabel: c.dni ? `DNI: ${c.dni}` : 'Sin DNI',
+        extraBadge: c.telefono ? `Tel: ${c.telefono}` : undefined,
+        raw: c,
+      })),
+      hasMore,
+    };
+  }, []);
+
+  const loadServicioOptions = useCallback(async (query: string, pageNum: number) => {
+    const res = await api.get('/servicios', {
+      params: { search: query, page: pageNum, per_page: 20, habilitado: true }
+    });
+    const items = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+    const hasMore = res.data?.current_page && res.data?.last_page
+      ? res.data.current_page < res.data.last_page
+      : false;
+    return {
+      data: items.map((s: any) => {
+        const tipoLabel = s.tipo_servicio === 'k' || s.tipo_servicio === 'Kilo' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda';
+        const precio = Number(s.precio_kilo || s.precio_unidad || 0).toFixed(2);
+        return {
+          id: s.id,
+          label: s.nom_servicio,
+          sublabel: `Tipo: ${tipoLabel}`,
+          extraBadge: `S/ ${precio}`,
+          raw: s,
+        };
+      }),
+      hasMore,
+    };
+  }, []);
+
+  const handleOpenCreateModal = () => {
+    setCreateForm(initialCreateForm);
+    setSelectedClienteOption(null);
+    setFechaOperacionCreate(toDateTimeLocal());
+    setShowCreateModal(true);
+  };
+
   const handleAddDetalle = () => {
     setCreateForm(prev => ({
       ...prev,
       detalles: [
         ...prev.detalles,
-        { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00' }
+        { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00', selectedOption: null }
       ]
     }));
   };
@@ -109,15 +159,16 @@ export const ComprobantesPage: React.FC = () => {
     }));
   };
 
-  const handleSelectServicio = (index: number, servicioId: string) => {
-    const s = servicios.find(item => item.id === Number(servicioId));
+  const handleSelectServicio = (index: number, servicioId: string | number, opt?: SelectOption) => {
+    const s = opt?.raw;
     setCreateForm(prev => {
       const newDetalles = [...prev.detalles];
       newDetalles[index] = {
         ...newDetalles[index],
-        servicio_id: servicioId,
-        costo_kilo: s?.precio_kilo ? String(s.precio_kilo) : '0.00',
-        peso_kg: newDetalles[index].peso_kg || '1.00'
+        servicio_id: String(servicioId || ''),
+        costo_kilo: s?.precio_kilo ? String(s.precio_kilo) : newDetalles[index].costo_kilo || '0.00',
+        peso_kg: newDetalles[index].peso_kg || '1.00',
+        selectedOption: opt || null
       };
       return { ...prev, detalles: newDetalles };
     });
@@ -281,10 +332,7 @@ export const ComprobantesPage: React.FC = () => {
 
         <button
           className="btn-primary"
-          onClick={() => {
-            setFechaOperacionCreate(toDateTimeLocal());
-            setShowCreateModal(true);
-          }}
+          onClick={handleOpenCreateModal}
         >
           <Plus size={18} /> Registrar Comprobante
         </button>
@@ -462,17 +510,18 @@ export const ComprobantesPage: React.FC = () => {
 
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Cliente *</label>
-                  <select
-                    className="form-select"
-                    required
+                  <AsyncSelect2
                     value={createForm.cliente_id}
-                    onChange={(e) => setCreateForm({ ...createForm, cliente_id: e.target.value })}
-                  >
-                    <option value="">Seleccione un cliente...</option>
-                    {clientes.map(c => (
-                      <option key={c.id} value={c.id}>{c.nombres} ({c.dni || 'Sin DNI'})</option>
-                    ))}
-                  </select>
+                    initialOption={selectedClienteOption}
+                    placeholder="Buscar o seleccionar cliente..."
+                    searchPlaceholder="Escriba nombre, DNI o teléfono..."
+                    loadOptions={loadClienteOptions}
+                    required
+                    onChange={(val, opt) => {
+                      setCreateForm({ ...createForm, cliente_id: String(val || '') });
+                      setSelectedClienteOption(opt || null);
+                    }}
+                  />
                 </div>
 
                 {isAdmin && (
@@ -539,7 +588,7 @@ export const ComprobantesPage: React.FC = () => {
                       key={idx}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'minmax(200px, 3fr) minmax(80px, 1fr) minmax(90px, 1.2fr) minmax(80px, 1fr) auto',
+                        gridTemplateColumns: 'minmax(220px, 3fr) minmax(80px, 1fr) minmax(90px, 1.2fr) minmax(80px, 1fr) auto',
                         gap: '8px',
                         alignItems: 'center',
                         background: '#f8fafc',
@@ -548,20 +597,17 @@ export const ComprobantesPage: React.FC = () => {
                         border: '1px solid #e2e8f0',
                       }}
                     >
-                      <select
-                        className="form-select"
-                        required
-                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
-                        value={det.servicio_id}
-                        onChange={(e) => handleSelectServicio(idx, e.target.value)}
-                      >
-                        <option value="">Seleccionar Servicio...</option>
-                        {servicios.map(s => (
-                          <option key={s.id} value={s.id}>
-                            {s.nom_servicio} ({s.tipo_servicio === 'k' || s.tipo_servicio === 'Kilo' ? 'Kilo' : s.tipo_servicio === 's' ? 'Servicio' : 'Prenda'}) - S/ {Number(s.precio_kilo || s.precio_unidad).toFixed(2)}
-                          </option>
-                        ))}
-                      </select>
+                      <div style={{ minWidth: '200px' }}>
+                        <AsyncSelect2
+                          value={det.servicio_id}
+                          initialOption={det.selectedOption}
+                          placeholder="Buscar servicio o prenda..."
+                          searchPlaceholder="Buscar por nombre..."
+                          loadOptions={loadServicioOptions}
+                          required
+                          onChange={(val, opt) => handleSelectServicio(idx, val, opt)}
+                        />
+                      </div>
 
                       <input
                         type="number"
