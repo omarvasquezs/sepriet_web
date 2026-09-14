@@ -129,7 +129,7 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
 
   // Search input handler with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
+    const query = e.target.value.toUpperCase();
     setSearchTerm(query);
     setPage(1);
 

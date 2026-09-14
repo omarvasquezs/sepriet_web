@@ -675,9 +675,9 @@ export const CajaPage: React.FC = () => {
                   className="form-input"
                   required
                   autoFocus
-                  placeholder="Ej: Bolsas, jabón líquido, almuerzo personal"
+                  placeholder="EJ: BOLSAS, JABÓN LÍQUIDO, ALMUERZO PERSONAL"
                   value={egresoForm.descripcion}
-                  onChange={(e) => setEgresoForm({ ...egresoForm, descripcion: e.target.value })}
+                  onChange={(e) => setEgresoForm({ ...egresoForm, descripcion: e.target.value.toUpperCase() })}
                 />
               </div>
 

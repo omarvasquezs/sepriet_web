@@ -188,7 +188,7 @@ export const ServiciosPage: React.FC = () => {
                   className="form-input"
                   required
                   value={form.nom_servicio}
-                  onChange={(e) => setForm({ ...form, nom_servicio: e.target.value })}
+                  onChange={(e) => setForm({ ...form, nom_servicio: e.target.value.toUpperCase() })}
                 />
               </div>
 

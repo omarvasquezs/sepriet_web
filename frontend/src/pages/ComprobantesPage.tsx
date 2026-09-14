@@ -303,7 +303,7 @@ export const ComprobantesPage: React.FC = () => {
               style={{ width: '100%', paddingLeft: '42px' }}
               placeholder="Buscar ticket, DNI, cliente..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
             />
           </div>
 
@@ -547,9 +547,9 @@ export const ComprobantesPage: React.FC = () => {
                       type="text"
                       className="form-input"
                       required
-                      placeholder="11 dígitos"
+                      placeholder="11 DÍGITOS"
                       value={createForm.num_ruc}
-                      onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value })}
+                      onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value.toUpperCase() })}
                     />
                   </div>
                   <div className="form-group" style={{ margin: 0 }}>
@@ -560,7 +560,7 @@ export const ComprobantesPage: React.FC = () => {
                       required
                       placeholder="Nombre o razón comercial"
                       value={createForm.razon_social}
-                      onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value })}
+                      onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value.toUpperCase() })}
                     />
                   </div>
                 </div>
@@ -720,7 +720,7 @@ export const ComprobantesPage: React.FC = () => {
                   className="form-input"
                   placeholder="Observaciones o notas adicionales (opcional)..."
                   value={createForm.observaciones}
-                  onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value })}
+                  onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value.toUpperCase() })}
                 />
               </div>
 

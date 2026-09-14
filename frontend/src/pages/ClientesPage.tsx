@@ -97,7 +97,7 @@ export const ClientesPage: React.FC = () => {
             style={{ width: '100%', paddingLeft: '42px' }}
             placeholder="Buscar por nombres, DNI o teléfono..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
           />
         </div>
 
@@ -214,7 +214,7 @@ export const ClientesPage: React.FC = () => {
                   className="form-input"
                   required
                   value={form.nombres}
-                  onChange={(e) => setForm({ ...form, nombres: e.target.value })}
+                  onChange={(e) => setForm({ ...form, nombres: e.target.value.toUpperCase() })}
                 />
               </div>
 
@@ -225,7 +225,7 @@ export const ClientesPage: React.FC = () => {
                     type="text"
                     className="form-input"
                     value={form.dni}
-                    onChange={(e) => setForm({ ...form, dni: e.target.value })}
+                    onChange={(e) => setForm({ ...form, dni: e.target.value.toUpperCase() })}
                   />
                 </div>
 
@@ -251,7 +251,7 @@ export const ClientesPage: React.FC = () => {
                     type="text"
                     className="form-input"
                     value={form.telefono}
-                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                    onChange={(e) => setForm({ ...form, telefono: e.target.value.toUpperCase() })}
                   />
                 </div>
 
@@ -261,7 +261,7 @@ export const ClientesPage: React.FC = () => {
                     type="email"
                     className="form-input"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(e) => setForm({ ...form, email: e.target.value.toUpperCase() })}
                   />
                 </div>
               </div>
@@ -272,7 +272,7 @@ export const ClientesPage: React.FC = () => {
                   type="text"
                   className="form-input"
                   value={form.direccion}
-                  onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                  onChange={(e) => setForm({ ...form, direccion: e.target.value.toUpperCase() })}
                 />
               </div>
 

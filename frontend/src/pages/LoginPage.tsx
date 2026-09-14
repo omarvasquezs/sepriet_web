@@ -89,9 +89,9 @@ export const LoginPage: React.FC = () => {
                 type="text"
                 className="form-input"
                 style={{ width: '100%', paddingLeft: '42px' }}
-                placeholder="admin"
+                placeholder="ADMIN"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.toUpperCase())}
                 required
                 autoFocus
               />

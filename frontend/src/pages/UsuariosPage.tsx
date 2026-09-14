@@ -280,7 +280,7 @@ export const UsuariosPage: React.FC = () => {
                   style={{ width: '100%', paddingLeft: '42px' }}
                   placeholder="Buscar por nombre, usuario o email..."
                   value={searchUsers}
-                  onChange={(e) => { setSearchUsers(e.target.value); setPageUsers(1); }}
+                  onChange={(e) => { setSearchUsers(e.target.value.toUpperCase()); setPageUsers(1); }}
                 />
               </div>
 
@@ -569,7 +569,7 @@ export const UsuariosPage: React.FC = () => {
                   required
                   placeholder="Ej: Juan Arana"
                   value={userForm.name}
-                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value.toUpperCase() })}
                 />
               </div>
 
@@ -582,7 +582,7 @@ export const UsuariosPage: React.FC = () => {
                     required
                     placeholder="Ej: jarana"
                     value={userForm.username}
-                    onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                    onChange={(e) => setUserForm({ ...userForm, username: e.target.value.toUpperCase() })}
                   />
                 </div>
 
@@ -609,7 +609,7 @@ export const UsuariosPage: React.FC = () => {
                   className="form-input"
                   placeholder="Opcional (ej: usuario@sepriet.com)"
                   value={userForm.email}
-                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value.toUpperCase() })}
                 />
               </div>
 
@@ -685,7 +685,7 @@ export const UsuariosPage: React.FC = () => {
                   required
                   placeholder="Ej: Supervisor, Auditor, etc."
                   value={roleForm.nombre}
-                  onChange={(e) => setRoleForm({ ...roleForm, nombre: e.target.value })}
+                  onChange={(e) => setRoleForm({ ...roleForm, nombre: e.target.value.toUpperCase() })}
                 />
               </div>
 

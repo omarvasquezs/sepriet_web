@@ -141,6 +141,19 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Global uppercase transformation for all textfields and textareas, except password */
+input:not([type="password"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="date"]):not([type="datetime-local"]):not([type="time"]):not([type="range"]),
+textarea,
+.form-input:not([type="password"]),
+.form-textarea {
+  text-transform: uppercase;
+}
+
+input[type="password"],
+.form-input[type="password"] {
+  text-transform: none !important;
+}
+
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
@@ -148,6 +161,12 @@ body {
 
 .form-input::placeholder, .form-textarea::placeholder {
   color: #94a3b8;
+  text-transform: uppercase;
+}
+
+input[type="password"]::placeholder,
+.form-input[type="password"]::placeholder {
+  text-transform: none !important;
 }
 
 /* Badges */
