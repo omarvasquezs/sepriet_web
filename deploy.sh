@@ -37,9 +37,9 @@ npm ci
 npm run build
 cd ..
 
-# Si existe el certificado SSL, asegurar configuración HTTPS
-if [ -f "/etc/letsencrypt/live/app.sepriet.com/fullchain.pem" ]; then
-    echo "🔒 Certificado SSL detectado, activando configuración HTTPS en Nginx..."
+# Activar configuración HTTPS en Nginx
+if [ -f "docker/nginx/ssl.conf" ]; then
+    echo "🔒 Activando configuración HTTPS / SSL en Nginx..."
     cp docker/nginx/ssl.conf docker/nginx/default.conf
 fi
 
