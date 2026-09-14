@@ -11,6 +11,7 @@ use App\Models\EstadoComprobante;
 use App\Models\EstadoRopa;
 use App\Models\MetodoPago;
 use App\Models\Local;
+use App\Models\CajaAperturaCierre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -72,6 +73,18 @@ class ComprobanteController extends Controller
             'detalles.*.peso_kg' => 'required|numeric|min:0.01',
             'detalles.*.costo_kilo' => 'required|numeric|min:0',
         ]);
+
+        if (empty($validated['fecha_operacion'])) {
+            $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')
+                ->whereDate('datetime_apertura', now()->toDateString())
+                ->first();
+            if (!$cajaAbierta) {
+                return response()->json([
+                    'message' => 'No se ha aperturado la caja el día de hoy. Por favor ingrese el monto inicial antes de registrar comprobantes.',
+                    'requiere_apertura' => true,
+                ], 422);
+            }
+        }
 
         return DB::transaction(function () use ($request, $validated) {
             $tipo = $validated['tipo_comprobante'];
@@ -202,6 +215,18 @@ class ComprobanteController extends Controller
             'metodo_pago_id' => 'required|exists:metodo_pago,id',
             'fecha_operacion' => 'nullable|date',
         ]);
+
+        if (empty($validated['fecha_operacion'])) {
+            $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')
+                ->whereDate('datetime_apertura', now()->toDateString())
+                ->first();
+            if (!$cajaAbierta) {
+                return response()->json([
+                    'message' => 'No se ha aperturado la caja el día de hoy. Por favor ingrese el monto inicial antes de registrar abonos.',
+                    'requiere_apertura' => true,
+                ], 422);
+            }
+        }
 
         return DB::transaction(function () use ($request, $id, $validated) {
             $comprobante = Comprobante::findOrFail($id);

@@ -1,15 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, ShieldCheck, Wallet, Menu } from 'lucide-react';
+import { Clock, ShieldCheck, Wallet, Menu, Unlock } from 'lucide-react';
 import api from '../api/axios';
 
 interface NavbarProps {
   title: string;
   onToggleSidebar?: () => void;
+  onOpenAperturaModal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar }) => {
+export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar, onOpenAperturaModal }) => {
   const [cajaAbierta, setCajaAbierta] = useState<boolean>(false);
+  const [saldoEfectivo, setSaldoEfectivo] = useState<number | null>(null);
   const [time, setTime] = useState<string>('');
+
+  const fetchCajaStatus = () => {
+    api.get('/caja/estado')
+      .then(res => {
+        const isAbierta = !!res.data.caja && !res.data.caja.datetime_cierre;
+        setCajaAbierta(isAbierta);
+        if (isAbierta && res.data.monto_teorico_efectivo !== undefined) {
+          setSaldoEfectivo(Number(res.data.monto_teorico_efectivo));
+        } else {
+          setSaldoEfectivo(null);
+        }
+      })
+      .catch(() => {
+        setCajaAbierta(false);
+        setSaldoEfectivo(null);
+      });
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -22,9 +41,10 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar }) => {
   }, []);
 
   useEffect(() => {
-    api.get('/caja/estado')
-      .then(res => setCajaAbierta(!!res.data.caja))
-      .catch(() => setCajaAbierta(false));
+    fetchCajaStatus();
+    // Poll caja status every 60s
+    const interval = setInterval(fetchCajaStatus, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -66,21 +86,49 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar }) => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '5px 10px',
-          borderRadius: '20px',
-          background: cajaAbierta ? '#dcfce7' : '#fee2e2',
-          border: `1px solid ${cajaAbierta ? '#bbf7d0' : '#fecaca'}`,
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          color: cajaAbierta ? '#15803d' : '#b91c1c'
-        }}>
-          <Wallet size={14} />
-          <span>{cajaAbierta ? 'Caja Abierta' : 'Caja Cerrada'}</span>
-        </div>
+        {cajaAbierta ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '20px',
+              background: '#dcfce7',
+              border: '1px solid #bbf7d0',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: '#15803d',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+            }}
+          >
+            <Wallet size={14} />
+            <span>Caja Abierta{saldoEfectivo !== null ? `: S/ ${saldoEfectivo.toFixed(2)}` : ''}</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenAperturaModal}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '20px',
+              background: '#fee2e2',
+              border: '1px solid #fecaca',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: '#b91c1c',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            title="Haga clic para aperturar caja física"
+          >
+            <Unlock size={14} />
+            <span>Caja Cerrada - Abrir</span>
+          </button>
+        )}
 
         <div className="hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 500 }}>
           <Clock size={14} />

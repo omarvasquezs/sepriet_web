@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ResilienceBanner } from './components/ResilienceBanner';
+import { AperturaCajaModal } from './components/AperturaCajaModal';
 import { DashboardPage } from './pages/DashboardPage';
 import { ComprobantesPage } from './pages/ComprobantesPage';
 import { ClientesPage } from './pages/ClientesPage';
@@ -12,6 +13,7 @@ import { ServiciosPage } from './pages/ServiciosPage';
 import { CajaPage } from './pages/CajaPage';
 import { ReportesPage } from './pages/ReportesPage';
 import { UsuariosPage } from './pages/UsuariosPage';
+import api from './api/axios';
 
 import { LayoutDashboard, Receipt, Users, Wallet, Menu } from 'lucide-react';
 
@@ -21,6 +23,23 @@ const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [progressWidth, setProgressWidth] = useState(0);
+
+  // Global Caja Check & Modal State
+  const [showGlobalAperturaModal, setShowGlobalAperturaModal] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      api.get('/caja/estado')
+        .then((res) => {
+          if (res.data?.requiere_apertura) {
+            setShowGlobalAperturaModal(true);
+          }
+        })
+        .catch((err) => {
+          console.error('Error checking global caja status:', err);
+        });
+    }
+  }, [user]);
 
   const handleTabChange = (newTab: string) => {
     setIsSidebarOpen(false);
@@ -70,7 +89,7 @@ const MainLayout: React.FC = () => {
     comprobantes: 'Gestión de Comprobantes',
     clientes: 'Directorio de Clientes',
     servicios: 'Tarifario de Servicios',
-    caja: 'Control de Caja Chica',
+    caja: 'Control de Caja y Egresos',
     reportes: 'Reportes Financieros',
     usuarios: 'Gestión de Usuarios y Roles',
   };
@@ -102,6 +121,7 @@ const MainLayout: React.FC = () => {
         <Navbar
           title={titles[activeTab] || 'Sepriet System'}
           onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+          onOpenAperturaModal={() => setShowGlobalAperturaModal(true)}
         />
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -160,6 +180,15 @@ const MainLayout: React.FC = () => {
           </button>
         </nav>
       </main>
+
+      {/* Global Apertura de Caja Modal */}
+      <AperturaCajaModal
+        isOpen={showGlobalAperturaModal}
+        onClose={() => setShowGlobalAperturaModal(false)}
+        onSuccess={() => {
+          setShowGlobalAperturaModal(false);
+        }}
+      />
 
       <ResilienceBanner />
     </div>
