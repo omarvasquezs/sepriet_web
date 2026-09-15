@@ -52,6 +52,7 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<any>(null);
+  const requestIdRef = useRef(0);
 
   // Sync initialOption if provided
   useEffect(() => {
@@ -81,9 +82,11 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch initial or searched batch
+  // Fetch initial or searched batch with stale-response protection
   const fetchOptions = useCallback(
     async (searchQuery: string, pageNum: number) => {
+      const currentRequestId = ++requestIdRef.current;
+
       if (pageNum === 1) {
         setLoading(true);
       } else {
@@ -92,6 +95,12 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
 
       try {
         const res = await loadOptions(searchQuery, pageNum);
+
+        // Discard result if user has typed a newer query in the meantime
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
+
         if (pageNum === 1) {
           setOptions(res.data);
         } else {
@@ -103,10 +112,14 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
         }
         setHasMore(res.hasMore);
       } catch (err) {
-        console.error('Error fetching options in AsyncSelect2:', err);
+        if (currentRequestId === requestIdRef.current) {
+          console.error('Error fetching options in AsyncSelect2:', err);
+        }
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [loadOptions]
@@ -127,9 +140,9 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
     }
   };
 
-  // Search input handler with debounce
+  // Search input handler with snappy 150ms debounce and instant search from first letter
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value.toUpperCase();
+    const query = e.target.value;
     setSearchTerm(query);
     setPage(1);
 
@@ -137,9 +150,14 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
       clearTimeout(debounceTimerRef.current);
     }
 
+    if (query.trim() === '') {
+      fetchOptions('', 1);
+      return;
+    }
+
     debounceTimerRef.current = setTimeout(() => {
-      fetchOptions(query, 1);
-    }, 280);
+      fetchOptions(query.trim(), 1);
+    }, 150);
   };
 
   // Infinite scroll listener inside dropdown list
@@ -337,6 +355,8 @@ export const AsyncSelect2: React.FC<AsyncSelect2Props> = ({
                 value={searchTerm}
                 onChange={handleSearchChange}
                 placeholder={searchPlaceholder}
+                autoComplete="off"
+                spellCheck={false}
                 style={{
                   border: 'none',
                   outline: 'none',
