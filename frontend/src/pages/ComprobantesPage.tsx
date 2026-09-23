@@ -946,15 +946,16 @@ export const ComprobantesPage: React.FC = () => {
           <div
             className="modal-content"
             style={{
-              maxWidth: '540px',
+              maxWidth: '560px',
               width: '95%',
+              height: '95dvh',
+              maxHeight: '96dvh',
               padding: '0',
               overflow: 'hidden',
               borderRadius: '14px',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
               display: 'flex',
               flexDirection: 'column',
-              maxHeight: '94vh',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1015,17 +1016,17 @@ export const ComprobantesPage: React.FC = () => {
             <div
               style={{
                 flex: 1,
-                minHeight: '480px',
-                height: '62vh',
+                minHeight: 0,
+                width: '100%',
                 background: '#475569',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'stretch',
                 justifyContent: 'center',
                 position: 'relative',
               }}
             >
               {printPdfLoading && (
-                <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                <div style={{ textAlign: 'center', color: '#ffffff', margin: 'auto' }}>
                   <LoadingSpinner />
                   <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 500 }}>
                     Cargando vista previa del PDF...
@@ -1034,7 +1035,7 @@ export const ComprobantesPage: React.FC = () => {
               )}
 
               {printPdfError && !printPdfLoading && (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#fecaca' }}>
+                <div style={{ textAlign: 'center', padding: '24px', color: '#fecaca', margin: 'auto' }}>
                   <p style={{ fontWeight: 600, marginBottom: '12px' }}>{printPdfError}</p>
                   <button
                     type="button"
@@ -1050,7 +1051,7 @@ export const ComprobantesPage: React.FC = () => {
               {printPdfUrl && !printPdfLoading && (
                 <iframe
                   ref={pdfIframeRef}
-                  src={`${printPdfUrl}#toolbar=0&navpanes=0`}
+                  src={`${printPdfUrl}#view=FitH&toolbar=0&navpanes=0`}
                   title={`Comprobante ${selectedTicket.cod_comprobante}`}
                   style={{
                     width: '100%',
