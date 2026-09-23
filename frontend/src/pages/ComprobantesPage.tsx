@@ -775,22 +775,23 @@ export const ComprobantesPage: React.FC = () => {
 
               {/* Bloque 2: Detalles de Servicios */}
               <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div className="comprobante-detalles-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
                   <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
                     Detalles de Servicios / Prendas
                   </h4>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary comprobante-btn-add-service"
                     onClick={handleAddDetalle}
                     style={{
-                      padding: '8px 16px',
-                      fontSize: '0.88rem',
+                      padding: '8px 14px',
+                      fontSize: '0.85rem',
                       fontWeight: 600,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       borderRadius: '8px',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     <Plus size={16} /> Agregar Servicio

@@ -646,17 +646,21 @@ input[type="password"]::placeholder,
   }
 
   .modal-overlay {
-    padding: 16px 12px calc(24px + env(safe-area-inset-bottom, 16px)) 12px;
-    align-items: center; /* Center modals nicely so virtual keyboard doesn't obscure content */
-    justify-content: center;
+    padding: 16px 12px calc(36px + env(safe-area-inset-bottom, 20px)) 12px !important;
+    align-items: flex-start !important; /* Top-anchored so header and first inputs are visible and scrollable */
+    justify-content: center !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-content {
     max-width: 100% !important;
     width: 100% !important;
-    max-height: 94dvh !important;
-    margin: auto;
+    max-height: none !important; /* Allow the white card to expand and fully wrap all form contents */
+    height: auto !important;
+    margin: 0 auto !important;
     border-radius: 16px !important;
+    box-sizing: border-box !important;
   }
 
   /* Only apply form modal padding to modals that don't have custom zero padding */
@@ -833,6 +837,28 @@ input[type="password"]::placeholder,
   .comprobantes-header-bar button.btn-primary {
     width: 100% !important;
     min-height: 44px !important;
+  }
+
+  /* Mobile Detalles Header & Add Button */
+  .comprobante-detalles-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .comprobante-detalles-header h4 {
+    font-size: 0.88rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .comprobante-btn-add-service {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 7px 12px !important;
+    font-size: 0.82rem !important;
+    min-height: 38px !important;
   }
 
   /* Mobile Detalle Item */
