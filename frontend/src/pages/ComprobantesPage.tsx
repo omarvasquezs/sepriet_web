@@ -783,9 +783,17 @@ export const ComprobantesPage: React.FC = () => {
                     type="button"
                     className="btn-secondary"
                     onClick={handleAddDetalle}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '8px',
+                    }}
                   >
-                    <Plus size={14} /> Agregar Servicio
+                    <Plus size={16} /> Agregar Servicio
                   </button>
                 </div>
 
@@ -925,9 +933,15 @@ export const ComprobantesPage: React.FC = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <input
-                  type="text"
+                <textarea
                   className="form-input"
+                  rows={3}
+                  style={{
+                    minHeight: '75px',
+                    resize: 'vertical',
+                    padding: '10px 14px',
+                    lineHeight: '1.4',
+                  }}
                   placeholder="Observaciones o notas adicionales (opcional)..."
                   value={createForm.observaciones}
                   onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value.toUpperCase() })}
