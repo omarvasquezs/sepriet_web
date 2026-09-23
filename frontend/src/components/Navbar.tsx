@@ -80,19 +80,19 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar, onOpenAp
             <Menu size={20} color="#0f172a" />
           </button>
         )}
-        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px', margin: 0 }}>
+        <h2 style={{ fontSize: 'clamp(0.92rem, 3.8vw, 1.15rem)', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px', margin: 0 }}>
           {title}
         </h2>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {cajaAbierta ? (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '5px 12px',
+              padding: '5px 10px',
               borderRadius: '20px',
               background: '#dcfce7',
               border: '1px solid #bbf7d0',
@@ -100,10 +100,11 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar, onOpenAp
               fontWeight: 700,
               color: '#15803d',
               boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              whiteSpace: 'nowrap',
             }}
           >
             <Wallet size={14} />
-            <span>Caja Abierta{saldoEfectivo !== null ? `: S/ ${saldoEfectivo.toFixed(2)}` : ''}</span>
+            <span><span className="hide-on-mobile">Caja Abierta: </span>S/ {saldoEfectivo !== null ? saldoEfectivo.toFixed(2) : '0.00'}</span>
           </div>
         ) : (
           <button
@@ -112,8 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar, onOpenAp
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '5px 12px',
+              gap: '5px',
+              padding: '5px 10px',
               borderRadius: '20px',
               background: '#fee2e2',
               border: '1px solid #fecaca',
@@ -122,11 +123,12 @@ export const Navbar: React.FC<NavbarProps> = ({ title, onToggleSidebar, onOpenAp
               color: '#b91c1c',
               cursor: 'pointer',
               transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
             }}
             title="Haga clic para aperturar caja física"
           >
             <Unlock size={14} />
-            <span>Caja Cerrada - Abrir</span>
+            <span><span className="hide-on-mobile">Caja Cerrada - </span>Abrir Caja</span>
           </button>
         )}
 

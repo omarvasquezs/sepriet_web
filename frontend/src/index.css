@@ -519,10 +519,119 @@ input[type="password"]::placeholder,
   }
 }
 
+.hide-on-desktop {
+  display: none;
+}
+
+.show-on-mobile {
+  display: none;
+}
+
+/* Comprobantes Page Layout Utilities */
+.comprobantes-search-wrapper {
+  position: relative;
+  flex: 1 1 260px;
+}
+
+.comprobantes-filters-wrapper {
+  display: flex;
+  gap: 10px;
+  flex: 0 1 360px;
+}
+
+.form-grid-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.form-grid-factura {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.comprobante-detalle-item {
+  display: grid;
+  grid-template-columns: minmax(200px, 2.5fr) minmax(180px, 1.5fr) 90px 36px;
+  gap: 10px;
+  align-items: center;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.comprobante-detalle-service {
+  min-width: 0;
+}
+
+.comprobante-detalle-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.comprobante-detalle-inputs input {
+  flex: 1;
+  min-width: 70px;
+}
+
+.comprobante-detalle-subtotal-row {
+  display: contents;
+}
+
+.create-comprobante-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.create-comprobante-totals {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.create-comprobante-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.pdf-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.pdf-modal-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 /* Mobile Small Devices (max-width: 767px) */
 @media (max-width: 767px) {
   .page-container {
-    padding: 12px 10px 80px 10px; /* extra bottom padding for bottom nav */
+    padding: 12px 10px calc(85px + env(safe-area-inset-bottom, 20px)) 10px; /* extra bottom padding for bottom nav & iOS bar */
+  }
+
+  /* Prevent iOS Safari auto-zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
   }
 
   .grid-responsive-2,
@@ -537,23 +646,34 @@ input[type="password"]::placeholder,
   }
 
   .modal-overlay {
-    padding: 12px 8px;
-    align-items: flex-end; /* Bottom sheet on phone */
+    padding: 16px 12px calc(24px + env(safe-area-inset-bottom, 16px)) 12px;
+    align-items: center; /* Center modals nicely so virtual keyboard doesn't obscure content */
+    justify-content: center;
   }
 
   .modal-content {
     max-width: 100% !important;
     width: 100% !important;
-    max-height: 92vh !important;
+    max-height: 94dvh !important;
+    margin: auto;
+    border-radius: 16px !important;
+  }
+
+  /* Only apply form modal padding to modals that don't have custom zero padding */
+  .modal-content:not([style*="padding: 0"]):not([style*="padding:0"]) {
     padding: 20px 16px !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-top-left-radius: 20px !important;
-    border-top-right-radius: 20px !important;
   }
 
   .hide-on-mobile {
     display: none !important;
+  }
+
+  .show-on-mobile {
+    display: block !important;
+  }
+
+  .hide-on-desktop {
+    display: block !important;
   }
 
   .form-group {
@@ -561,13 +681,101 @@ input[type="password"]::placeholder,
   }
 
   .btn-primary, .btn-secondary {
-    padding: 9px 14px;
-    font-size: 0.86rem;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .custom-table th, .custom-table td {
     padding: 10px 12px;
     font-size: 0.85rem;
+  }
+
+  /* Mobile Ticket Card Styles */
+  .mobile-ticket-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  }
+
+  .mobile-ticket-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .mobile-ticket-code {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #4f46e5;
+  }
+
+  .mobile-ticket-date {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .mobile-ticket-client {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mobile-ticket-phone {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .mobile-ticket-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #f1f5f9;
+  }
+
+  .mobile-ticket-stat-item {
+    text-align: center;
+  }
+
+  .mobile-ticket-stat-label {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+
+  .mobile-ticket-stat-val {
+    font-size: 0.88rem;
+    font-weight: 800;
+  }
+
+  .mobile-ticket-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+    flex-wrap: wrap;
   }
 
   /* Bottom Navigation Bar on Mobile */
@@ -577,14 +785,16 @@ input[type="password"]::placeholder,
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(60px + env(safe-area-inset-bottom, 12px));
+    padding-bottom: env(safe-area-inset-bottom, 12px);
     background: #ffffff;
     border-top: 1px solid var(--border-color);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
     z-index: 900;
     justify-content: space-around;
     align-items: center;
-    padding: 4px 8px;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 
   .bottom-nav-item {
@@ -607,6 +817,139 @@ input[type="password"]::placeholder,
   .bottom-nav-item.active {
     color: #4f46e5;
     font-weight: 700;
+  }
+
+  /* Mobile Comprobantes Header & Filter Adjustments */
+  .comprobantes-search-wrapper {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .comprobantes-filters-wrapper {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .comprobantes-header-bar button.btn-primary {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  /* Mobile Detalle Item */
+  .comprobante-detalle-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .comprobante-detalle-service {
+    width: 100% !important;
+  }
+
+  .comprobante-detalle-inputs {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .comprobante-detalle-inputs input {
+    flex: 1 !important;
+    width: 50% !important;
+  }
+
+  .comprobante-detalle-subtotal-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding-top: 6px !important;
+    border-top: 1px dashed #e2e8f0 !important;
+  }
+
+  /* Mobile Create Comprobante Footer */
+  .create-comprobante-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .create-comprobante-totals {
+    justify-content: space-between !important;
+    background: #f1f5f9 !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .create-comprobante-actions {
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .create-comprobante-actions button {
+    flex: 1 !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+
+  /* Responsive Modal Action Buttons */
+  .modal-actions-responsive {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .modal-actions-responsive button,
+  .modal-actions-responsive a {
+    flex: 1 !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Mobile PDF Modal & Footer */
+  .pdf-preview-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 94dvh !important;
+    max-height: 94dvh !important;
+    margin: 0 !important;
+  }
+
+  .pdf-modal-footer {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 16px)) 14px !important;
+  }
+
+  .pdf-modal-actions {
+    display: contents !important;
+  }
+
+  .pdf-modal-footer .pdf-btn-print {
+    grid-column: span 2 !important;
+    order: 1 !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .pdf-modal-footer .pdf-btn-close {
+    grid-column: 1 !important;
+    order: 2 !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .pdf-modal-footer .pdf-btn-download {
+    grid-column: 2 !important;
+    order: 3 !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    font-size: 0.9rem !important;
   }
 }
 

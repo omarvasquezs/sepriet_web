@@ -178,22 +178,12 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
                 marginBottom: '20px',
               }}
             >
-              <h4
-                style={{
-                  fontSize: '0.95rem',
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  margin: '0 0 6px 0',
-                }}
-              >
-                Apertura de Caja
-              </h4>
               <p
                 style={{
-                  fontSize: '0.88rem',
+                  fontSize: '0.92rem',
                   fontWeight: 700,
                   color: '#1e293b',
-                  margin: '0 0 4px 0',
+                  margin: '0 0 6px 0',
                 }}
               >
                 No se ha aperturado la caja el día de hoy.
@@ -211,19 +201,18 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
               <div
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
+                  flexDirection: 'column',
+                  gap: '8px',
                 }}
               >
                 <label
                   style={{
-                    fontSize: '0.9rem',
+                    fontSize: '0.88rem',
                     fontWeight: 700,
                     color: '#0f172a',
-                    whiteSpace: 'nowrap',
                   }}
                 >
-                  Monto Inicial (S/.):
+                  Monto Inicial en Efectivo (S/):
                 </label>
                 <input
                   type="number"
@@ -233,11 +222,15 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
                   autoFocus
                   className="form-input"
                   style={{
-                    fontWeight: 700,
-                    fontSize: '1.05rem',
+                    width: '100%',
+                    fontWeight: 800,
+                    fontSize: '1.25rem',
                     color: '#0f172a',
                     background: '#ffffff',
-                    padding: '8px 12px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #94a3b8',
+                    boxSizing: 'border-box',
                   }}
                   value={montoInicial}
                   onChange={(e) => setMontoInicial(e.target.value)}
@@ -277,7 +270,7 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
                 className="btn-secondary"
                 onClick={onClose}
                 disabled={loading}
-                style={{ padding: '10px 18px', fontSize: '0.9rem' }}
+                style={{ flex: 1, minHeight: '44px', padding: '10px 14px', fontSize: '0.9rem' }}
               >
                 Cancelar
               </button>
@@ -285,7 +278,7 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
                 type="submit"
                 className="btn-primary"
                 disabled={loading}
-                style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700 }}
+                style={{ flex: 1.5, minHeight: '44px', padding: '10px 14px', fontSize: '0.9rem', fontWeight: 700 }}
               >
                 {loading ? 'Aperturando...' : 'Aperturar Caja'}
               </button>

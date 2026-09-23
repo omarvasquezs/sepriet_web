@@ -388,9 +388,9 @@ export const ComprobantesPage: React.FC = () => {
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', flex: 1, maxWidth: '750px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', minWidth: '220px', flex: 1 }}>
+      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
+          <div className="comprobantes-search-wrapper">
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
             <input
               type="text"
@@ -402,31 +402,36 @@ export const ComprobantesPage: React.FC = () => {
             />
           </div>
 
-          <select
-            className="form-select"
-            value={estadoPagoFilter}
-            onChange={(e) => { setEstadoPagoFilter(e.target.value); setPage(1); }}
-          >
-            <option value="">Pago: Todos</option>
-            {catalogos.estados_pago.map((ep: any) => (
-              <option key={ep.id} value={ep.id}>{ep.nom_estado || ep.nombre}</option>
-            ))}
-          </select>
+          <div className="comprobantes-filters-wrapper">
+            <select
+              className="form-select"
+              style={{ flex: 1, minWidth: 0 }}
+              value={estadoPagoFilter}
+              onChange={(e) => { setEstadoPagoFilter(e.target.value); setPage(1); }}
+            >
+              <option value="">Pago: Todos</option>
+              {catalogos.estados_pago.map((ep: any) => (
+                <option key={ep.id} value={ep.id}>{ep.nom_estado || ep.nombre}</option>
+              ))}
+            </select>
 
-          <select
-            className="form-select"
-            value={estadoRopaFilter}
-            onChange={(e) => { setEstadoRopaFilter(e.target.value); setPage(1); }}
-          >
-            <option value="">Prendas: Todos</option>
-            {catalogos.estados_ropa.map((er: any) => (
-              <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
-            ))}
-          </select>
+            <select
+              className="form-select"
+              style={{ flex: 1, minWidth: 0 }}
+              value={estadoRopaFilter}
+              onChange={(e) => { setEstadoRopaFilter(e.target.value); setPage(1); }}
+            >
+              <option value="">Prendas: Todos</option>
+              {catalogos.estados_ropa.map((er: any) => (
+                <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <button
           className="btn-primary"
+          style={{ flex: '0 0 auto' }}
           onClick={handleOpenCreateModal}
         >
           <Plus size={18} /> Registrar Comprobante
@@ -439,105 +444,215 @@ export const ComprobantesPage: React.FC = () => {
         ) : comprobantesData.data.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No se encontraron comprobantes con esos filtros.</p>
         ) : (
-          <div className="table-responsive">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Cliente</th>
-                  <th>Fecha</th>
-                  <th>Estado Pago</th>
-                  <th>Estado Ropa</th>
-                  <th>Total</th>
-                  <th>Abonado</th>
-                  <th>Restante</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comprobantesData.data.map((t: any) => (
-                  <tr key={t.id} className="row-item">
-                    <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
-                    <td style={{ fontWeight: 600, color: '#0f172a' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
-                    <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
-                    <td>
-                      <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre)}`}>
-                        {t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre || 'DEBE'}
-                      </span>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 600 }}
-                        value={t.estado_ropa_id || 1}
-                        onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
-                      >
-                        {catalogos.estados_ropa.map((er: any) => (
-                          <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
-                    <td style={{ color: '#059669', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
-                    <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700 }}>
-                      S/ {Number(t.monto_restante).toFixed(2)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {Number(t.monto_restante) > 0 && (
+          <>
+            {/* Desktop Table View (>= 768px) */}
+            <div className="table-responsive hide-on-mobile">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Estado Pago</th>
+                    <th>Estado Ropa</th>
+                    <th>Total</th>
+                    <th>Abonado</th>
+                    <th>Restante</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comprobantesData.data.map((t: any) => (
+                    <tr key={t.id} className="row-item">
+                      <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
+                      <td style={{ fontWeight: 600, color: '#0f172a' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
+                      <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
+                      <td>
+                        <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre)}`}>
+                          {t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre || 'DEBE'}
+                        </span>
+                      </td>
+                      <td>
+                        <select
+                          className="form-select"
+                          style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 600 }}
+                          value={t.estado_ropa_id || 1}
+                          onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
+                        >
+                          {catalogos.estados_ropa.map((er: any) => (
+                            <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ fontWeight: 700, color: '#0f172a' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
+                      <td style={{ color: '#059669', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
+                      <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700 }}>
+                        S/ {Number(t.monto_restante).toFixed(2)}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {Number(t.monto_restante) > 0 && (
+                            <button
+                              className="btn-secondary"
+                              style={{ padding: '4px 8px', fontSize: '0.78rem' }}
+                              title="Registrar Abono"
+                              onClick={() => {
+                                setSelectedTicket(t);
+                                setFechaOperacionAbono(toDateTimeLocal());
+                                setAbonoMetodoPago('4');
+                                setShowAbonoModal(true);
+                              }}
+                            >
+                              <DollarSign size={14} color="#059669" /> Abono
+                            </button>
+                          )}
                           <button
                             className="btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '0.78rem' }}
-                            title="Registrar Abono"
+                            style={{ padding: '4px 8px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4' }}
+                            title="Enviar por WhatsApp"
                             onClick={() => {
-                              setSelectedTicket(t);
-                              setFechaOperacionAbono(toDateTimeLocal());
-                              setAbonoMetodoPago('4');
-                              setShowAbonoModal(true);
+                              setWhatsAppTicket(t);
+                              setWhatsAppActionType('ticket');
+                              setShowWhatsAppModal(true);
                             }}
                           >
-                            <DollarSign size={14} color="#059669" /> Abono
+                            <MessageSquare size={14} />
                           </button>
-                        )}
-                        <button
-                          className="btn-secondary"
-                          style={{ padding: '4px 8px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4' }}
-                          title="Enviar por WhatsApp"
-                          onClick={() => {
-                            setWhatsAppTicket(t);
-                            setWhatsAppActionType('ticket');
-                            setShowWhatsAppModal(true);
-                          }}
-                        >
-                          <MessageSquare size={14} />
-                        </button>
-                        <button
-                          className="btn-secondary"
-                          style={{ padding: '4px 8px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
-                          title="Descargar / Ver PDF"
-                          onClick={() => handleDownloadPdf(t.id)}
-                        >
-                          <FileText size={14} />
-                        </button>
-                        <button
-                          className="btn-secondary"
-                          style={{ padding: '4px 8px' }}
-                          title="Imprimir / Vista Previa"
-                          onClick={() => handleOpenPrintModal(t)}
-                        >
-                          <Printer size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          <button
+                            className="btn-secondary"
+                            style={{ padding: '4px 8px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
+                            title="Descargar / Ver PDF"
+                            onClick={() => handleDownloadPdf(t.id)}
+                          >
+                            <FileText size={14} />
+                          </button>
+                          <button
+                            className="btn-secondary"
+                            style={{ padding: '4px 8px' }}
+                            title="Imprimir / Vista Previa"
+                            onClick={() => handleOpenPrintModal(t)}
+                          >
+                            <Printer size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View (< 768px) */}
+            <div className="hide-on-desktop">
+              {comprobantesData.data.map((t: any) => (
+                <div key={t.id} className="mobile-ticket-card">
+                  <div className="mobile-ticket-card-header">
+                    <div>
+                      <div className="mobile-ticket-code">{t.cod_comprobante || `N° ${t.id}`}</div>
+                      <span className="mobile-ticket-date">
+                        {new Date(t.fecha).toLocaleDateString('es-PE')} • {new Date(t.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre)}`}>
+                      {t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre || 'DEBE'}
+                    </span>
+                  </div>
+
+                  <div className="mobile-ticket-client">
+                    <span>{t.cliente?.nombres || 'Cliente Genérico'}</span>
+                    {t.cliente?.telefono && (
+                      <span className="mobile-ticket-phone">Tel: {t.cliente.telefono}</span>
+                    )}
+                  </div>
+
+                  <div className="mobile-ticket-stats-grid">
+                    <div className="mobile-ticket-stat-item">
+                      <span className="mobile-ticket-stat-label">Total</span>
+                      <span className="mobile-ticket-stat-val">S/ {Number(t.costo_total).toFixed(2)}</span>
+                    </div>
+                    <div className="mobile-ticket-stat-item">
+                      <span className="mobile-ticket-stat-label">Abonado</span>
+                      <span className="mobile-ticket-stat-val" style={{ color: '#059669' }}>S/ {Number(t.monto_abonado).toFixed(2)}</span>
+                    </div>
+                    <div className="mobile-ticket-stat-item">
+                      <span className="mobile-ticket-stat-label">Saldo</span>
+                      <span className="mobile-ticket-stat-val" style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669' }}>
+                        S/ {Number(t.monto_restante).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>Prendas:</span>
+                    <select
+                      className="form-select"
+                      style={{ padding: '6px 8px', fontSize: '0.82rem', fontWeight: 600, maxWidth: '200px' }}
+                      value={t.estado_ropa_id || 1}
+                      onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
+                    >
+                      {catalogos.estados_ropa.map((er: any) => (
+                        <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mobile-ticket-actions">
+                    {Number(t.monto_restante) > 0 && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{ padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, color: '#059669', borderColor: '#a7f3d0', background: '#ecfdf5', flex: '1 1 auto' }}
+                        title="Registrar Abono"
+                        onClick={() => {
+                          setSelectedTicket(t);
+                          setFechaOperacionAbono(toDateTimeLocal());
+                          setAbonoMetodoPago('4');
+                          setShowAbonoModal(true);
+                        }}
+                      >
+                        <DollarSign size={14} color="#059669" /> Abono
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '8px 12px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
+                      title="Enviar por WhatsApp"
+                      onClick={() => {
+                        setWhatsAppTicket(t);
+                        setWhatsAppActionType('ticket');
+                        setShowWhatsAppModal(true);
+                      }}
+                    >
+                      <MessageSquare size={14} /> WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '8px 12px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
+                      title="Descargar / Ver PDF"
+                      onClick={() => handleDownloadPdf(t.id)}
+                    >
+                      <FileText size={14} /> PDF
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
+                      title="Imprimir / Vista Previa"
+                      onClick={() => handleOpenPrintModal(t)}
+                    >
+                      <Printer size={14} /> Imprimir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {/* Pagination Controls */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Mostrando página {comprobantesData.current_page} de {comprobantesData.last_page} ({comprobantesData.total} tickets en total)
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                Página {comprobantesData.current_page} de {comprobantesData.last_page} ({comprobantesData.total} tickets)
               </span>
 
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -545,7 +660,7 @@ export const ComprobantesPage: React.FC = () => {
                   className="btn-secondary"
                   disabled={page <= 1}
                   onClick={() => setPage(prev => Math.max(1, prev - 1))}
-                  style={{ opacity: page <= 1 ? 0.5 : 1 }}
+                  style={{ opacity: page <= 1 ? 0.5 : 1, padding: '6px 12px', fontSize: '0.82rem' }}
                 >
                   <ChevronLeft size={16} /> Anterior
                 </button>
@@ -553,13 +668,13 @@ export const ComprobantesPage: React.FC = () => {
                   className="btn-secondary"
                   disabled={page >= comprobantesData.last_page}
                   onClick={() => setPage(prev => prev + 1)}
-                  style={{ opacity: page >= comprobantesData.last_page ? 0.5 : 1 }}
+                  style={{ opacity: page >= comprobantesData.last_page ? 0.5 : 1, padding: '6px 12px', fontSize: '0.82rem' }}
                 >
                   Siguiente <ChevronRight size={16} />
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -586,7 +701,7 @@ export const ComprobantesPage: React.FC = () => {
 
             <form onSubmit={handleCreateSubmit}>
               {/* Bloque 1: Cabecera y Cliente */}
-              <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 2fr', gap: '14px', marginBottom: '14px' }}>
+              <div className="form-grid-header">
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Tipo de Comprobante *</label>
                   <select
@@ -632,7 +747,7 @@ export const ComprobantesPage: React.FC = () => {
               </div>
 
               {createForm.tipo_comprobante === 'F' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div className="form-grid-factura">
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">RUC *</label>
                     <input
@@ -678,18 +793,9 @@ export const ComprobantesPage: React.FC = () => {
                   {createForm.detalles.map((det, idx) => (
                     <div
                       key={idx}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(220px, 3fr) minmax(80px, 1fr) minmax(90px, 1.2fr) minmax(80px, 1fr) auto',
-                        gap: '8px',
-                        alignItems: 'center',
-                        background: '#f8fafc',
-                        padding: '8px 12px',
-                        borderRadius: '10px',
-                        border: '1px solid #e2e8f0',
-                      }}
+                      className="comprobante-detalle-item"
                     >
-                      <div style={{ minWidth: '200px' }}>
+                      <div className="comprobante-detalle-service">
                         <AsyncSelect2
                           value={det.servicio_id}
                           initialOption={det.selectedOption}
@@ -701,55 +807,67 @@ export const ComprobantesPage: React.FC = () => {
                         />
                       </div>
 
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        className="form-input"
-                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
-                        placeholder="Peso / Cant"
-                        value={det.peso_kg}
-                        onChange={(e) => {
-                          const newD = [...createForm.detalles];
-                          newD[idx].peso_kg = e.target.value;
-                          setCreateForm({ ...createForm, detalles: newD });
-                        }}
-                      />
+                      <div className="comprobante-detalle-inputs">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          className="form-input"
+                          style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                          placeholder="Peso / Cant"
+                          value={det.peso_kg}
+                          onChange={(e) => {
+                            const newD = [...createForm.detalles];
+                            newD[idx].peso_kg = e.target.value;
+                            setCreateForm({ ...createForm, detalles: newD });
+                          }}
+                        />
 
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="form-input"
-                        style={{ padding: '8px 10px', fontSize: '0.88rem' }}
-                        placeholder="Precio Unit (S/)"
-                        value={det.costo_kilo}
-                        onChange={(e) => {
-                          const newD = [...createForm.detalles];
-                          newD[idx].costo_kilo = e.target.value;
-                          setCreateForm({ ...createForm, detalles: newD });
-                        }}
-                      />
-
-                      <div style={{ fontWeight: 800, color: '#059669', fontSize: '0.92rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="form-input"
+                          style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                          placeholder="Precio Unit (S/)"
+                          value={det.costo_kilo}
+                          onChange={(e) => {
+                            const newD = [...createForm.detalles];
+                            newD[idx].costo_kilo = e.target.value;
+                            setCreateForm({ ...createForm, detalles: newD });
+                          }}
+                        />
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDetalle(idx)}
-                        disabled={createForm.detalles.length <= 1}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: createForm.detalles.length <= 1 ? '#cbd5e1' : '#dc2626',
-                          cursor: createForm.detalles.length <= 1 ? 'default' : 'pointer',
-                          padding: '4px',
-                        }}
-                        title="Eliminar fila"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="comprobante-detalle-subtotal-row">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="hide-on-desktop" style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                            Subtotal:
+                          </span>
+                          <span style={{ fontWeight: 800, color: '#059669', fontSize: '0.92rem', whiteSpace: 'nowrap' }}>
+                            S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDetalle(idx)}
+                          disabled={createForm.detalles.length <= 1}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: createForm.detalles.length <= 1 ? '#cbd5e1' : '#dc2626',
+                            cursor: createForm.detalles.length <= 1 ? 'default' : 'pointer',
+                            padding: '4px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          title="Eliminar fila"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -759,7 +877,7 @@ export const ComprobantesPage: React.FC = () => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
                   gap: '12px',
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
@@ -817,18 +935,8 @@ export const ComprobantesPage: React.FC = () => {
               </div>
 
               {/* Totales y Botones de Acción */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderTop: '1px solid #e2e8f0',
-                  paddingTop: '16px',
-                  flexWrap: 'wrap',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div className="create-comprobante-footer">
+                <div className="create-comprobante-totals">
                   <div style={{ fontSize: '0.9rem', color: '#475569' }}>
                     Total a Pagar:{' '}
                     <strong style={{ fontSize: '1.25rem', color: '#4f46e5' }}>
@@ -847,7 +955,7 @@ export const ComprobantesPage: React.FC = () => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div className="create-comprobante-actions">
                   <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>
                     Cancelar
                   </button>
@@ -927,7 +1035,7 @@ export const ComprobantesPage: React.FC = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div className="modal-actions-responsive" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowAbonoModal(false)}>
                   Cancelar
                 </button>
@@ -944,7 +1052,7 @@ export const ComprobantesPage: React.FC = () => {
       {showPrintModal && selectedTicket && (
         <div className="modal-overlay" onClick={() => setShowPrintModal(false)}>
           <div
-            className="modal-content"
+            className="modal-content pdf-preview-modal"
             style={{
               maxWidth: '560px',
               width: '95%',
@@ -1065,35 +1173,27 @@ export const ComprobantesPage: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '12px 20px',
-                borderTop: '1px solid var(--border-color)',
-                background: 'var(--bg-secondary, #f8fafc)',
-              }}
-            >
+            <div className="pdf-modal-footer">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-secondary pdf-btn-close"
                 onClick={() => setShowPrintModal(false)}
               >
                 Cerrar
               </button>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="pdf-modal-actions">
                 {printPdfUrl && (
                   <a
                     href={printPdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     download={`${selectedTicket.cod_comprobante}.pdf`}
-                    className="btn-secondary"
+                    className="btn-secondary pdf-btn-download"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '6px',
                       textDecoration: 'none',
                       color: '#4f46e5',
@@ -1106,8 +1206,8 @@ export const ComprobantesPage: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  className="btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  className="btn-primary pdf-btn-print"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   onClick={handlePrintPdfDocument}
                   disabled={printPdfLoading || !printPdfUrl}
                 >
