@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -29,6 +29,10 @@ export const ComprobantesPage: React.FC = () => {
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [printPdfLoading, setPrintPdfLoading] = useState(false);
+  const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
+  const [printPdfError, setPrintPdfError] = useState<string | null>(null);
+  const pdfIframeRef = useRef<HTMLIFrameElement>(null);
 
   // WhatsApp Modal State
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -270,28 +274,106 @@ export const ComprobantesPage: React.FC = () => {
     }
   };
 
+  const resolvePdfUrl = (rawUrl?: string): string => {
+    if (!rawUrl) return '';
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (apiBase && (rawUrl.includes('localhost:8000') || rawUrl.startsWith('/'))) {
+        const apiOrigin = new URL(apiBase, window.location.origin).origin;
+        let url = rawUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
+        if (url.startsWith('/')) {
+          url = `${apiOrigin}${url}`;
+        }
+        return url;
+      }
+    } catch {
+      // fallback
+    }
+    return rawUrl;
+  };
+
   const handleDownloadPdf = async (ticketId: number) => {
     try {
       const res = await api.get(`/comprobantes/${ticketId}/pdf`);
-      let targetUrl = res.data?.url;
+      const targetUrl = resolvePdfUrl(res.data?.url);
       if (targetUrl) {
-        try {
-          const apiBase = import.meta.env.VITE_API_BASE_URL;
-          if (apiBase && (targetUrl.includes('localhost:8000') || targetUrl.startsWith('/'))) {
-            const apiOrigin = new URL(apiBase, window.location.origin).origin;
-            targetUrl = targetUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
-            if (targetUrl.startsWith('/')) {
-              targetUrl = `${apiOrigin}${targetUrl}`;
-            }
-          }
-        } catch {
-          // fallback to original targetUrl
-        }
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'No se pudo generar el comprobante en PDF');
     }
+  };
+
+  const handleOpenPrintModal = async (ticket: any) => {
+    setSelectedTicket(ticket);
+    setShowPrintModal(true);
+    setPrintPdfLoading(true);
+    setPrintPdfError(null);
+    setPrintPdfUrl(null);
+
+    try {
+      const res = await api.get(`/comprobantes/${ticket.id}/pdf`);
+      const url = resolvePdfUrl(res.data?.url);
+      if (url) {
+        setPrintPdfUrl(url);
+      } else {
+        setPrintPdfError('No se pudo obtener la URL del comprobante');
+      }
+    } catch (err: any) {
+      setPrintPdfError(err.response?.data?.message || 'Error al generar la vista previa del comprobante en PDF');
+    } finally {
+      setPrintPdfLoading(false);
+    }
+  };
+
+  const handlePrintPdfDocument = () => {
+    if (!printPdfUrl) return;
+
+    // Method 1: Try printing through iframe contentWindow
+    try {
+      if (pdfIframeRef.current?.contentWindow) {
+        pdfIframeRef.current.contentWindow.focus();
+        pdfIframeRef.current.contentWindow.print();
+        return;
+      }
+    } catch (e) {
+      console.warn('Direct iframe print exception:', e);
+    }
+
+    // Method 2: Fetch PDF blob and print via hidden iframe (same-origin blob)
+    fetch(printPdfUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        iframe.src = blobUrl;
+        document.body.appendChild(iframe);
+
+        iframe.onload = () => {
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+            } catch {
+              window.open(blobUrl, '_blank');
+            } finally {
+              setTimeout(() => {
+                document.body.removeChild(iframe);
+                URL.revokeObjectURL(blobUrl);
+              }, 60000);
+            }
+          }, 350);
+        };
+      })
+      .catch(() => {
+        window.open(printPdfUrl, '_blank');
+      });
   };
 
   const getBadgeClassPago = (nombre: string) => {
@@ -441,10 +523,7 @@ export const ComprobantesPage: React.FC = () => {
                           className="btn-secondary"
                           style={{ padding: '4px 8px' }}
                           title="Imprimir / Vista Previa"
-                          onClick={() => {
-                            setSelectedTicket(t);
-                            setShowPrintModal(true);
-                          }}
+                          onClick={() => handleOpenPrintModal(t)}
                         >
                           <Printer size={14} />
                         </button>
@@ -861,70 +940,177 @@ export const ComprobantesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Print Preview */}
+      {/* Modal PDF Preview & Print */}
       {showPrintModal && selectedTicket && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ background: '#ffffff', color: '#000000', fontFamily: 'monospace', maxWidth: '480px' }}>
-            <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: '12px', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>LAVANDERIA SEPRIET</h2>
-              <p style={{ fontSize: '0.8rem' }}>Enrique Nerini 995, San Luis 15021</p>
-              <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '6px' }}>{selectedTicket.cod_comprobante || `Ticket #${selectedTicket.id}`}</p>
+        <div className="modal-overlay" onClick={() => setShowPrintModal(false)}>
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: '540px',
+              width: '95%',
+              padding: '0',
+              overflow: 'hidden',
+              borderRadius: '14px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '94vh',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 20px',
+                borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-secondary, #f8fafc)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    background: '#e0e7ff',
+                    color: '#4338ca',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Printer size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main, #1e293b)' }}>
+                    {selectedTicket.cod_comprobante || `Ticket #${selectedTicket.id}`}
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-muted, #64748b)' }}>
+                    {selectedTicket.cliente?.nombres || 'Cliente'} • {new Date(selectedTicket.fecha).toLocaleDateString('es-PE')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted, #64748b)',
+                  padding: '6px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Cerrar"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <div style={{ fontSize: '0.85rem', marginBottom: '12px' }}>
-              <p><b>CLIENTE:</b> {selectedTicket.cliente?.nombres}</p>
-              <p><b>DNI/DOC:</b> {selectedTicket.cliente?.dni || 'N/A'}</p>
-              <p><b>FECHA:</b> {new Date(selectedTicket.fecha).toLocaleString('es-PE')}</p>
-              <p><b>ESTADO PAGO:</b> {selectedTicket.estado_comprobante?.nom_estado || selectedTicket.estado_comprobante?.nombre}</p>
-              <p><b>ESTADO PRENDA:</b> {selectedTicket.estado_ropa?.nom_estado_ropa || selectedTicket.estado_ropa?.nombre}</p>
+            {/* Modal Body - PDF Iframe Preview */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: '480px',
+                height: '62vh',
+                background: '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              {printPdfLoading && (
+                <div style={{ textAlign: 'center', color: '#ffffff' }}>
+                  <LoadingSpinner />
+                  <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 500 }}>
+                    Cargando vista previa del PDF...
+                  </p>
+                </div>
+              )}
+
+              {printPdfError && !printPdfLoading && (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#fecaca' }}>
+                  <p style={{ fontWeight: 600, marginBottom: '12px' }}>{printPdfError}</p>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ background: '#ffffff', color: '#1e293b' }}
+                    onClick={() => handleOpenPrintModal(selectedTicket)}
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              )}
+
+              {printPdfUrl && !printPdfLoading && (
+                <iframe
+                  ref={pdfIframeRef}
+                  src={`${printPdfUrl}#toolbar=0&navpanes=0`}
+                  title={`Comprobante ${selectedTicket.cod_comprobante}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block',
+                    background: '#ffffff',
+                  }}
+                />
+              )}
             </div>
 
-            <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse', marginBottom: '12px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #000', textAlign: 'left' }}>
-                  <th>KG/CANT</th>
-                  <th>SERVICIO</th>
-                  <th style={{ textAlign: 'right' }}>TOTAL</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedTicket.detalles?.map((d: any, idx: number) => (
-                  <tr key={idx}>
-                    <td>{d.peso_kg}</td>
-                    <td>{d.servicio?.nom_servicio || 'Servicio'}</td>
-                    <td style={{ textAlign: 'right' }}>S/ {Number(d.subtotal || (d.peso_kg * d.costo_kilo)).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div style={{ borderTop: '2px dashed #000', paddingTop: '8px', textAlign: 'right', fontSize: '0.85rem' }}>
-              <p>TOTAL: S/ {Number(selectedTicket.costo_total).toFixed(2)}</p>
-              <p>ABONADO: S/ {Number(selectedTicket.monto_abonado).toFixed(2)}</p>
-              <p style={{ fontWeight: 800 }}>PENDIENTE: S/ {Number(selectedTicket.monto_restante).toFixed(2)}</p>
-            </div>
-
-            <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.72rem', color: '#444' }}>
-              <p>* El tiempo máximo para recoger su prenda es de 30 días. *</p>
-              <p>* De no recoger en 30 días se aplicará penalidad. *</p>
-              <p>* Una vez retirada la prenda, no se aceptarán reclamos. *</p>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginTop: '20px' }}>
-              <button className="btn-secondary" style={{ background: '#e2e8f0', color: '#000' }} onClick={() => setShowPrintModal(false)}>
+            {/* Modal Footer */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 20px',
+                borderTop: '1px solid var(--border-color)',
+                background: 'var(--bg-secondary, #f8fafc)',
+              }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowPrintModal(false)}
+              >
                 Cerrar
               </button>
-              <div style={{ display: 'flex', gap: '8px' }}>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {printPdfUrl && (
+                  <a
+                    href={printPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={`${selectedTicket.cod_comprobante}.pdf`}
+                    className="btn-secondary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      textDecoration: 'none',
+                      color: '#4f46e5',
+                      borderColor: '#c7d2fe',
+                      background: '#eef2ff',
+                    }}
+                  >
+                    <Download size={15} /> Descargar PDF
+                  </a>
+                )}
                 <button
                   type="button"
-                  className="btn-secondary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
-                  onClick={() => handleDownloadPdf(selectedTicket.id)}
+                  className="btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={handlePrintPdfDocument}
+                  disabled={printPdfLoading || !printPdfUrl}
                 >
-                  <FileText size={15} /> Descargar PDF
-                </button>
-                <button className="btn-primary" onClick={() => window.print()}>
-                  <Printer size={16} /> Imprimir Ticket
+                  <Printer size={16} /> Imprimir Comprobante
                 </button>
               </div>
             </div>

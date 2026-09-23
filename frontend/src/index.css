@@ -609,3 +609,21 @@ input[type="password"]::placeholder,
     font-weight: 700;
   }
 }
+
+/* Print styles to prevent page UI / modals from appearing in printouts */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .modal-overlay,
+  .sidebar,
+  .navbar,
+  header,
+  .bottom-nav,
+  .btn-primary,
+  .btn-secondary {
+    display: none !important;
+  }
+}
