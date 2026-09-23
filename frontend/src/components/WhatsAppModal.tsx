@@ -201,11 +201,24 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         .get(`/comprobantes/${ticket.id}/pdf`)
         .then((res) => {
           if (res.data?.success) {
+            let cleanUrl = res.data.url;
+            try {
+              const apiBase = import.meta.env.VITE_API_BASE_URL;
+              if (apiBase && (cleanUrl.includes('localhost:8000') || cleanUrl.startsWith('/'))) {
+                const apiOrigin = new URL(apiBase, window.location.origin).origin;
+                cleanUrl = cleanUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
+                if (cleanUrl.startsWith('/')) {
+                  cleanUrl = `${apiOrigin}${cleanUrl}`;
+                }
+              }
+            } catch {
+              // fallback
+            }
             setPdfInfo({
-              url: res.data.url,
+              url: cleanUrl,
               filename: res.data.filename,
             });
-            setMessage(buildWhatsAppMessage(ticket, actionType, includePdfLink ? res.data.url : undefined));
+            setMessage(buildWhatsAppMessage(ticket, actionType, includePdfLink ? cleanUrl : undefined));
           }
         })
         .catch((err) => {

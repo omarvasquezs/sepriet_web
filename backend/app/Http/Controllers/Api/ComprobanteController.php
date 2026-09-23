@@ -410,7 +410,15 @@ class ComprobanteController extends Controller
             $disk->put($relativePath, $pdf->output());
         }
 
-        $baseUrl = rtrim(config('app.url') ?: url('/'), '/');
+        $requestBase = request()->hasHeader('Host') ? request()->getSchemeAndHttpHost() : null;
+        $configuredUrl = config('app.url');
+        $isLocalhostConfig = empty($configuredUrl) || in_array(parse_url($configuredUrl, PHP_URL_HOST), ['localhost', '127.0.0.1'], true);
+
+        if ($requestBase && ($isLocalhostConfig || empty($configuredUrl))) {
+            $baseUrl = rtrim($requestBase, '/');
+        } else {
+            $baseUrl = rtrim($configuredUrl ?: $requestBase ?: url('/'), '/');
+        }
         $publicUrl = "{$baseUrl}/storage/{$relativePath}";
 
         return [

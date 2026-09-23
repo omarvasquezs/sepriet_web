@@ -273,8 +273,21 @@ export const ComprobantesPage: React.FC = () => {
   const handleDownloadPdf = async (ticketId: number) => {
     try {
       const res = await api.get(`/comprobantes/${ticketId}/pdf`);
-      if (res.data?.url) {
-        window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      let targetUrl = res.data?.url;
+      if (targetUrl) {
+        try {
+          const apiBase = import.meta.env.VITE_API_BASE_URL;
+          if (apiBase && (targetUrl.includes('localhost:8000') || targetUrl.startsWith('/'))) {
+            const apiOrigin = new URL(apiBase, window.location.origin).origin;
+            targetUrl = targetUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
+            if (targetUrl.startsWith('/')) {
+              targetUrl = `${apiOrigin}${targetUrl}`;
+            }
+          }
+        } catch {
+          // fallback to original targetUrl
+        }
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'No se pudo generar el comprobante en PDF');
