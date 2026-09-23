@@ -23,10 +23,10 @@
             margin-bottom: 8px;
         }
         .logo-img {
-            max-width: 70px;
-            max-height: 70px;
-            margin-bottom: 4px;
-            border-radius: 4px;
+            width: 140px;
+            max-width: 155px;
+            height: auto;
+            margin-bottom: 6px;
         }
         .logo-title {
             font-size: 15px;
