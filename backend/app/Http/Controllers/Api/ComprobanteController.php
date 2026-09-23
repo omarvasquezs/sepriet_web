@@ -368,11 +368,15 @@ class ComprobanteController extends Controller
             $logoPath = public_path('images/logo_sepreit.jpeg');
         }
         $logoTimestamp = file_exists($logoPath) ? filemtime($logoPath) : 0;
+        $viewPath = resource_path('views/pdf/comprobante_ticket.blade.php');
+        $viewTimestamp = file_exists($viewPath) ? filemtime($viewPath) : 0;
+        $templateTimestamp = max($logoTimestamp, $viewTimestamp);
+
         $pdfNeedsRegeneration = $force
             || !$disk->exists($relativePath)
-            || ($logoTimestamp > 0 && $disk->lastModified($relativePath) < $logoTimestamp);
+            || ($templateTimestamp > 0 && $disk->lastModified($relativePath) < $templateTimestamp);
 
-        // Regenerar si no existe, si se solicita forzar, o si el logo es más reciente que el PDF existente
+        // Regenerar si no existe, si se solicita forzar, o si el logo/plantilla es más reciente que el PDF existente
         if ($pdfNeedsRegeneration) {
             $local = Local::where('habilitado', 1)->first();
 

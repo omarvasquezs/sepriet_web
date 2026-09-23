@@ -5,7 +5,7 @@
     <title>{{ $comprobante->cod_comprobante }}</title>
     <style>
         @page {
-            margin: 10px 15px;
+            margin: 24px 15px 12px 15px;
             size: 80mm 200mm; /* Formato Ticket Térmico estándar 80mm */
         }
         body {
@@ -19,14 +19,20 @@
         .header {
             text-align: center;
             border-bottom: 1px dashed #444;
+            padding-top: 4px;
             padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        .logo-container {
+            text-align: center;
+            margin-top: 2px;
             margin-bottom: 8px;
         }
         .logo-img {
             width: 140px;
             max-width: 155px;
             height: auto;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .logo-title {
             font-size: 15px;
@@ -121,7 +127,7 @@
 <body>
     <div class="header">
         @if(!empty($logoBase64))
-            <div style="text-align: center; margin-bottom: 5px;">
+            <div class="logo-container">
                 <img src="{{ $logoBase64 }}" class="logo-img" alt="Logo" />
             </div>
         @endif
