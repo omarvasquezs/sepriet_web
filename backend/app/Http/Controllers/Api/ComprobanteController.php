@@ -363,8 +363,17 @@ class ComprobanteController extends Controller
 
         $disk = Storage::disk('public');
 
-        // Regenerar si no existe o si se solicita forzar
-        if ($force || !$disk->exists($relativePath)) {
+        $logoPath = public_path('images/logo_sepriet.jpeg');
+        if (!file_exists($logoPath)) {
+            $logoPath = public_path('images/logo_sepreit.jpeg');
+        }
+        $logoTimestamp = file_exists($logoPath) ? filemtime($logoPath) : 0;
+        $pdfNeedsRegeneration = $force
+            || !$disk->exists($relativePath)
+            || ($logoTimestamp > 0 && $disk->lastModified($relativePath) < $logoTimestamp);
+
+        // Regenerar si no existe, si se solicita forzar, o si el logo es más reciente que el PDF existente
+        if ($pdfNeedsRegeneration) {
             $local = Local::where('habilitado', 1)->first();
 
             $tipoComprobanteNombre = match ($comprobante->tipo_comprobante) {
@@ -380,11 +389,17 @@ class ComprobanteController extends Controller
                 default => 'badge-debe',
             };
 
+            $logoBase64 = null;
+            if (file_exists($logoPath)) {
+                $logoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath));
+            }
+
             $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
                 'comprobante',
                 'local',
                 'tipoComprobanteNombre',
-                'badgeClass'
+                'badgeClass',
+                'logoBase64'
             ));
 
             // Dimensiones estándar ticket térmico 80mm

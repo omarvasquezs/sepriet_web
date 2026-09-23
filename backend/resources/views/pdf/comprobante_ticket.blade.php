@@ -22,6 +22,12 @@
             padding-bottom: 8px;
             margin-bottom: 8px;
         }
+        .logo-img {
+            max-width: 70px;
+            max-height: 70px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+        }
         .logo-title {
             font-size: 15px;
             font-weight: bold;
@@ -114,6 +120,11 @@
 </head>
 <body>
     <div class="header">
+        @if(!empty($logoBase64))
+            <div style="text-align: center; margin-bottom: 5px;">
+                <img src="{{ $logoBase64 }}" class="logo-img" alt="Logo" />
+            </div>
+        @endif
         <h1 class="logo-title">LAVANDERIA SEPRIET</h1>
         <div class="subtitle">{{ $local->nombre ?? 'Oficina Principal' }}</div>
         <div class="subtitle">{{ $local->direccion ?? 'Av. Agustín de la Rosa Toro 318, San Luis' }}</div>
