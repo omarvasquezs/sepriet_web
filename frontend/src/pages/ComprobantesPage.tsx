@@ -47,6 +47,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
   const [printPdfError, setPrintPdfError] = useState<string | null>(null);
   const pdfIframeRef = useRef<HTMLIFrameElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   // WhatsApp Modal State
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -233,6 +234,12 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
     setTempServicioId('');
     setTempServicioOption(null);
+
+    setTimeout(() => {
+      if (tableScrollRef.current) {
+        tableScrollRef.current.scrollTop = tableScrollRef.current.scrollHeight;
+      }
+    }, 50);
   };
 
   const handleRemoveDetalle = (index: number) => {
@@ -1164,8 +1171,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       </div>
                     </div>
 
-                    {/* Fila 6: Tabla de Servicios */}
-                    <div style={{ overflowX: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '180px', backgroundColor: '#ffffff', marginBottom: '16px' }}>
+                    {/* Fila 6: Tabla de Servicios (Grilla fija con scroll vertical estilo Java/iframe) */}
+                    <div ref={tableScrollRef} className="comprobante-vjs-table-container">
                       <table className="comprobante-vjs-table">
                         <thead>
                           <tr>
