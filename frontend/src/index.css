@@ -1142,3 +1142,53 @@ input[type="password"]::placeholder,
     display: none !important;
   }
 }
+
+/* Estilos Formulario Registro Comprobante Estilo Java/VJS */
+.modal-content-comprobante-vjs {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 1200px;
+  width: 96vw;
+  max-height: 94vh;
+  overflow-y: auto;
+  padding: 24px 28px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  margin: auto;
+  box-sizing: border-box;
+}
+
+.comprobante-vjs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 992px) {
+  .comprobante-vjs-grid {
+    grid-template-columns: 65% 35%;
+    gap: 32px;
+  }
+}
+
+.comprobante-vjs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comprobante-vjs-table th {
+  background-color: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 10px 10px;
+  border-bottom: 2px solid #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.comprobante-vjs-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+

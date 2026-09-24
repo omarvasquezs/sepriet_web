@@ -64,22 +64,41 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   // Selected Cliente Option for AsyncSelect2
   const [selectedClienteOption, setSelectedClienteOption] = useState<SelectOption | null>(null);
 
-  // Create Form State
+  // Quick Client Modal State
+  const [showQuickClienteModal, setShowQuickClienteModal] = useState(false);
+  const [quickClienteForm, setQuickClienteForm] = useState({
+    nombres: '',
+    dni: '',
+    telefono: '',
+    direccion: ''
+  });
+
+  // Temp service selection for Java/VJS style add row
+  const [tempServicioId, setTempServicioId] = useState<string>('');
+  const [tempServicioOption, setTempServicioOption] = useState<SelectOption | null>(null);
+
+  // Create Form State (matching Java / VJS)
   const initialCreateForm = {
-    tipo_comprobante: 'N',
+    tipo_comprobante: 'N', // 'N' | 'B' | 'F'
     cliente_id: '',
+    estado_comprobante_id: '4', // Default CANCELADO (4)
     metodo_pago_id: '4', // Efectivo
     descuento: '0.00',
     monto_abonado: '0.00',
     observaciones: '',
     num_ruc: '',
     razon_social: '',
-    detalles: [
-      { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00', selectedOption: null as SelectOption | null }
-    ]
+    detalles: [] as Array<{
+      servicio_id: string;
+      servicio_name?: string;
+      peso_kg: string;
+      costo_kilo: string;
+      selectedOption?: SelectOption | null;
+    }>
   };
 
   const [createForm, setCreateForm] = useState(initialCreateForm);
+
 
   const fetchData = async () => {
     setLoading(true);
@@ -172,61 +191,174 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const handleOpenCreateModal = () => {
     setCreateForm(initialCreateForm);
     setSelectedClienteOption(null);
+    setTempServicioId('');
+    setTempServicioOption(null);
     setFechaOperacionCreate(toDateTimeLocal());
     setShowCreateModal(true);
   };
 
-  const handleAddDetalle = () => {
-    setCreateForm(prev => ({
-      ...prev,
-      detalles: [
-        ...prev.detalles,
-        { servicio_id: '', peso_kg: '1.00', costo_kilo: '0.00', selectedOption: null }
-      ]
-    }));
+  const handleAddSelectedServicio = () => {
+    if (!tempServicioId || !tempServicioOption) {
+      alert('Por favor seleccione un servicio primero.');
+      return;
+    }
+    const raw = tempServicioOption.raw;
+    const precio = raw?.precio_kilo || raw?.precio_unidad || 0;
+    const newDetalle = {
+      servicio_id: String(tempServicioId),
+      servicio_name: tempServicioOption.label,
+      peso_kg: '1.00',
+      costo_kilo: Number(precio).toFixed(2),
+      selectedOption: tempServicioOption
+    };
+
+    setCreateForm(prev => {
+      const updatedDetalles = [...prev.detalles, newDetalle];
+      // If CANCELADO, recalculate monto_abonado automatically
+      let newMonto = prev.monto_abonado;
+      if (prev.estado_comprobante_id === '4') {
+        let sub = 0;
+        updatedDetalles.forEach(d => {
+          sub += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0);
+        });
+        const desc = Number(prev.descuento || 0);
+        newMonto = Math.max(0, sub - desc).toFixed(2);
+      }
+      return {
+        ...prev,
+        detalles: updatedDetalles,
+        monto_abonado: newMonto
+      };
+    });
+
+    setTempServicioId('');
+    setTempServicioOption(null);
   };
 
   const handleRemoveDetalle = (index: number) => {
-    if (createForm.detalles.length === 1) return;
-    setCreateForm(prev => ({
-      ...prev,
-      detalles: prev.detalles.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSelectServicio = (index: number, servicioId: string | number, opt?: SelectOption) => {
-    const s = opt?.raw;
     setCreateForm(prev => {
-      const newDetalles = [...prev.detalles];
-      newDetalles[index] = {
-        ...newDetalles[index],
-        servicio_id: String(servicioId || ''),
-        costo_kilo: s?.precio_kilo ? String(s.precio_kilo) : newDetalles[index].costo_kilo || '0.00',
-        peso_kg: newDetalles[index].peso_kg || '1.00',
-        selectedOption: opt || null
+      const updatedDetalles = prev.detalles.filter((_, i) => i !== index);
+      let newMonto = prev.monto_abonado;
+      if (prev.estado_comprobante_id === '4') {
+        let sub = 0;
+        updatedDetalles.forEach(d => {
+          sub += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0);
+        });
+        const desc = Number(prev.descuento || 0);
+        newMonto = Math.max(0, sub - desc).toFixed(2);
+      }
+      return {
+        ...prev,
+        detalles: updatedDetalles,
+        monto_abonado: newMonto
       };
-      return { ...prev, detalles: newDetalles };
     });
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotalRaw = () => {
     let subtotal = 0;
     createForm.detalles.forEach(d => {
       subtotal += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0);
     });
+    return subtotal;
+  };
+
+  const calculateTotal = () => {
+    const raw = calculateSubtotalRaw();
     const desc = Number(createForm.descuento || 0);
-    return Math.max(0, subtotal - desc);
+    return Math.max(0, raw - desc);
+  };
+
+  const handleEstadoComprobanteChange = (val: string) => {
+    const total = calculateTotal();
+    if (val === '4') { // CANCELADO
+      setCreateForm(prev => ({
+        ...prev,
+        estado_comprobante_id: val,
+        monto_abonado: total.toFixed(2)
+      }));
+    } else if (val === '1') { // DEBE
+      setCreateForm(prev => ({
+        ...prev,
+        estado_comprobante_id: val,
+        monto_abonado: '0.00'
+      }));
+    } else { // ABONO
+      setCreateForm(prev => ({
+        ...prev,
+        estado_comprobante_id: val,
+        monto_abonado: ''
+      }));
+    }
+  };
+
+  const handleQuickClienteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickClienteForm.nombres.trim()) {
+      alert('El nombre es obligatorio.');
+      return;
+    }
+    try {
+      const res = await api.post('/clientes', {
+        ...quickClienteForm,
+        codigo_pais: '+51'
+      });
+      const newClient = res.data;
+      setCreateForm(prev => ({ ...prev, cliente_id: String(newClient.id) }));
+      setSelectedClienteOption({
+        id: newClient.id,
+        label: newClient.nombres,
+        sublabel: newClient.dni ? `DNI: ${newClient.dni}` : 'Sin DNI',
+        extraBadge: newClient.telefono ? `Tel: ${newClient.telefono}` : undefined,
+        raw: newClient
+      });
+      setShowQuickClienteModal(false);
+      setQuickClienteForm({ nombres: '', dni: '', telefono: '', direccion: '' });
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al registrar cliente');
+    }
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (createForm.detalles.length === 0) {
+      alert('Favor ingrese servicios en el comprobante!');
+      return;
+    }
+    if (!createForm.cliente_id) {
+      alert('Favor de seleccionar un cliente.');
+      return;
+    }
+    if (createForm.tipo_comprobante === 'F' && (!createForm.num_ruc || !createForm.razon_social)) {
+      alert('Para Factura debe ingresar N° de RUC y Razón Social.');
+      return;
+    }
+
+    const totalFinal = calculateTotal();
+    let montoAbonadoReal = 0;
+
+    if (createForm.estado_comprobante_id === '4') {
+      montoAbonadoReal = totalFinal;
+    } else if (createForm.estado_comprobante_id === '1') {
+      montoAbonadoReal = 0;
+    } else {
+      montoAbonadoReal = Number(createForm.monto_abonado || 0);
+      if (montoAbonadoReal <= 0 || montoAbonadoReal >= totalFinal) {
+        alert('Para estado ABONO, el monto abonado debe ser mayor a 0 y menor al total.');
+        return;
+      }
+    }
+
     try {
       const payload: any = {
-        ...createForm,
+        tipo_comprobante: createForm.tipo_comprobante,
         cliente_id: Number(createForm.cliente_id),
-        metodo_pago_id: Number(createForm.metodo_pago_id),
-        descuento: Number(createForm.descuento),
-        monto_abonado: Number(createForm.monto_abonado),
+        metodo_pago_id: Number(createForm.metodo_pago_id || 4),
+        descuento: Number(createForm.descuento || 0),
+        monto_abonado: montoAbonadoReal,
+        num_ruc: createForm.tipo_comprobante === 'F' ? createForm.num_ruc : null,
+        razon_social: createForm.tipo_comprobante === 'F' ? createForm.razon_social : null,
+        observaciones: createForm.observaciones ? createForm.observaciones.trim() : null,
         detalles: createForm.detalles.map(d => ({
           servicio_id: Number(d.servicio_id),
           peso_kg: Number(d.peso_kg),
@@ -234,7 +366,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         }))
       };
 
-      if (isAdmin && fechaOperacionCreate) {
+      if (fechaOperacionCreate) {
         payload.fecha_operacion = fechaOperacionCreate;
       }
 
@@ -253,6 +385,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       alert(err.response?.data?.message || 'Error al registrar comprobante');
     }
   };
+
 
   const handleAbonoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -753,311 +886,606 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         )}
       </div>
 
-      {/* Modal Registrar Comprobante */}
-      {showCreateModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '900px', padding: '24px' }}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={20} color="var(--primary-color)" />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                  Registrar Nuevo Comprobante
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setShowCreateModal(false)}
-                title="Cerrar"
-              >
-                <X size={20} />
-              </button>
-            </div>
+      {/* Modal Registrar Comprobante Estilo Java / VJS */}
+      {showCreateModal && (() => {
+        const rawSubtotal = calculateSubtotalRaw();
+        const descVal = Number(createForm.descuento || 0);
+        const totalFinal = Math.max(0, rawSubtotal - descVal);
+        const igvCalculado = totalFinal * 0.18;
+        const opGravadas = totalFinal - igvCalculado;
 
-            <form onSubmit={handleCreateSubmit}>
-              {/* Bloque 1: Cabecera y Cliente */}
-              <div className="form-grid-header">
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Tipo de Comprobante *</label>
-                  <select
-                    className="form-select"
-                    value={createForm.tipo_comprobante}
-                    onChange={(e) => setCreateForm({ ...createForm, tipo_comprobante: e.target.value })}
-                  >
-                    <option value="N">Nota de Venta (NV)</option>
-                    <option value="B">Boleta de Venta (BV)</option>
-                    <option value="F">Factura (FV)</option>
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Cliente *</label>
-                  <AsyncSelect2
-                    value={createForm.cliente_id}
-                    initialOption={selectedClienteOption}
-                    placeholder="Buscar o seleccionar cliente..."
-                    searchPlaceholder="Escriba nombre, DNI o teléfono..."
-                    loadOptions={loadClienteOptions}
-                    required
-                    onChange={(val, opt) => {
-                      setCreateForm({ ...createForm, cliente_id: String(val || '') });
-                      setSelectedClienteOption(opt || null);
-                    }}
-                  />
-                </div>
-
-                {isAdmin && (
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5' }}>
-                      <Calendar size={14} /> Fecha Operación (Admin)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      className="form-input"
-                      value={fechaOperacionCreate}
-                      onChange={(e) => setFechaOperacionCreate(e.target.value)}
-                    />
-                  </div>
-                )}
+        return (
+          <div className="modal-overlay">
+            <div className="modal-content-comprobante-vjs">
+              {/* Header ventana */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '14px', borderBottom: '2px solid #e2e8f0' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.3px', textTransform: 'uppercase' }}>
+                  REGISTRO DE COMPROBANTE
+                </h2>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowCreateModal(false)}
+                  title="Cerrar ventana"
+                >
+                  <X size={24} />
+                </button>
               </div>
 
-              {createForm.tipo_comprobante === 'F' && (
-                <div className="form-grid-factura">
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">RUC *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="11 DÍGITOS"
-                      value={createForm.num_ruc}
-                      onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Razón Social *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="Nombre o razón comercial"
-                      value={createForm.razon_social}
-                      onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Bloque 2: Detalles de Servicios */}
-              <div style={{ marginBottom: '14px' }}>
-                <div className="comprobante-detalles-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
-                  <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                    Detalles de Servicios / Prendas
-                  </h4>
-                  <button
-                    type="button"
-                    className="btn-secondary comprobante-btn-add-service"
-                    onClick={handleAddDetalle}
-                    style={{
-                      padding: '8px 14px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      borderRadius: '8px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <Plus size={16} /> Agregar Servicio
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {createForm.detalles.map((det, idx) => (
-                    <div
-                      key={idx}
-                      className="comprobante-detalle-item"
-                    >
-                      <div className="comprobante-detalle-service">
+              <form onSubmit={handleCreateSubmit}>
+                <div className="comprobante-vjs-grid">
+                  {/* COLUMNA IZQUIERDA: Clientes, Estados, Servicios y Tabla */}
+                  <div>
+                    {/* Fila 1: Cliente + Añadir Nuevo Cliente */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          CLIENTE:
+                        </label>
                         <AsyncSelect2
-                          value={det.servicio_id}
-                          initialOption={det.selectedOption}
-                          placeholder="Buscar servicio o prenda..."
-                          searchPlaceholder="Buscar por nombre..."
-                          loadOptions={loadServicioOptions}
+                          value={createForm.cliente_id}
+                          initialOption={selectedClienteOption}
+                          placeholder="-- SELECCIONAR CLIENTE --"
+                          searchPlaceholder="Escriba nombre, DNI o teléfono..."
+                          loadOptions={loadClienteOptions}
                           required
-                          onChange={(val, opt) => handleSelectServicio(idx, val, opt)}
+                          onChange={(val, opt) => {
+                            setCreateForm({ ...createForm, cliente_id: String(val || '') });
+                            setSelectedClienteOption(opt || null);
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingTop: '21px' }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => setShowQuickClienteModal(true)}
+                          style={{
+                            padding: '9px 16px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            backgroundColor: '#0d6efd',
+                            borderColor: '#0d6efd',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            whiteSpace: 'nowrap',
+                            height: '42px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Plus size={16} /> AÑADIR NUEVO CLIENTE
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Fila 2: Estado Comprobante + Tipo Comprobante (Segmented) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          ESTADO:
+                        </label>
+                        <select
+                          className="form-select"
+                          value={createForm.estado_comprobante_id}
+                          onChange={(e) => handleEstadoComprobanteChange(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                            backgroundColor: '#ffffff'
+                          }}
+                        >
+                          <option value="4">CANCELADO</option>
+                          <option value="2">ABONO</option>
+                          <option value="1">DEBE</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          TIPO DE COMPROBANTE:
+                        </label>
+                        <div style={{ display: 'flex', width: '100%' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCreateForm({ ...createForm, tipo_comprobante: 'N' })}
+                            style={{
+                              flex: 1,
+                              padding: '9px 6px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              border: '1px solid #0d6efd',
+                              borderRadius: '6px 0 0 6px',
+                              backgroundColor: createForm.tipo_comprobante === 'N' ? '#0d6efd' : '#ffffff',
+                              color: createForm.tipo_comprobante === 'N' ? '#ffffff' : '#0d6efd',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            NOTA DE VENTA
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreateForm({ ...createForm, tipo_comprobante: 'B' })}
+                            style={{
+                              flex: 1,
+                              padding: '9px 6px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              borderTop: '1px solid #0d6efd',
+                              borderBottom: '1px solid #0d6efd',
+                              borderLeft: 'none',
+                              borderRight: 'none',
+                              backgroundColor: createForm.tipo_comprobante === 'B' ? '#0d6efd' : '#ffffff',
+                              color: createForm.tipo_comprobante === 'B' ? '#ffffff' : '#0d6efd',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            BOLETA
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreateForm({ ...createForm, tipo_comprobante: 'F' })}
+                            style={{
+                              flex: 1,
+                              padding: '9px 6px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              border: '1px solid #0d6efd',
+                              borderRadius: '0 6px 6px 0',
+                              backgroundColor: createForm.tipo_comprobante === 'F' ? '#0d6efd' : '#ffffff',
+                              color: createForm.tipo_comprobante === 'F' ? '#ffffff' : '#0d6efd',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            FACTURA
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Condición de Pago */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                        CONDICIÓN DE PAGO:
+                      </label>
+                      <select
+                        className="form-select"
+                        value={createForm.metodo_pago_id}
+                        disabled={createForm.estado_comprobante_id === '1'}
+                        onChange={(e) => setCreateForm({ ...createForm, metodo_pago_id: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '6px',
+                          fontSize: '0.88rem',
+                          backgroundColor: createForm.estado_comprobante_id === '1' ? '#f1f5f9' : '#ffffff'
+                        }}
+                      >
+                        {catalogos.metodos_pago.map((mp: any) => (
+                          <option key={mp.id} value={mp.id}>{mp.nom_metodo_pago}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Fila 4: N° de RUC y Razón Social */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          N° DE RUC:
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="N° DE RUC"
+                          value={createForm.num_ruc}
+                          disabled={createForm.tipo_comprobante !== 'F'}
+                          required={createForm.tipo_comprobante === 'F'}
+                          onChange={(e) => setCreateForm({ ...createForm, num_ruc: e.target.value.toUpperCase() })}
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            fontSize: '0.88rem',
+                            backgroundColor: createForm.tipo_comprobante === 'F' ? '#ffffff' : '#f1f5f9'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          RAZON SOCIAL:
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="RAZON SOCIAL"
+                          value={createForm.razon_social}
+                          disabled={createForm.tipo_comprobante !== 'F'}
+                          required={createForm.tipo_comprobante === 'F'}
+                          onChange={(e) => setCreateForm({ ...createForm, razon_social: e.target.value.toUpperCase() })}
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            fontSize: '0.88rem',
+                            backgroundColor: createForm.tipo_comprobante === 'F' ? '#ffffff' : '#f1f5f9'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fila 5: Selector de Servicio + Botón Añadir */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          SELECCIONAR SERVICIO:
+                        </label>
+                        <AsyncSelect2
+                          value={tempServicioId}
+                          initialOption={tempServicioOption}
+                          placeholder="-- SELECCIONAR SERVICIO --"
+                          searchPlaceholder="Buscar por nombre de servicio..."
+                          loadOptions={loadServicioOptions}
+                          onChange={(val, opt) => {
+                            setTempServicioId(val ? String(val) : '');
+                            setTempServicioOption(opt || null);
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingTop: '21px' }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={handleAddSelectedServicio}
+                          style={{
+                            padding: '9px 20px',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            backgroundColor: '#0d6efd',
+                            borderColor: '#0d6efd',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            whiteSpace: 'nowrap',
+                            height: '42px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Plus size={16} /> AÑADIR
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Fila 6: Tabla de Servicios */}
+                    <div style={{ overflowX: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '180px', backgroundColor: '#ffffff', marginBottom: '16px' }}>
+                      <table className="comprobante-vjs-table">
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left' }}>SERVICIO</th>
+                            <th style={{ textAlign: 'center', width: '120px' }}>PESO EN KG</th>
+                            <th style={{ textAlign: 'center', width: '140px' }}>PRECIO POR KG (S/.)</th>
+                            <th style={{ textAlign: 'center', width: '120px' }}>TOTAL (S/.)</th>
+                            <th style={{ textAlign: 'center', width: '50px' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {createForm.detalles.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} style={{ textAlign: 'center', padding: '36px 14px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No hay servicios agregados. Seleccione un servicio arriba y haga clic en AÑADIR.
+                              </td>
+                            </tr>
+                          ) : (
+                            createForm.detalles.map((det, idx) => {
+                              const rowTotal = Number(det.peso_kg || 0) * Number(det.costo_kilo || 0);
+                              return (
+                                <tr key={idx}>
+                                  <td style={{ fontWeight: 600, color: '#1e293b' }}>
+                                    {det.servicio_name || det.selectedOption?.label || `Servicio #${det.servicio_id}`}
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0.01"
+                                      className="form-input"
+                                      value={det.peso_kg}
+                                      onChange={(e) => {
+                                        const newD = [...createForm.detalles];
+                                        newD[idx].peso_kg = e.target.value;
+                                        setCreateForm(prev => {
+                                          let newM = prev.monto_abonado;
+                                          if (prev.estado_comprobante_id === '4') {
+                                            let s = 0;
+                                            newD.forEach(d => { s += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0); });
+                                            newM = Math.max(0, s - Number(prev.descuento || 0)).toFixed(2);
+                                          }
+                                          return { ...prev, detalles: newD, monto_abonado: newM };
+                                        });
+                                      }}
+                                      style={{ width: '5.5rem', textAlign: 'center', padding: '6px 8px', margin: '0 auto' }}
+                                      required
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      className="form-input"
+                                      value={det.costo_kilo}
+                                      onChange={(e) => {
+                                        const newD = [...createForm.detalles];
+                                        newD[idx].costo_kilo = e.target.value;
+                                        setCreateForm(prev => {
+                                          let newM = prev.monto_abonado;
+                                          if (prev.estado_comprobante_id === '4') {
+                                            let s = 0;
+                                            newD.forEach(d => { s += Number(d.peso_kg || 0) * Number(d.costo_kilo || 0); });
+                                            newM = Math.max(0, s - Number(prev.descuento || 0)).toFixed(2);
+                                          }
+                                          return { ...prev, detalles: newD, monto_abonado: newM };
+                                        });
+                                      }}
+                                      style={{ width: '5.5rem', textAlign: 'center', padding: '6px 8px', margin: '0 auto' }}
+                                      required
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: 'center', fontWeight: 800, color: '#0f172a' }}>
+                                    S/. {rowTotal.toFixed(2)}
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveDetalle(idx)}
+                                      style={{
+                                        background: '#dc3545',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        padding: '6px 8px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                      }}
+                                      title="Eliminar fila"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* COLUMNA DERECHA: Creación, Resumen Económico, Descuento, Abono y Registrar */}
+                  <div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+                      {/* Creación */}
+                      <div style={{ marginBottom: '18px' }}>
+                        <h5 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', margin: '0 0 6px 0', textTransform: 'uppercase' }}>
+                          CREACIÓN:
+                        </h5>
+                        <input
+                          type="datetime-local"
+                          className="form-input"
+                          value={fechaOperacionCreate}
+                          onChange={(e) => setFechaOperacionCreate(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', fontSize: '0.9rem', backgroundColor: '#ffffff' }}
+                          required
                         />
                       </div>
 
-                      <div className="comprobante-detalle-inputs">
+                      {/* Operaciones Gravadas e IGV */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475569', margin: 0 }}>OP. GRAVADAS:</h5>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>S/. {opGravadas.toFixed(2)}</h5>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475569', margin: 0 }}>IGV 18%:</h5>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>S/. {igvCalculado.toFixed(2)}</h5>
+                      </div>
+
+                      {/* Total a Pagar Prominente */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderTop: '2px dashed #cbd5e1', paddingTop: '12px' }}>
+                        <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>TOTAL A PAGAR:</h4>
+                        <h3 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>S/. {totalFinal.toFixed(2)}</h3>
+                      </div>
+
+                      {/* Descuento */}
+                      <div style={{ marginBottom: '14px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          DESCUENTO (S/):
+                        </label>
                         <input
                           type="number"
-                          step="0.01"
-                          min="0.01"
+                          step="0.50"
+                          min="0"
                           className="form-input"
-                          style={{ padding: '8px 10px', fontSize: '0.88rem' }}
-                          placeholder="Peso / Cant"
-                          value={det.peso_kg}
+                          value={createForm.descuento}
                           onChange={(e) => {
-                            const newD = [...createForm.detalles];
-                            newD[idx].peso_kg = e.target.value;
-                            setCreateForm({ ...createForm, detalles: newD });
+                            const val = e.target.value;
+                            setCreateForm(prev => {
+                              const desc = Number(val || 0);
+                              const sub = calculateSubtotalRaw();
+                              const newTot = Math.max(0, sub - desc);
+                              return {
+                                ...prev,
+                                descuento: val,
+                                monto_abonado: prev.estado_comprobante_id === '4' ? newTot.toFixed(2) : prev.monto_abonado
+                              };
+                            });
                           }}
+                          style={{ width: '100%', padding: '8px 12px', fontSize: '0.9rem', backgroundColor: '#ffffff' }}
                         />
+                      </div>
 
+                      {/* Monto Abonado */}
+                      <div style={{ marginBottom: '14px' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 900, color: '#0f172a', marginBottom: '4px' }}>
+                          MONTO ABONADO:
+                        </label>
                         <input
                           type="number"
                           step="0.01"
                           min="0"
                           className="form-input"
-                          style={{ padding: '8px 10px', fontSize: '0.88rem' }}
-                          placeholder="Precio Unit (S/)"
-                          value={det.costo_kilo}
-                          onChange={(e) => {
-                            const newD = [...createForm.detalles];
-                            newD[idx].costo_kilo = e.target.value;
-                            setCreateForm({ ...createForm, detalles: newD });
+                          value={createForm.estado_comprobante_id === '4' ? totalFinal.toFixed(2) : createForm.estado_comprobante_id === '1' ? '0.00' : createForm.monto_abonado}
+                          disabled={createForm.estado_comprobante_id !== '2'}
+                          onChange={(e) => setCreateForm({ ...createForm, monto_abonado: e.target.value })}
+                          placeholder={createForm.estado_comprobante_id === '4' ? totalFinal.toFixed(2) : '0.00'}
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            fontSize: '1.05rem',
+                            fontWeight: 800,
+                            backgroundColor: createForm.estado_comprobante_id === '2' ? '#ffffff' : '#f1f5f9',
+                            color: '#0f172a'
                           }}
+                          required={createForm.estado_comprobante_id === '2'}
                         />
                       </div>
 
-                      <div className="comprobante-detalle-subtotal-row">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="hide-on-desktop" style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                            Subtotal:
-                          </span>
-                          <span style={{ fontWeight: 800, color: '#059669', fontSize: '0.92rem', whiteSpace: 'nowrap' }}>
-                            S/ {(Number(det.peso_kg || 0) * Number(det.costo_kilo || 0)).toFixed(2)}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDetalle(idx)}
-                          disabled={createForm.detalles.length <= 1}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: createForm.detalles.length <= 1 ? '#cbd5e1' : '#dc2626',
-                            cursor: createForm.detalles.length <= 1 ? 'default' : 'pointer',
-                            padding: '4px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                          title="Eliminar fila"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      {/* Observaciones */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>
+                          OBSERVACIONES:
+                        </label>
+                        <textarea
+                          rows={3}
+                          className="form-input"
+                          value={createForm.observaciones}
+                          onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value.toUpperCase() })}
+                          placeholder="OBSERVACIONES O NOTAS..."
+                          style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem', resize: 'vertical', backgroundColor: '#ffffff' }}
+                        />
                       </div>
+
+                      {/* Botón REGISTRAR Verde */}
+                      <button
+                        type="submit"
+                        style={{
+                          width: '100%',
+                          padding: '14px',
+                          fontSize: '1.15rem',
+                          fontWeight: 900,
+                          backgroundColor: '#198754',
+                          border: 'none',
+                          color: '#ffffff',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          letterSpacing: '0.04em',
+                          boxShadow: '0 4px 14px rgba(25, 135, 84, 0.3)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        REGISTRAR
+                      </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bloque 3: Finanzas y Descuento */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: '12px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  marginBottom: '14px',
-                }}
-              >
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Descuento (S/)</label>
-                  <input
-                    type="number"
-                    step="0.50"
-                    min="0"
-                    className="form-input"
-                    value={createForm.descuento}
-                    onChange={(e) => setCreateForm({ ...createForm, descuento: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Monto Abonado (S/)</label>
-                  <input
-                    type="number"
-                    step="0.50"
-                    min="0"
-                    className="form-input"
-                    value={createForm.monto_abonado}
-                    onChange={(e) => setCreateForm({ ...createForm, monto_abonado: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.82rem' }}>Método de Pago</label>
-                  <select
-                    className="form-select"
-                    value={createForm.metodo_pago_id}
-                    onChange={(e) => setCreateForm({ ...createForm, metodo_pago_id: e.target.value })}
-                  >
-                    {catalogos.metodos_pago.map((mp: any) => (
-                      <option key={mp.id} value={mp.id}>{mp.nom_metodo_pago}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <textarea
-                  className="form-input"
-                  rows={3}
-                  style={{
-                    minHeight: '75px',
-                    resize: 'vertical',
-                    padding: '10px 14px',
-                    lineHeight: '1.4',
-                  }}
-                  placeholder="Observaciones o notas adicionales (opcional)..."
-                  value={createForm.observaciones}
-                  onChange={(e) => setCreateForm({ ...createForm, observaciones: e.target.value.toUpperCase() })}
-                />
-              </div>
-
-              {/* Totales y Botones de Acción */}
-              <div className="create-comprobante-footer">
-                <div className="create-comprobante-totals">
-                  <div style={{ fontSize: '0.9rem', color: '#475569' }}>
-                    Total a Pagar:{' '}
-                    <strong style={{ fontSize: '1.25rem', color: '#4f46e5' }}>
-                      S/ {calculateTotal().toFixed(2)}
-                    </strong>
                   </div>
-                  {Number(createForm.monto_abonado) > 0 && (
-                    <div style={{ fontSize: '0.85rem', color: '#059669' }}>
-                      Abono: <strong>S/ {Number(createForm.monto_abonado).toFixed(2)}</strong>
-                    </div>
-                  )}
-                  {Math.max(0, calculateTotal() - Number(createForm.monto_abonado || 0)) > 0 && (
-                    <div style={{ fontSize: '0.85rem', color: '#dc2626' }}>
-                      Pendiente: <strong>S/ {Math.max(0, calculateTotal() - Number(createForm.monto_abonado || 0)).toFixed(2)}</strong>
-                    </div>
-                  )}
                 </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
-                <div className="create-comprobante-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn-primary" style={{ padding: '10px 20px', fontWeight: 700 }}>
-                    Generar Comprobante
-                  </button>
+      {/* Modal Rápido Añadir Nuevo Cliente */}
+      {showQuickClienteModal && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '480px', padding: '24px' }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
+                AÑADIR NUEVO CLIENTE
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowQuickClienteModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleQuickClienteSubmit}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                <div>
+                  <label className="form-label">Nombres / Razón Social *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    required
+                    placeholder="Nombres completos o razón social"
+                    value={quickClienteForm.nombres}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, nombres: e.target.value.toUpperCase() })}
+                  />
                 </div>
+                <div>
+                  <label className="form-label">DNI / RUC</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="8 u 11 dígitos"
+                    value={quickClienteForm.dni}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, dni: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Teléfono (WhatsApp)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="9 dígitos"
+                    value={quickClienteForm.telefono}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, telefono: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Dirección (Opcional)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Dirección..."
+                    value={quickClienteForm.direccion}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, direccion: e.target.value.toUpperCase() })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowQuickClienteModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ backgroundColor: '#0d6efd', borderColor: '#0d6efd', fontWeight: 700 }}
+                >
+                  Guardar y Seleccionar
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
 
       {/* Modal Abono */}
       {showAbonoModal && selectedTicket && (
