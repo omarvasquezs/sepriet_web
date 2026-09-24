@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
-import { Navbar } from './components/Navbar';
+import { TopMenuBar } from './components/TopMenuBar';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ResilienceBanner } from './components/ResilienceBanner';
 import { AperturaCajaModal } from './components/AperturaCajaModal';
@@ -24,6 +24,15 @@ const MainLayout: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [progressWidth, setProgressWidth] = useState(0);
 
+  // Triggers & Presets from Top Menu (Java / VJS Navigation)
+  const [triggerCreateTicket, setTriggerCreateTicket] = useState(0);
+  const [triggerCreateCliente, setTriggerCreateCliente] = useState(0);
+  const [comprobanteFilterPreset, setComprobanteFilterPreset] = useState<{
+    id: string;
+    label: string;
+    timestamp: number;
+  } | null>(null);
+
   // Global Caja Check & Modal State
   const [showGlobalAperturaModal, setShowGlobalAperturaModal] = useState(false);
 
@@ -40,6 +49,19 @@ const MainLayout: React.FC = () => {
         });
     }
   }, [user]);
+
+  // Global keyboard shortcut Ctrl+N / Cmd+N for New Comprobante
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        handleTabChange('comprobantes');
+        setTriggerCreateTicket(prev => prev + 1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleTabChange = (newTab: string) => {
     setIsSidebarOpen(false);
@@ -60,6 +82,25 @@ const MainLayout: React.FC = () => {
         setProgressWidth(0);
       }, 200);
     }, 120);
+  };
+
+  const handleRegistrarComprobante = () => {
+    handleTabChange('comprobantes');
+    setTriggerCreateTicket(prev => prev + 1);
+  };
+
+  const handleRegistrarCliente = () => {
+    handleTabChange('clientes');
+    setTriggerCreateCliente(prev => prev + 1);
+  };
+
+  const handleConsultarComprobantes = (presetId: string, label: string) => {
+    setComprobanteFilterPreset({
+      id: presetId,
+      label,
+      timestamp: Date.now()
+    });
+    handleTabChange('comprobantes');
   };
 
   if (isLoading) {
@@ -84,16 +125,6 @@ const MainLayout: React.FC = () => {
     );
   }
 
-  const titles: Record<string, string> = {
-    dashboard: 'Dashboard Principal',
-    comprobantes: 'Gestión de Comprobantes',
-    clientes: 'Directorio de Clientes',
-    servicios: 'Tarifario de Servicios',
-    caja: 'Control de Caja y Egresos',
-    reportes: 'Reportes Financieros',
-    usuarios: 'Gestión de Usuarios y Roles',
-  };
-
   const showBar = isTransitioning || isAuthTransitioning;
   const barWidth = isAuthTransitioning ? '100%' : `${progressWidth}%`;
 
@@ -110,25 +141,42 @@ const MainLayout: React.FC = () => {
         />
       </div>
 
+      {/* Mobile Off-canvas Drawer */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onRegistrarComprobante={handleRegistrarComprobante}
+        onRegistrarCliente={handleRegistrarCliente}
+        onConsultarComprobantes={handleConsultarComprobantes}
       />
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '20px' }}>
-        <Navbar
-          title={titles[activeTab] || 'Sepriet System'}
-          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        {/* Desktop Top Menu Bar (Java / VJS Style) */}
+        <TopMenuBar
+          activeTab={activeTab}
+          onNavigate={handleTabChange}
+          onRegistrarComprobante={handleRegistrarComprobante}
+          onRegistrarCliente={handleRegistrarCliente}
+          onConsultarComprobantes={handleConsultarComprobantes}
           onOpenAperturaModal={() => setShowGlobalAperturaModal(true)}
+          onToggleMobileDrawer={() => setIsSidebarOpen(prev => !prev)}
         />
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div key={activeTab} className="page-transition">
             {activeTab === 'dashboard' && <DashboardPage onNavigate={handleTabChange} />}
-            {activeTab === 'comprobantes' && <ComprobantesPage />}
-            {activeTab === 'clientes' && <ClientesPage />}
+            {activeTab === 'comprobantes' && (
+              <ComprobantesPage
+                filterPreset={comprobanteFilterPreset}
+                triggerCreateTicket={triggerCreateTicket}
+                onClearFilterPreset={() => setComprobanteFilterPreset(null)}
+              />
+            )}
+            {activeTab === 'clientes' && (
+              <ClientesPage triggerCreateCliente={triggerCreateCliente} />
+            )}
             {activeTab === 'servicios' && <ServiciosPage />}
             {activeTab === 'caja' && <CajaPage />}
             {activeTab === 'reportes' && <ReportesPage />}
@@ -149,7 +197,10 @@ const MainLayout: React.FC = () => {
           <button
             type="button"
             className={`bottom-nav-item ${activeTab === 'comprobantes' ? 'active' : ''}`}
-            onClick={() => handleTabChange('comprobantes')}
+            onClick={() => {
+              setComprobanteFilterPreset(null);
+              handleTabChange('comprobantes');
+            }}
           >
             <Receipt size={20} />
             <span>Tickets</span>

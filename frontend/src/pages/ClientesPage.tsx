@@ -3,7 +3,11 @@ import { Search, Plus, ChevronLeft, ChevronRight, Edit2, Trash2, X } from 'lucid
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
-export const ClientesPage: React.FC = () => {
+export interface ClientesPageProps {
+  triggerCreateCliente?: number;
+}
+
+export const ClientesPage: React.FC<ClientesPageProps> = ({ triggerCreateCliente }) => {
   const [clientesData, setClientesData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -43,6 +47,12 @@ export const ClientesPage: React.FC = () => {
     setForm(initialForm);
     setShowModal(true);
   };
+
+  useEffect(() => {
+    if (triggerCreateCliente && triggerCreateCliente > 0) {
+      handleOpenCreate();
+    }
+  }, [triggerCreateCliente]);
 
   const handleOpenEdit = (c: any) => {
     setEditingClienteId(c.id);

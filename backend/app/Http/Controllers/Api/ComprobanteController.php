@@ -32,12 +32,50 @@ class ComprobanteController extends Controller
             'detalles.servicio'
         ]);
 
+        if ($request->filled('preset')) {
+            $preset = $request->preset;
+            switch ($preset) {
+                case 'activos':
+                    // Todos los comprobantes (menos los recogidos o anulados)
+                    $query->whereNotIn('estado_ropa_id', [4])
+                          ->whereNotIn('estado_comprobante_id', [3]);
+                    break;
+                case 'no_cancelados':
+                    // Comprobantes no cancelados (Debe o Abono)
+                    $query->whereIn('estado_comprobante_id', [1, 2]);
+                    break;
+                case 'cancelados':
+                    // Comprobantes ya cancelados
+                    $query->where('estado_comprobante_id', 4);
+                    break;
+                case 'recogidos_cancelados':
+                    // Recogidos y Cancelados
+                    $query->where('estado_ropa_id', 4)
+                          ->where('estado_comprobante_id', 4);
+                    break;
+                case 'todos':
+                case 'historico':
+                    // Histórico absoluto
+                    break;
+            }
+        }
+
         if ($request->filled('estado_comprobante_id')) {
-            $query->where('estado_comprobante_id', $request->estado_comprobante_id);
+            $val = (string)$request->estado_comprobante_id;
+            if (str_contains($val, ',')) {
+                $query->whereIn('estado_comprobante_id', explode(',', $val));
+            } else {
+                $query->where('estado_comprobante_id', $val);
+            }
         }
 
         if ($request->filled('estado_ropa_id')) {
-            $query->where('estado_ropa_id', $request->estado_ropa_id);
+            $val = (string)$request->estado_ropa_id;
+            if (str_contains($val, ',')) {
+                $query->whereIn('estado_ropa_id', explode(',', $val));
+            } else {
+                $query->where('estado_ropa_id', $val);
+            }
         }
 
         if ($request->filled('search')) {

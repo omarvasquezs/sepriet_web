@@ -472,6 +472,152 @@ input[type="password"]::placeholder,
   display: none;
 }
 
+/* Top Menu Bar Desktop Styles (Java / VJS Style) */
+.top-menu-bar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+}
+
+.top-menu-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 52px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.top-menu-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.top-menu-item {
+  position: relative;
+}
+
+.top-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 11px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.top-menu-btn:hover,
+.top-menu-item.open .top-menu-btn,
+.top-menu-btn.active {
+  background: #f1f5f9;
+  color: #4f46e5;
+}
+
+.top-menu-arrow {
+  transition: transform 0.18s ease;
+  color: #94a3b8;
+}
+
+.top-menu-item:hover .top-menu-arrow,
+.top-menu-item.open .top-menu-arrow {
+  transform: rotate(180deg);
+  color: #4f46e5;
+}
+
+.top-menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.15);
+  min-width: 250px;
+  padding: 6px;
+  z-index: 200;
+  margin-top: 2px;
+  animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Open on hover on desktop */
+@media (min-width: 1024px) {
+  .top-menu-item:hover .top-menu-dropdown {
+    display: block;
+  }
+}
+
+.top-menu-item.open .top-menu-dropdown {
+  display: block;
+}
+
+.top-menu-subitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+}
+
+.top-menu-subitem:hover {
+  background: #f1f5f9;
+  color: #4f46e5;
+}
+
+.top-menu-shortcut-badge {
+  font-size: 0.7rem;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.top-menu-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 6px;
+}
+
+/* Hide sidebar on desktop as top menu bar replaces it */
+@media (min-width: 1024px) {
+  .sidebar-container {
+    display: none !important;
+  }
+}
+
 /* ==========================================================================
    Responsive Breakpoints
    ========================================================================== */

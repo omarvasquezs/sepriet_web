@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download, Filter } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -11,7 +11,21 @@ const toDateTimeLocal = (d: Date = new Date()) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export const ComprobantesPage: React.FC = () => {
+export interface ComprobantesPageProps {
+  filterPreset?: {
+    id: string;
+    label: string;
+    timestamp: number;
+  } | null;
+  triggerCreateTicket?: number;
+  onClearFilterPreset?: () => void;
+}
+
+export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
+  filterPreset,
+  triggerCreateTicket,
+  onClearFilterPreset,
+}) => {
   const { user } = useAuth();
   const isAdmin = (user?.role_id === 1) || Boolean(user?.role && user.role.toLowerCase().includes('admin'));
 
@@ -70,15 +84,15 @@ export const ComprobantesPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const params: any = { search, page };
+      if (estadoPagoFilter) params.estado_comprobante_id = estadoPagoFilter;
+      if (estadoRopaFilter) params.estado_ropa_id = estadoRopaFilter;
+      if (filterPreset?.id && !estadoPagoFilter && !estadoRopaFilter) {
+        params.preset = filterPreset.id;
+      }
+
       const [compRes, catRes] = await Promise.all([
-        api.get('/comprobantes', {
-          params: {
-            search,
-            estado_comprobante_id: estadoPagoFilter,
-            estado_ropa_id: estadoRopaFilter,
-            page
-          }
-        }),
+        api.get('/comprobantes', { params }),
         api.get('/catalogos')
       ]);
 
@@ -91,9 +105,26 @@ export const ComprobantesPage: React.FC = () => {
     }
   };
 
+  // Reset filters when filterPreset changes from top navigation
+  useEffect(() => {
+    if (filterPreset) {
+      setEstadoPagoFilter('');
+      setEstadoRopaFilter('');
+      setSearch('');
+      setPage(1);
+    }
+  }, [filterPreset?.timestamp]);
+
+  // Open modal when triggerCreateTicket changes (e.g. Ctrl+N or top menu)
+  useEffect(() => {
+    if (triggerCreateTicket && triggerCreateTicket > 0) {
+      handleOpenCreateModal();
+    }
+  }, [triggerCreateTicket]);
+
   useEffect(() => {
     fetchData();
-  }, [search, estadoPagoFilter, estadoRopaFilter, page]);
+  }, [search, estadoPagoFilter, estadoRopaFilter, filterPreset?.timestamp, page]);
 
   // Loaders for Select2 with search & lazy loading
   const loadClienteOptions = useCallback(async (query: string, pageNum: number) => {
@@ -388,6 +419,50 @@ export const ComprobantesPage: React.FC = () => {
 
   return (
     <div className="page-container">
+      {/* Active Filter Preset Notification from Top Menu CONSULTAR */}
+      {filterPreset && !estadoPagoFilter && !estadoRopaFilter && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#eef2ff',
+            border: '1px solid #c7d2fe',
+            padding: '10px 16px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            fontSize: '0.88rem',
+            color: '#3730a3',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Filter size={18} color="#4f46e5" />
+            <span>Filtro activo desde menú Consultar: <strong>{filterPreset.label}</strong></span>
+          </div>
+          {onClearFilterPreset && (
+            <button
+              type="button"
+              onClick={onClearFilterPreset}
+              style={{
+                background: '#ffffff',
+                border: '1px solid #c7d2fe',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#4f46e5',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <X size={14} /> Quitar filtro
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
           <div className="comprobantes-search-wrapper">
