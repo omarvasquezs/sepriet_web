@@ -1151,6 +1151,7 @@ input[type="password"]::placeholder,
   width: 96vw;
   max-height: 94vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px 28px;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
   margin: auto;
@@ -1160,15 +1161,18 @@ input[type="password"]::placeholder,
 .comprobante-vjs-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 992px) {
   .comprobante-vjs-grid {
-    grid-template-columns: 65% 35%;
-    gap: 32px;
+    grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+    gap: 28px;
   }
 }
+
 
 .comprobante-vjs-table-container {
   overflow-x: auto;
