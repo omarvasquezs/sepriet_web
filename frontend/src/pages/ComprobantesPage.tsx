@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download, Filter } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download, Filter, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -1413,79 +1413,157 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
       {/* Modal Rápido Añadir Nuevo Cliente */}
       {showQuickClienteModal && (
-        <div className="modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="modal-content" style={{ maxWidth: '480px', padding: '24px' }}>
-            <div className="modal-header">
-              <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
-                AÑADIR NUEVO CLIENTE
-              </h3>
+        <div
+          className="modal-overlay"
+          style={{
+            zIndex: 100050,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)'
+          }}
+          onClick={() => setShowQuickClienteModal(false)}
+        >
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: '520px',
+              padding: '26px 28px',
+              borderRadius: '16px',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ marginBottom: '18px', paddingBottom: '14px', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#eff6ff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0d6efd'
+                  }}
+                >
+                  <UserPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.25rem', color: '#0f172a' }}>
+                    AÑADIR NUEVO CLIENTE
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                    Registrar datos para asociar directamente al comprobante
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setShowQuickClienteModal(false)}
+                title="Cerrar"
               >
                 <X size={20} />
               </button>
             </div>
+
             <form onSubmit={handleQuickClienteSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                <div>
-                  <label className="form-label">Nombres / Razón Social *</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '22px' }}>
+                {/* Nombres / Razón Social */}
+                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
+                    Nombres y Apellidos / Razón Social *
+                  </label>
                   <input
                     type="text"
                     className="form-input"
                     required
-                    placeholder="Nombres completos o razón social"
+                    placeholder="EJ: JUAN PÉREZ O COMERCIAL S.A.C."
                     value={quickClienteForm.nombres}
                     onChange={(e) => setQuickClienteForm({ ...quickClienteForm, nombres: e.target.value.toUpperCase() })}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
-                <div>
-                  <label className="form-label">DNI / RUC</label>
+
+                {/* DNI / RUC y Teléfono */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
+                      DNI / RUC
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="8 u 11 DÍGITOS"
+                      value={quickClienteForm.dni}
+                      onChange={(e) => setQuickClienteForm({ ...quickClienteForm, dni: e.target.value })}
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
+                      Teléfono (WhatsApp)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="9 DÍGITOS"
+                      value={quickClienteForm.telefono}
+                      onChange={(e) => setQuickClienteForm({ ...quickClienteForm, telefono: e.target.value })}
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Dirección */}
+                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
+                    Dirección (Opcional)
+                  </label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="8 u 11 dígitos"
-                    value={quickClienteForm.dni}
-                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, dni: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Teléfono (WhatsApp)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="9 dígitos"
-                    value={quickClienteForm.telefono}
-                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, telefono: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Dirección (Opcional)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Dirección..."
+                    placeholder="AV., JR., CALLE O REFERENCIA..."
                     value={quickClienteForm.direccion}
                     onChange={(e) => setQuickClienteForm({ ...quickClienteForm, direccion: e.target.value.toUpperCase() })}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowQuickClienteModal(false)}
+                  style={{
+                    padding: '9px 18px',
+                    fontSize: '0.88rem',
+                    fontWeight: 600,
+                    borderRadius: '8px'
+                  }}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   className="btn-primary"
-                  style={{ backgroundColor: '#0d6efd', borderColor: '#0d6efd', fontWeight: 700 }}
+                  style={{
+                    padding: '9px 20px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    backgroundColor: '#0d6efd',
+                    borderColor: '#0d6efd',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(13, 110, 253, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
                 >
-                  Guardar y Seleccionar
+                  <Plus size={16} /> Guardar y Seleccionar
                 </button>
               </div>
             </form>
