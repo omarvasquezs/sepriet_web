@@ -57,135 +57,161 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`sidebar-container ${isOpen ? 'sidebar-open' : ''}`}
         style={{
-          width: '280px',
+          width: 'min(340px, 86vw)',
           background: '#ffffff',
-          borderRight: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '20px 16px',
           height: '100vh',
           position: 'fixed',
           top: 0,
           left: 0,
-          boxShadow: '4px 0 25px rgba(0, 0, 0, 0.12)',
+          bottom: 0,
+          boxShadow: '4px 0 30px rgba(15, 23, 42, 0.18)',
           zIndex: 1000,
-          overflowY: 'auto',
+          overflow: 'hidden',
         }}
       >
-        <div>
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '20px',
-              paddingBottom: '12px',
-              borderBottom: '1px solid #f1f5f9',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  color: 'white',
-                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)',
-                }}
-              >
-                S
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>SEPRIET</h2>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>Sistema de Lavandería 1.0</p>
-              </div>
+        {/* Header - Fixed at Top */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 18px',
+            borderBottom: '1px solid #f1f5f9',
+            flexShrink: 0,
+            background: '#ffffff',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '1.15rem',
+                color: 'white',
+                boxShadow: '0 3px 10px rgba(79, 70, 229, 0.3)',
+                flexShrink: 0,
+              }}
+            >
+              S
             </div>
-
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  padding: '6px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#f1f5f9',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <X size={18} />
-              </button>
-            )}
+            <div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.2px' }}>
+                SEPRIET
+              </h2>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
+                Sistema de Lavandería 1.0
+              </p>
+            </div>
           </div>
 
-          {/* Quick Home */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                border: 'none',
+                background: '#f1f5f9',
+                color: '#475569',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.15s ease',
+              }}
+              aria-label="Cerrar menú"
+            >
+              <X size={20} />
+            </button>
+          )}
+        </div>
+
+        {/* Scrollable Navigation Body */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            padding: '16px 14px 20px 14px',
+          }}
+        >
+          {/* Dashboard Principal */}
           <button
             type="button"
             onClick={() => handleSelectTab('dashboard')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '12px',
               width: '100%',
-              padding: '10px 14px',
-              borderRadius: '8px',
+              padding: '12px 14px',
+              minHeight: '48px',
+              borderRadius: '10px',
               border: 'none',
               background: activeTab === 'dashboard' ? '#eef2ff' : 'transparent',
-              color: activeTab === 'dashboard' ? '#4f46e5' : '#334155',
-              fontWeight: activeTab === 'dashboard' ? 700 : 500,
-              fontSize: '0.88rem',
+              color: activeTab === 'dashboard' ? '#4f46e5' : '#1e293b',
+              fontWeight: activeTab === 'dashboard' ? 700 : 600,
+              fontSize: '0.94rem',
               cursor: 'pointer',
-              marginBottom: '12px',
+              marginBottom: '16px',
               textAlign: 'left',
+              transition: 'background 0.15s ease',
             }}
           >
-            <LayoutDashboard size={18} color={activeTab === 'dashboard' ? '#4f46e5' : '#64748b'} />
+            <LayoutDashboard size={20} color={activeTab === 'dashboard' ? '#4f46e5' : '#64748b'} />
             <span>Dashboard Principal</span>
           </button>
 
           {/* Group 1: REGISTRAR */}
-          <div style={{ marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <span
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                padding: '0 8px',
+                display: 'block',
+                marginBottom: '8px',
+              }}
+            >
               Registrar
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button
                 type="button"
                 onClick={() => handleAction(onRegistrarComprobante)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  gap: '12px',
                   width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: 'none',
+                  padding: '12px 14px',
+                  minHeight: '48px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
                   background: '#f8fafc',
                   color: '#0f172a',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
+                  fontSize: '0.94rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileText size={16} color="#4f46e5" />
-                  <span>Comprobante</span>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: '#6366f1', background: '#e0e7ff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
-                  Ctrl+N
-                </span>
+                <FileText size={20} color="#4f46e5" />
+                <span>Comprobante</span>
               </button>
 
               <button
@@ -194,50 +220,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: 'none',
+                  padding: '12px 14px',
+                  minHeight: '48px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
                   background: '#f8fafc',
                   color: '#0f172a',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
+                  fontSize: '0.94rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <Users size={16} color="#0284c7" />
+                <Users size={20} color="#0284c7" />
                 <span>Cliente</span>
               </button>
             </div>
           </div>
 
           {/* Group 2: CONSULTAR */}
-          <div style={{ marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <span
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                padding: '0 8px',
+                display: 'block',
+                marginBottom: '8px',
+              }}
+            >
               Consultar
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <button
                 type="button"
                 onClick={() => handleAction(() => onConsultarComprobantes?.('activos', 'Todos los Comprobantes (Activos)'))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#334155',
-                  fontSize: '0.84rem',
+                  color: '#1e293b',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <Layers size={15} color="#4f46e5" />
+                <Layers size={19} color="#4f46e5" />
                 <span>Comprobantes Activos</span>
               </button>
 
@@ -247,19 +287,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#334155',
-                  fontSize: '0.84rem',
+                  color: '#1e293b',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <AlertCircle size={15} color="#ea580c" />
+                <AlertCircle size={19} color="#ea580c" />
                 <span>No Cancelados (Debe/Abono)</span>
               </button>
 
@@ -269,19 +311,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#334155',
-                  fontSize: '0.84rem',
+                  color: '#1e293b',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <CheckCircle2 size={15} color="#16a34a" />
+                <CheckCircle2 size={19} color="#16a34a" />
                 <span>Ya Cancelados</span>
               </button>
 
@@ -291,19 +335,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#334155',
-                  fontSize: '0.84rem',
+                  color: '#1e293b',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <Archive size={15} color="#64748b" />
+                <Archive size={19} color="#64748b" />
                 <span>Recogidos y Cancelados</span>
               </button>
 
@@ -313,19 +359,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: 'transparent',
-                  color: '#334155',
-                  fontSize: '0.84rem',
+                  color: '#1e293b',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
               >
-                <History size={15} color="#6366f1" />
+                <History size={19} color="#6366f1" />
                 <span>Histórico (Todos)</span>
               </button>
 
@@ -335,20 +383,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: activeTab === 'clientes' ? '#eef2ff' : 'transparent',
-                  color: activeTab === 'clientes' ? '#4f46e5' : '#334155',
-                  fontSize: '0.84rem',
+                  color: activeTab === 'clientes' ? '#4f46e5' : '#1e293b',
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  fontWeight: activeTab === 'clientes' ? 700 : 500,
+                  fontWeight: activeTab === 'clientes' ? 700 : 600,
                 }}
               >
-                <Users size={15} color="#0284c7" />
+                <Users size={19} color="#0284c7" />
                 <span>Directorio de Clientes</span>
               </button>
             </div>
@@ -356,31 +405,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Group 3: OPCIONES AVANZADAS */}
           {isAdmin && (
-            <div style={{ marginBottom: '14px' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px' }}>
+            <div style={{ marginBottom: '18px' }}>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  padding: '0 8px',
+                  display: 'block',
+                  marginBottom: '8px',
+                }}
+              >
                 Opciones Avanzadas
               </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <button
                   type="button"
                   onClick={() => handleSelectTab('servicios')}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '12px',
                     width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
+                    padding: '11px 14px',
+                    minHeight: '44px',
+                    borderRadius: '8px',
                     border: 'none',
                     background: activeTab === 'servicios' ? '#eef2ff' : 'transparent',
-                    color: activeTab === 'servicios' ? '#4f46e5' : '#334155',
-                    fontSize: '0.84rem',
+                    color: activeTab === 'servicios' ? '#4f46e5' : '#1e293b',
+                    fontSize: '0.92rem',
                     cursor: 'pointer',
                     textAlign: 'left',
-                    fontWeight: activeTab === 'servicios' ? 700 : 500,
+                    fontWeight: activeTab === 'servicios' ? 700 : 600,
                   }}
                 >
-                  <Shirt size={15} color="#8b5cf6" />
+                  <Shirt size={19} color="#8b5cf6" />
                   <span>Servicios y Tarifas</span>
                 </button>
 
@@ -390,20 +451,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '12px',
                     width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
+                    padding: '11px 14px',
+                    minHeight: '44px',
+                    borderRadius: '8px',
                     border: 'none',
                     background: activeTab === 'usuarios' ? '#eef2ff' : 'transparent',
-                    color: activeTab === 'usuarios' ? '#4f46e5' : '#334155',
-                    fontSize: '0.84rem',
+                    color: activeTab === 'usuarios' ? '#4f46e5' : '#1e293b',
+                    fontSize: '0.92rem',
                     cursor: 'pointer',
                     textAlign: 'left',
-                    fontWeight: activeTab === 'usuarios' ? 700 : 500,
+                    fontWeight: activeTab === 'usuarios' ? 700 : 600,
                   }}
                 >
-                  <Shield size={15} color="#3b82f6" />
+                  <Shield size={19} color="#3b82f6" />
                   <span>Usuarios y Roles</span>
                 </button>
               </div>
@@ -411,31 +473,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Group 4: CAJA & REPORTES */}
-          <div style={{ marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', padding: '0 10px' }}>
+          <div style={{ marginBottom: '18px' }}>
+            <span
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                padding: '0 8px',
+                display: 'block',
+                marginBottom: '8px',
+              }}
+            >
               Caja y Reportes
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <button
                 type="button"
                 onClick={() => handleSelectTab('caja')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: activeTab === 'caja' ? '#eef2ff' : 'transparent',
-                  color: activeTab === 'caja' ? '#4f46e5' : '#334155',
-                  fontSize: '0.84rem',
+                  color: activeTab === 'caja' ? '#4f46e5' : '#1e293b',
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  fontWeight: activeTab === 'caja' ? 700 : 500,
+                  fontWeight: activeTab === 'caja' ? 700 : 600,
                 }}
               >
-                <Wallet size={15} color="#059669" />
+                <Wallet size={19} color="#059669" />
                 <span>Control de Caja Chica</span>
               </button>
 
@@ -445,34 +519,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
+                  padding: '11px 14px',
+                  minHeight: '44px',
+                  borderRadius: '8px',
                   border: 'none',
                   background: activeTab === 'reportes' ? '#eef2ff' : 'transparent',
-                  color: activeTab === 'reportes' ? '#4f46e5' : '#334155',
-                  fontSize: '0.84rem',
+                  color: activeTab === 'reportes' ? '#4f46e5' : '#1e293b',
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  fontWeight: activeTab === 'reportes' ? 700 : 500,
+                  fontWeight: activeTab === 'reportes' ? 700 : 600,
                 }}
               >
-                <TrendingUp size={15} color="#4f46e5" />
+                <TrendingUp size={19} color="#4f46e5" />
                 <span>Reportes Financieros</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Footer User & Logout */}
-        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+        {/* Footer User & Logout - Fixed at Bottom */}
+        <div
+          style={{
+            borderTop: '1px solid #e2e8f0',
+            padding: '14px 18px',
+            paddingBottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
+            background: '#ffffff',
+            flexShrink: 0,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>
                 {user?.name || user?.username || 'Usuario'}
               </p>
-              <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                 {isAdmin ? 'Administrador' : 'Operador'}
               </p>
             </div>
@@ -483,18 +566,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 background: '#fef2f2',
                 border: '1px solid #fecaca',
                 color: '#dc2626',
-                padding: '6px 10px',
-                borderRadius: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.78rem',
+                gap: '6px',
+                fontSize: '0.88rem',
                 fontWeight: 700,
+                minHeight: '40px',
+                transition: 'background 0.15s ease',
               }}
               title="Cerrar sesión"
             >
-              <LogOut size={14} />
+              <LogOut size={16} />
               <span>Salir</span>
             </button>
           </div>

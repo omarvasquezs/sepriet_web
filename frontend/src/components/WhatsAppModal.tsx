@@ -316,7 +316,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ zIndex: 100050 }}>
       <div
         className="modal-content"
         style={{

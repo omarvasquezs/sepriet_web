@@ -50,19 +50,6 @@ const MainLayout: React.FC = () => {
     }
   }, [user]);
 
-  // Global keyboard shortcut Ctrl+N / Cmd+N for New Comprobante
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        handleTabChange('comprobantes');
-        setTriggerCreateTicket(prev => prev + 1);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const handleTabChange = (newTab: string) => {
     setIsSidebarOpen(false);
     if (newTab === activeTab) return;

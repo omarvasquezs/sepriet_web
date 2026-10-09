@@ -112,14 +112,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
             className="navbar-hamburger-btn"
             onClick={onToggleMobileDrawer}
             title="Abrir menú"
-            style={{
-              display: 'none',
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              padding: '7px 9px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
+            aria-label="Abrir menú de navegación"
           >
             <Menu size={20} color="#0f172a" />
           </button>
@@ -155,10 +148,13 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               S
             </div>
             <div className="top-menu-brand-text">
-              <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#0f172a', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+              <span className="desktop-brand-title top-menu-brand-title">
                 LAVANDERIA SEPRIET
               </span>
-              <span className="hide-on-mobile" style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginTop: '-2px' }}>
+              <span className="mobile-brand-title">
+                SEPRIET
+              </span>
+              <span className="top-menu-brand-subtitle">
                 Sistema 1.0
               </span>
             </div>
@@ -166,7 +162,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
         </div>
 
         {/* Center: Desktop Navigation Dropdown Menus (Java / VJS structure) */}
-        <nav className="top-menu-nav hide-on-mobile">
+        <nav className="top-menu-nav">
           {/* 1. REGISTRAR */}
           <div
             className={`top-menu-item ${openDropdown === 'registrar' ? 'open' : ''}`}
@@ -191,7 +187,6 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   <FileText size={16} color="#4f46e5" />
                   <span>Comprobante</span>
                 </div>
-                <span className="top-menu-shortcut-badge">Ctrl+N</span>
               </button>
               <button
                 type="button"
@@ -406,17 +401,6 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               </button>
             </div>
           </div>
-
-          {/* 6. SALIR / CERRAR SESIÓN */}
-          <button
-            type="button"
-            className="top-menu-btn"
-            onClick={logout}
-            style={{ color: '#ef4444' }}
-            title="Cerrar sesión"
-          >
-            <span>Salir</span>
-          </button>
         </nav>
 
         {/* Right Side: Status Badge, Live Clock, User Pill */}
@@ -443,13 +427,14 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
             >
               <Wallet size={14} />
               <span>
-                <span className="hide-on-mobile">Caja: </span>S/ {saldoEfectivo !== null ? saldoEfectivo.toFixed(2) : '0.00'}
+                <span className="desktop-caja-text">Caja: </span>S/ {saldoEfectivo !== null ? saldoEfectivo.toFixed(2) : '0.00'}
               </span>
             </div>
           ) : (
             <button
               type="button"
               onClick={onOpenAperturaModal}
+              className="top-menu-caja-pill cerrada"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -467,19 +452,21 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               title="Caja no aperturada. Clic para aperturar."
             >
               <Unlock size={14} />
-              <span><span className="hide-on-mobile">Caja Cerrada - </span>Abrir</span>
+              <span className="desktop-caja-text">Caja Cerrada - Abrir</span>
+              <span className="mobile-caja-text">Abrir Caja</span>
             </button>
           )}
 
-          {/* Clock */}
-          <div className="hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '0.8rem', fontWeight: 500, paddingLeft: '4px' }}>
+          {/* Clock (Desktop Only >= 1024px) */}
+          <div className="top-menu-clock">
             <Clock size={14} />
             <span>{time}</span>
           </div>
 
-          {/* User & Logout Badge */}
-          <div className="hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
+          {/* Desktop User & Logout Badge (Desktop Only >= 1024px) */}
+          <div className="top-menu-desktop-user" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div
+              className="top-menu-user-badge"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -511,7 +498,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
             <button
               type="button"
               onClick={logout}
-              className="btn-secondary"
+              className="btn-secondary top-menu-logout-btn"
               style={{
                 padding: '5px 8px',
                 display: 'flex',
@@ -523,10 +510,23 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 cursor: 'pointer',
               }}
               title="Cerrar sesión"
+              aria-label="Cerrar sesión"
             >
               <LogOut size={14} />
             </button>
           </div>
+
+          {/* Mobile & Tablet User Avatar (< 1024px) */}
+          <button
+            type="button"
+            className="top-menu-mobile-avatar"
+            onClick={onToggleMobileDrawer}
+            title={`Usuario: ${user?.name || user?.username || 'Usuario'} - Tocar para menú y opciones`}
+            aria-label="Abrir perfil y menú"
+          >
+            <span>{(user?.name || user?.username || 'A').charAt(0).toUpperCase()}</span>
+            <span className="avatar-online-dot" />
+          </button>
         </div>
       </div>
     </header>

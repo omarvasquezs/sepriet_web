@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, FileText, X, Download, Filter, UserPlus } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -135,7 +135,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
   }, [filterPreset?.timestamp]);
 
-  // Open modal when triggerCreateTicket changes (e.g. Ctrl+N or top menu)
+  // Open modal when triggerCreateTicket changes (e.g. from top menu)
   useEffect(() => {
     if (triggerCreateTicket && triggerCreateTicket > 0) {
       handleOpenCreateModal();
@@ -463,18 +463,6 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     return rawUrl;
   };
 
-  const handleDownloadPdf = async (ticketId: number) => {
-    try {
-      const res = await api.get(`/comprobantes/${ticketId}/pdf`);
-      const targetUrl = resolvePdfUrl(res.data?.url);
-      if (targetUrl) {
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'No se pudo generar el comprobante en PDF');
-    }
-  };
-
   const handleOpenPrintModal = async (ticket: any) => {
     setSelectedTicket(ticket);
     setShowPrintModal(true);
@@ -603,7 +591,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         </div>
       )}
 
-      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
           <div className="comprobantes-search-wrapper">
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
@@ -665,29 +653,29 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Código</th>
-                    <th>Cliente</th>
-                    <th>Fecha</th>
-                    <th>Estado Pago</th>
-                    <th>Estado Ropa</th>
-                    <th>Total</th>
-                    <th>Abonado</th>
-                    <th>Restante</th>
-                    <th>Acciones</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '95px' }}>Código</th>
+                    <th style={{ minWidth: '160px' }}>Cliente</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '95px' }}>Fecha</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Estado Pago</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '130px' }}>Estado Ropa</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Total</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Abonado</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Restante</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '160px', textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comprobantesData.data.map((t: any) => (
                     <tr key={t.id} className="row-item">
-                      <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
+                      <td style={{ fontWeight: 700, color: '#4f46e5', whiteSpace: 'nowrap' }}>{t.cod_comprobante || `N° ${t.id}`}</td>
                       <td style={{ fontWeight: 600, color: '#0f172a' }}>{t.cliente?.nombres || 'Cliente Genérico'}</td>
-                      <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
-                      <td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
                         <span className={`badge ${getBadgeClassPago(t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre)}`}>
                           {t.estado_comprobante?.nom_estado || t.estado_comprobante?.nombre || 'DEBE'}
                         </span>
                       </td>
-                      <td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
                         <select
                           className="form-select"
                           style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 600 }}
@@ -699,17 +687,28 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           ))}
                         </select>
                       </td>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
-                      <td style={{ color: '#059669', fontWeight: 600 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
-                      <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700 }}>
+                      <td style={{ fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
+                      <td style={{ color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>
+                      <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         S/ {Number(t.monto_restante).toFixed(2)}
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                           {Number(t.monto_restante) > 0 && (
                             <button
                               className="btn-secondary"
-                              style={{ padding: '4px 8px', fontSize: '0.78rem' }}
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                color: '#059669',
+                                borderColor: '#a7f3d0',
+                                background: '#ecfdf5',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                minHeight: '34px',
+                              }}
                               title="Registrar Abono"
                               onClick={() => {
                                 setSelectedTicket(t);
@@ -718,36 +717,24 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                                 setShowAbonoModal(true);
                               }}
                             >
-                              <DollarSign size={14} color="#059669" /> Abono
+                              <DollarSign size={15} color="#059669" /> Abono
                             </button>
                           )}
                           <button
-                            className="btn-secondary"
-                            style={{ padding: '4px 8px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4' }}
-                            title="Enviar por WhatsApp"
-                            onClick={() => {
-                              setWhatsAppTicket(t);
-                              setWhatsAppActionType('ticket');
-                              setShowWhatsAppModal(true);
+                            className="btn-primary"
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              minHeight: '34px',
                             }}
-                          >
-                            <MessageSquare size={14} />
-                          </button>
-                          <button
-                            className="btn-secondary"
-                            style={{ padding: '4px 8px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff' }}
-                            title="Descargar / Ver PDF"
-                            onClick={() => handleDownloadPdf(t.id)}
-                          >
-                            <FileText size={14} />
-                          </button>
-                          <button
-                            className="btn-secondary"
-                            style={{ padding: '4px 8px' }}
-                            title="Imprimir / Vista Previa"
+                            title="Ver Comprobante, Imprimir, Descargar o Enviar por WhatsApp"
                             onClick={() => handleOpenPrintModal(t)}
                           >
-                            <Printer size={14} />
+                            <Printer size={15} /> Ver / Imprimir
                           </button>
                         </div>
                       </td>
@@ -811,12 +798,25 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                     </select>
                   </div>
 
-                  <div className="mobile-ticket-actions">
+                  <div className="mobile-ticket-actions" style={{ display: 'flex', gap: '8px' }}>
                     {Number(t.monto_restante) > 0 && (
                       <button
                         type="button"
                         className="btn-secondary"
-                        style={{ padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, color: '#059669', borderColor: '#a7f3d0', background: '#ecfdf5', flex: '1 1 auto' }}
+                        style={{
+                          padding: '10px 14px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          color: '#059669',
+                          borderColor: '#a7f3d0',
+                          background: '#ecfdf5',
+                          flex: 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          minHeight: '40px',
+                        }}
                         title="Registrar Abono"
                         onClick={() => {
                           setSelectedTicket(t);
@@ -825,39 +825,27 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           setShowAbonoModal(true);
                         }}
                       >
-                        <DollarSign size={14} color="#059669" /> Abono
+                        <DollarSign size={16} color="#059669" /> Abono
                       </button>
                     )}
                     <button
                       type="button"
-                      className="btn-secondary"
-                      style={{ padding: '8px 12px', color: '#16a34a', borderColor: '#bbf7d0', background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
-                      title="Enviar por WhatsApp"
-                      onClick={() => {
-                        setWhatsAppTicket(t);
-                        setWhatsAppActionType('ticket');
-                        setShowWhatsAppModal(true);
-                      }}
-                    >
-                      <MessageSquare size={14} /> WhatsApp
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ padding: '8px 12px', color: '#4f46e5', borderColor: '#c7d2fe', background: '#eef2ff', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
-                      title="Descargar / Ver PDF"
-                      onClick={() => handleDownloadPdf(t.id)}
-                    >
-                      <FileText size={14} /> PDF
-                    </button>
-                    <button
-                      type="button"
                       className="btn-primary"
-                      style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', flex: '1 1 auto' }}
-                      title="Imprimir / Vista Previa"
+                      style={{
+                        padding: '10px 14px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        flex: 1,
+                        minHeight: '40px',
+                      }}
+                      title="Ver Comprobante, Imprimir, Descargar o Enviar por WhatsApp"
                       onClick={() => handleOpenPrintModal(t)}
                     >
-                      <Printer size={14} /> Imprimir
+                      <Printer size={16} /> Ver / Imprimir
                     </button>
                   </div>
                 </div>
@@ -1786,6 +1774,27 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
               </button>
 
               <div className="pdf-modal-actions">
+                <button
+                  type="button"
+                  className="btn-secondary pdf-btn-whatsapp"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    color: '#16a34a',
+                    borderColor: '#bbf7d0',
+                    background: '#f0fdf4',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => {
+                    setWhatsAppTicket(selectedTicket);
+                    setWhatsAppActionType('ticket');
+                    setShowWhatsAppModal(true);
+                  }}
+                >
+                  <MessageSquare size={16} /> WhatsApp
+                </button>
                 {printPdfUrl && (
                   <a
                     href={printPdfUrl}
@@ -1802,9 +1811,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       color: '#4f46e5',
                       borderColor: '#c7d2fe',
                       background: '#eef2ff',
+                      fontWeight: 600,
                     }}
                   >
-                    <Download size={15} /> Descargar PDF
+                    <Download size={15} /> Descargar
                   </a>
                 )}
                 <button
@@ -1814,7 +1824,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                   onClick={handlePrintPdfDocument}
                   disabled={printPdfLoading || !printPdfUrl}
                 >
-                  <Printer size={16} /> Imprimir Comprobante
+                  <Printer size={16} /> Imprimir
                 </button>
               </div>
             </div>

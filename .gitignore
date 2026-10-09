@@ -6,3 +6,4 @@ backend/vendor
 backend/.env
 backend/storage/*.key
 backend/storage/logs/*
+.vscode/
