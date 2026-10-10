@@ -661,7 +661,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Total</th>
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Abonado</th>
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Restante</th>
-                    <th style={{ whiteSpace: 'nowrap', minWidth: '160px', textAlign: 'center' }}>Acciones</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '220px', textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -692,8 +692,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         S/ {Number(t.monto_restante).toFixed(2)}
                       </td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '220px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
                           {Number(t.monto_restante) > 0 && (
                             <button
                               className="btn-secondary"
@@ -706,8 +706,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                                 background: '#ecfdf5',
                                 display: 'inline-flex',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '4px',
                                 minHeight: '34px',
+                                flex: '0 0 auto',
                               }}
                               title="Registrar Abono"
                               onClick={() => {
@@ -728,8 +730,11 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                               fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
+                              justifyContent: 'center',
                               gap: '6px',
                               minHeight: '34px',
+                              width: Number(t.monto_restante) > 0 ? 'auto' : '100%',
+                              flex: 1,
                             }}
                             title="Ver Comprobante, Imprimir, Descargar o Enviar por WhatsApp"
                             onClick={() => handleOpenPrintModal(t)}
