@@ -443,10 +443,21 @@ class ComprobanteController extends Controller
         if ($pdfNeedsRegeneration) {
             $local = Local::where('habilitado', 1)->first();
 
+            $empresaRuc = config('services.sunat.ruc', env('EMPRESA_RUC', '20608518855'));
+            if ($local && !empty($local->ruc)) {
+                $empresaRuc = preg_replace('/\D/', '', $local->ruc);
+            }
+
             $tipoComprobanteNombre = match ($comprobante->tipo_comprobante) {
-                'F' => 'FACTURA DE VENTA',
-                'B' => 'BOLETA DE VENTA',
+                'F' => 'FACTURA ELECTRÓNICA',
+                'B' => 'BOLETA DE VENTA ELECTRÓNICA',
                 default => 'NOTA DE VENTA',
+            };
+
+            $tipoComprobanteNombreSunat = match ($comprobante->tipo_comprobante) {
+                'F' => 'FACTURA ELECTRÓNICA',
+                'B' => 'BOLETA DE VENTA ELECTRÓNICA',
+                default => 'NOTA DE VENTA / TICKET',
             };
 
             $badgeClass = match ($comprobante->estado_comprobante_id) {
@@ -461,16 +472,40 @@ class ComprobanteController extends Controller
                 $logoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath));
             }
 
+            // Generación de Código QR según normativa SUNAT
+            $qrString = \App\Services\SunatQrService::buildSunatQrString($comprobante, $local);
+            $qrBase64 = \App\Services\SunatQrService::generateQrBase64($qrString, 3);
+            $codigoHash = \App\Services\SunatQrService::getCodigoHash($comprobante, $local);
+
+            // Cálculos tributarios oficiales
+            $costoTotal = (float)($comprobante->costo_total ?? 0);
+            $opGravadas = 0.00;
+            $igv = 0.00;
+            if ($comprobante->tipo_comprobante === 'F' || $comprobante->tipo_comprobante === 'B') {
+                $opGravadas = round($costoTotal / 1.18, 2);
+                $igv = round($costoTotal - $opGravadas, 2);
+            }
+
             $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
                 'comprobante',
                 'local',
+                'empresaRuc',
                 'tipoComprobanteNombre',
+                'tipoComprobanteNombreSunat',
                 'badgeClass',
-                'logoBase64'
+                'logoBase64',
+                'qrBase64',
+                'qrString',
+                'codigoHash',
+                'opGravadas',
+                'igv'
             ));
 
-            // Dimensiones estándar ticket térmico 80mm
-            $pdf->setPaper([0, 0, 226.77, 566.93], 'portrait');
+            // Dimensiones optimizadas para impresora térmica LN-POS80-CX (rollo 80mm de ancho)
+            // 80mm = 226.77 pt. Altura adaptable según cantidad de ítems para corte continuo
+            $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
+            $calculatedHeight = max(566.93, 470 + ($itemCount * 24) + 150);
+            $pdf->setPaper([0, 0, 226.77, $calculatedHeight], 'portrait');
 
             // Asegurar directorio y guardar
             $disk->makeDirectory($relativeDir);
