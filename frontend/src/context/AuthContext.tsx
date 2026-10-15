@@ -8,6 +8,7 @@ export interface User {
   email?: string;
   role_id?: number;
   role: string;
+  permisos?: string[];
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   isAuthTransitioning: boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +48,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    const roleUpper = (user.role || '').toUpperCase();
+    if (user.role_id === 1 || roleUpper.includes('ADMIN')) {
+      return true;
+    }
+    if (!user.permisos || !Array.isArray(user.permisos)) {
+      return false;
+    }
+    return user.permisos.includes(permission);
+  };
+
   const login = (newToken: string, newUser: User) => {
     setIsAuthTransitioning(true);
     localStorage.setItem('token', newToken);
@@ -72,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading, isAuthTransitioning }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading, isAuthTransitioning, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

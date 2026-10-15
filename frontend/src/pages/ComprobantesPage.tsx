@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, UserPlus } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, UserPlus, Ban } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -445,9 +445,25 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
   };
 
+  const handleAnular = async (ticket: any) => {
+    if (!window.confirm(`¿Estás seguro de que deseas ANULAR el comprobante "${ticket.cod_comprobante}"?\nEsta acción revertirá los pagos registrados en caja y el comprobante pasará a estado ANULADO.`)) {
+      return;
+    }
+    try {
+      await api.put(`/comprobantes/${ticket.id}/estado`, { estado_comprobante_id: 3 });
+      fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al anular comprobante');
+    }
+  };
+
   const resolvePdfUrl = (rawUrl?: string): string => {
     if (!rawUrl) return '';
     try {
+      if (rawUrl.includes('/storage/')) {
+        const storageIndex = rawUrl.indexOf('/storage/');
+        return rawUrl.substring(storageIndex);
+      }
       const apiBase = import.meta.env.VITE_API_BASE_URL;
       if (apiBase && (rawUrl.includes('localhost:8000') || rawUrl.startsWith('/'))) {
         const apiOrigin = new URL(apiBase, window.location.origin).origin;
@@ -741,6 +757,29 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           >
                             <Printer size={15} /> Ver / Imprimir
                           </button>
+                          {t.estado_comprobante_id !== 3 && (
+                            <button
+                              className="btn-secondary"
+                              style={{
+                                padding: '6px 8px',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                color: '#dc2626',
+                                borderColor: '#fecaca',
+                                background: '#fef2f2',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                minHeight: '34px',
+                                flex: '0 0 auto',
+                              }}
+                              title="Anular comprobante"
+                              onClick={() => handleAnular(t)}
+                            >
+                              <Ban size={15} color="#dc2626" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -852,6 +891,30 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                     >
                       <Printer size={16} /> Ver / Imprimir
                     </button>
+                    {t.estado_comprobante_id !== 3 && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        style={{
+                          padding: '10px 12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          color: '#dc2626',
+                          borderColor: '#fecaca',
+                          background: '#fef2f2',
+                          minHeight: '40px',
+                          flex: '0 0 auto',
+                        }}
+                        title="Anular comprobante"
+                        onClick={() => handleAnular(t)}
+                      >
+                        <Ban size={16} color="#dc2626" /> Anular
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

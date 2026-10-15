@@ -22,6 +22,7 @@ class RoleController extends Controller
             'nom_rol' => 'sometimes|string|max:100',
             'role_name' => 'sometimes|string|max:100',
             'habilitado' => 'boolean',
+            'permisos' => 'nullable|array',
         ]);
 
         $name = trim($validated['nombre'] ?? $validated['nom_rol'] ?? $validated['role_name'] ?? 'Nuevo Rol');
@@ -42,6 +43,7 @@ class RoleController extends Controller
 
         $data = [
             'habilitado' => $request->boolean('habilitado', true),
+            'permisos' => $validated['permisos'] ?? [],
         ];
 
         if (Schema::hasColumn('roles', 'nom_rol')) {
@@ -70,11 +72,16 @@ class RoleController extends Controller
             'nom_rol' => 'sometimes|string|max:100',
             'role_name' => 'sometimes|string|max:100',
             'habilitado' => 'boolean',
+            'permisos' => 'nullable|array',
         ]);
 
         $data = [];
         if ($request->has('habilitado')) {
             $data['habilitado'] = $request->boolean('habilitado');
+        }
+
+        if ($request->has('permisos')) {
+            $data['permisos'] = $validated['permisos'] ?? [];
         }
 
         $name = isset($validated['nombre']) || isset($validated['nom_rol']) || isset($validated['role_name'])

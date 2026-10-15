@@ -76,6 +76,14 @@ class ServicioController extends Controller
     public function destroy($id)
     {
         $servicio = Servicio::findOrFail($id);
+
+        $hasDetails = \App\Models\ComprobanteDetalle::where('servicio_id', $id)->exists();
+        if ($hasDetails) {
+            return response()->json([
+                'message' => 'No se puede eliminar el servicio porque tiene comprobantes históricos asociados. Puede deshabilitarlo para que no aparezca en nuevas ventas.'
+            ], 422);
+        }
+
         $servicio->delete();
 
         return response()->json(['message' => 'Servicio eliminado correctamente']);

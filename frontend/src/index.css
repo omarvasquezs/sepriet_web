@@ -1438,4 +1438,113 @@ input[type="password"]::placeholder,
   background-color: #ffffff;
 }
 
+/* ==========================================================================
+   Mobile Optimization (Dashboard, Usuarios, Modals, Forms)
+   ========================================================================== */
+
+/* Dashboard Responsive Layout */
+.dashboard-hero-banner {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e293b 100%);
+  border-radius: 16px;
+  padding: 24px 28px;
+  color: #ffffff;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dashboard-hero-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.dashboard-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.dashboard-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 991px) {
+  .dashboard-content-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-hero-banner {
+    padding: 16px 14px !important;
+    gap: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .dashboard-hero-title {
+    font-size: 1.25rem !important;
+  }
+
+  .dashboard-quick-actions {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-quick-actions button {
+    padding: 12px 10px !important;
+    min-height: 52px !important;
+  }
+
+  .dashboard-quick-actions button > div:first-child {
+    padding: 6px !important;
+  }
+
+  /* Grid Responsive 4: 2x2 cards on mobile */
+  .grid-responsive-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .grid-responsive-4 .glass-card {
+    padding: 14px 12px !important;
+  }
+
+  .grid-responsive-4 h3 {
+    font-size: 1.45rem !important;
+    margin-top: 8px !important;
+  }
+
+  /* Role modal inputs */
+  .role-header-inputs {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .role-matrix-group-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .grid-responsive-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-quick-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
 

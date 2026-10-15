@@ -68,6 +68,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $roleName = $user->role ? ($user->role->nom_rol ?? $user->role->role_name ?? 'Usuario') : 'Usuario';
+        $permisos = $user->role ? ($user->role->permisos ?? []) : [];
 
         return response()->json([
             'token' => $token,
@@ -78,6 +79,7 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'role_id' => $user->role_id,
                 'role' => $roleName,
+                'permisos' => $permisos,
             ]
         ]);
     }
@@ -95,6 +97,7 @@ class AuthController extends Controller
     {
         $user = $request->user()->load('role');
         $roleName = $user->role ? ($user->role->nom_rol ?? $user->role->role_name ?? 'Usuario') : 'Usuario';
+        $permisos = $user->role ? ($user->role->permisos ?? []) : [];
 
         return response()->json([
             'user' => [
@@ -103,6 +106,7 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'role_id' => $user->role_id,
                 'role' => $roleName,
+                'permisos' => $permisos,
             ]
         ]);
     }

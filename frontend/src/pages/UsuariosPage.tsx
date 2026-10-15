@@ -1,12 +1,122 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Shield, User as UserIcon, CheckCircle2, XCircle, KeyRound, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Shield, User as UserIcon, CheckCircle2, XCircle, KeyRound, ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 
-export const UsuariosPage: React.FC = () => {
+export interface UsuariosPageProps {
+  initialTab?: 'usuarios' | 'roles';
+}
+
+interface PermissionItem {
+  id: string;
+  name: string;
+  desc: string;
+}
+
+interface PermissionGroup {
+  module: string;
+  title: string;
+  iconColor: string;
+  items: PermissionItem[];
+}
+
+const PERMISSION_GROUPS: PermissionGroup[] = [
+  {
+    module: 'comprobantes',
+    title: 'Comprobantes y Ventas',
+    iconColor: '#4f46e5',
+    items: [
+      { id: 'dashboard', name: 'Panel Principal (Dashboard)', desc: 'Visualizar métricas clave, estadísticas y tickets recientes' },
+      { id: 'comprobantes_crear', name: 'Registrar Nuevo Comprobante', desc: 'Emitir comprobantes (Boletas, Facturas, Notas de Venta)' },
+      { id: 'comprobantes_consultar', name: 'Consultar e Imprimir', desc: 'Filtrar listado, ver comprobante, imprimir ticket térmico y enviar WhatsApp' },
+      { id: 'comprobantes_abono', name: 'Registrar Abonos y Cobros', desc: 'Cobrar saldos pendientes de tickets emitidos' },
+      { id: 'comprobantes_anular', name: 'Anular Comprobantes', desc: 'Cancelar tickets y revertir movimientos de cobro en caja' },
+    ]
+  },
+  {
+    module: 'clientes',
+    title: 'Clientes',
+    iconColor: '#0284c7',
+    items: [
+      { id: 'clientes', name: 'Gestión de Clientes', desc: 'Registrar, consultar y modificar clientes en el directorio' },
+    ]
+  },
+  {
+    module: 'servicios',
+    title: 'Servicios y Tarifas',
+    iconColor: '#10b981',
+    items: [
+      { id: 'servicios', name: 'Tarifario de Servicios', desc: 'Crear, editar precios y habilitar servicios por kilo/prenda' },
+    ]
+  },
+  {
+    module: 'caja',
+    title: 'Caja Chica y Turnos',
+    iconColor: '#059669',
+    items: [
+      { id: 'caja_apertura', name: 'Apertura de Caja', desc: 'Iniciar turno con monto inicial en efectivo' },
+      { id: 'caja_cierre', name: 'Cierre de Caja y Arqueo', desc: 'Finalizar turno con cuadre físico, teórico y live indicators' },
+      { id: 'caja_egresos', name: 'Registrar Gastos / Egresos', desc: 'Registrar salidas de dinero en efectivo o transferencias' },
+      { id: 'caja_historial', name: 'Historial de Cajas', desc: 'Consultar turnos de cajas cerradas en fechas anteriores' },
+    ]
+  },
+  {
+    module: 'reportes',
+    title: 'Reportes',
+    iconColor: '#8b5cf6',
+    items: [
+      { id: 'reportes', name: 'Reportes Financieros y de Trabajo', desc: 'Ver balances de ingresos, egresos, ganancia neta y volumen de prendas' },
+    ]
+  },
+  {
+    module: 'sistemas',
+    title: 'Sistemas y Seguridad',
+    iconColor: '#d97706',
+    items: [
+      { id: 'sistemas', name: 'Gestión de Usuarios y Perfiles', desc: 'Crear usuarios, configurar roles y asignar permisos en el sistema' },
+    ]
+  },
+];
+
+const ALL_PERMISSION_IDS = PERMISSION_GROUPS.flatMap(g => g.items.map(i => i.id));
+
+const ROLE_PRESETS: Record<string, string[]> = {
+  'ATENCION AL CLIENTE': [
+    'dashboard',
+    'comprobantes_crear',
+    'comprobantes_consultar',
+    'comprobantes_abono',
+    'clientes',
+    'caja_apertura',
+    'caja_egresos'
+  ],
+  'SUPERVISOR': [
+    'dashboard',
+    'comprobantes_crear',
+    'comprobantes_consultar',
+    'comprobantes_abono',
+    'comprobantes_anular',
+    'clientes',
+    'servicios',
+    'caja_apertura',
+    'caja_cierre',
+    'caja_egresos',
+    'caja_historial',
+    'reportes'
+  ],
+  'ADMINISTRADOR': ALL_PERMISSION_IDS,
+};
+
+export const UsuariosPage: React.FC<UsuariosPageProps> = ({ initialTab = 'usuarios' }) => {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>('usuarios');
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // --- State Usuarios ---
   const [usersData, setUsersData] = useState<any>({ data: [], current_page: 1, last_page: 1, total: 0 });
@@ -31,9 +141,14 @@ export const UsuariosPage: React.FC = () => {
   const [loadingRoles, setLoadingRoles] = useState(true);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<number | null>(null);
-  const [roleForm, setRoleForm] = useState({
+  const [roleForm, setRoleForm] = useState<{
+    nombre: string;
+    habilitado: boolean;
+    permisos: string[];
+  }>({
     nombre: '',
     habilitado: true,
+    permisos: [],
   });
 
   // --- Fetch Data ---
@@ -154,17 +269,63 @@ export const UsuariosPage: React.FC = () => {
   // --- Handlers Roles ---
   const handleOpenCreateRole = () => {
     setEditingRoleId(null);
-    setRoleForm({ nombre: '', habilitado: true });
+    setRoleForm({
+      nombre: '',
+      habilitado: true,
+      permisos: [...ROLE_PRESETS['ATENCION AL CLIENTE']],
+    });
     setShowRoleModal(true);
   };
 
   const handleOpenEditRole = (r: any) => {
     setEditingRoleId(r.id);
+    let permisosList: string[] = [];
+    if (Array.isArray(r.permisos)) {
+      permisosList = r.permisos;
+    } else if (typeof r.permisos === 'string') {
+      try {
+        permisosList = JSON.parse(r.permisos);
+      } catch {}
+    } else if (!r.permisos) {
+      const upper = (r.nombre || r.nom_rol || r.role_name || '').toUpperCase();
+      if (upper.includes('ADMIN')) permisosList = ROLE_PRESETS['ADMINISTRADOR'];
+      else if (upper.includes('SUPERVISOR')) permisosList = ROLE_PRESETS['SUPERVISOR'];
+      else permisosList = ROLE_PRESETS['ATENCION AL CLIENTE'];
+    }
+
     setRoleForm({
-      nombre: r.nom_rol || r.role_name || r.nombre || '',
-      habilitado: Boolean(r.habilitado),
+      nombre: r.nombre || r.nom_rol || r.role_name || '',
+      habilitado: r.habilitado !== false,
+      permisos: permisosList,
     });
     setShowRoleModal(true);
+  };
+
+  const handleTogglePermiso = (permId: string) => {
+    setRoleForm(prev => {
+      const exists = prev.permisos.includes(permId);
+      const updated = exists
+        ? prev.permisos.filter(p => p !== permId)
+        : [...prev.permisos, permId];
+      return { ...prev, permisos: updated };
+    });
+  };
+
+  const handleApplyPreset = (presetName: string) => {
+    const list = ROLE_PRESETS[presetName] || [];
+    setRoleForm(prev => ({
+      ...prev,
+      nombre: prev.nombre || presetName,
+      permisos: [...list]
+    }));
+  };
+
+  const handleSelectAllPermisos = () => {
+    setRoleForm(prev => ({ ...prev, permisos: [...ALL_PERMISSION_IDS] }));
+  };
+
+  const handleClearAllPermisos = () => {
+    setRoleForm(prev => ({ ...prev, permisos: [] }));
   };
 
   const handleDeleteRole = async (r: any) => {
@@ -188,10 +349,16 @@ export const UsuariosPage: React.FC = () => {
   const handleSubmitRole = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        nombre: roleForm.nombre,
+        habilitado: roleForm.habilitado,
+        permisos: roleForm.permisos,
+      };
+
       if (editingRoleId) {
-        await api.put(`/roles/${editingRoleId}`, roleForm);
+        await api.put(`/roles/${editingRoleId}`, payload);
       } else {
-        await api.post('/roles', roleForm);
+        await api.post('/roles', payload);
       }
       setShowRoleModal(false);
       fetchRoles();
@@ -205,7 +372,10 @@ export const UsuariosPage: React.FC = () => {
     if (upper.includes('ADMIN')) {
       return { background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' };
     }
-    if (upper.includes('CAJERO') || upper.includes('ASISTENTE')) {
+    if (upper.includes('SUPERVISOR')) {
+      return { background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' };
+    }
+    if (upper.includes('ATENCION') || upper.includes('CLIENTE') || upper.includes('ASISTENTE')) {
       return { background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' };
     }
     return { background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' };
@@ -271,8 +441,8 @@ export const UsuariosPage: React.FC = () => {
         <div>
           {/* Filters & Actions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', width: '320px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '1 1 300px' }}>
+              <div style={{ position: 'relative', width: 'min(320px, 100%)', flex: '1 1 220px' }}>
                 <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
@@ -286,7 +456,7 @@ export const UsuariosPage: React.FC = () => {
 
               <select
                 className="form-select"
-                style={{ width: '180px' }}
+                style={{ width: 'min(180px, 100%)', flex: '1 1 140px' }}
                 value={selectedRoleFilter}
                 onChange={(e) => { setSelectedRoleFilter(e.target.value); setPageUsers(1); }}
               >
@@ -474,6 +644,7 @@ export const UsuariosPage: React.FC = () => {
                     <tr>
                       <th>ID</th>
                       <th>Nombre del Rol</th>
+                      <th style={{ minWidth: '240px' }}>Permisos Asignados</th>
                       <th>Usuarios con este Rol</th>
                       <th style={{ textAlign: 'center' }}>Estado</th>
                       <th style={{ textAlign: 'center' }}>Acciones</th>
@@ -482,6 +653,15 @@ export const UsuariosPage: React.FC = () => {
                   <tbody>
                     {roles.map((r: any) => {
                       const roleName = r.nombre || r.nom_rol || r.role_name;
+                      let rolePerms: string[] = [];
+                      if (Array.isArray(r.permisos)) {
+                        rolePerms = r.permisos;
+                      } else if (typeof r.permisos === 'string') {
+                        try { rolePerms = JSON.parse(r.permisos); } catch {}
+                      }
+
+                      const isAll = rolePerms.length >= ALL_PERMISSION_IDS.length;
+
                       return (
                         <tr key={r.id} className="row-item">
                           <td style={{ fontWeight: 600, color: '#64748b' }}>#{r.id}</td>
@@ -490,6 +670,48 @@ export const UsuariosPage: React.FC = () => {
                               <Shield size={16} color="#4f46e5" />
                               {roleName}
                             </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  background: isAll ? '#ecfdf5' : '#eff6ff',
+                                  color: isAll ? '#059669' : '#2563eb',
+                                  border: isAll ? '1px solid #a7f3d0' : '1px solid #bfdbfe'
+                                }}>
+                                  {rolePerms.length} de {ALL_PERMISSION_IDS.length} módulos
+                                </span>
+                                {isAll && (
+                                  <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>Acceso Total</span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '360px' }}>
+                                {rolePerms.slice(0, 3).map((pId: string) => {
+                                  const item = PERMISSION_GROUPS.flatMap(g => g.items).find(i => i.id === pId);
+                                  return (
+                                    <span key={pId} style={{
+                                      fontSize: '0.7rem',
+                                      background: '#f8fafc',
+                                      border: '1px solid #e2e8f0',
+                                      borderRadius: '4px',
+                                      padding: '1px 6px',
+                                      color: '#475569'
+                                    }}>
+                                      {item ? item.name.split('(')[0].trim() : pId}
+                                    </span>
+                                  );
+                                })}
+                                {rolePerms.length > 3 && (
+                                  <span style={{ fontSize: '0.7rem', color: '#64748b', alignSelf: 'center', fontWeight: 600 }}>
+                                    +{rolePerms.length - 3} más
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </td>
                           <td>
                             <span style={{ padding: '3px 10px', background: '#f1f5f9', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
@@ -508,7 +730,7 @@ export const UsuariosPage: React.FC = () => {
                               <button
                                 className="btn-secondary"
                                 style={{ padding: '4px 8px', color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff' }}
-                                title="Editar Rol"
+                                title="Editar Rol y Permisos"
                                 onClick={() => handleOpenEditRole(r)}
                               >
                                 <Edit2 size={14} />
@@ -602,6 +824,49 @@ export const UsuariosPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Preview card of selected role */}
+              {userForm.role_id && (() => {
+                const selectedRole = roles.find(r => String(r.id) === String(userForm.role_id));
+                if (!selectedRole) return null;
+                const rName = selectedRole.nombre || selectedRole.nom_rol || selectedRole.role_name;
+                const bStyle = getRoleBadgeStyle(rName);
+                let pList: string[] = [];
+                if (Array.isArray(selectedRole.permisos)) pList = selectedRole.permisos;
+                else if (typeof selectedRole.permisos === 'string') {
+                  try { pList = JSON.parse(selectedRole.permisos); } catch {}
+                }
+                const isAll = pList.length >= ALL_PERMISSION_IDS.length;
+
+                return (
+                  <div style={{
+                    marginBottom: '16px',
+                    padding: '10px 14px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '0.825rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', ...bStyle }}>
+                        {rName}
+                      </span>
+                      <span style={{ color: isAll ? '#059669' : '#4f46e5', fontSize: '0.75rem', fontWeight: 700 }}>
+                        {isAll ? 'Acceso Total (Todos los módulos)' : `${pList.length} de ${ALL_PERMISSION_IDS.length} permisos`}
+                      </span>
+                    </div>
+                    <div style={{ color: '#475569', fontSize: '0.75rem', lineHeight: '1.4' }}>
+                      {rName.toUpperCase().includes('ADMIN') ? (
+                        'Este rol posee control total del sistema, incluyendo configuración de seguridad y gestión de usuarios.'
+                      ) : rName.toUpperCase().includes('SUPERVISOR') ? (
+                        'Este rol puede emitir y anular comprobantes, administrar clientes, servicios, arqueo/cierre de caja y reportes financieros.'
+                      ) : (
+                        'Este rol puede emitir comprobantes de venta, registrar abonos/cobros, consultar clientes y apertura/gastos de caja.'
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="form-group">
                 <label className="form-label">Correo Electrónico (opcional)</label>
                 <input
@@ -660,12 +925,22 @@ export const UsuariosPage: React.FC = () => {
       {/* MODAL ROL */}
       {showRoleModal && (
         <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={20} color="#4f46e5" />
-                {editingRoleId ? 'Editar Rol' : 'Nuevo Rol'}
-              </h3>
+          <div
+            className="modal-content"
+            style={{ maxWidth: '840px', width: '95%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: '24px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="modal-header" style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={22} color="#4f46e5" />
+                  {editingRoleId ? 'Editar Rol y Permisos' : 'Crear Nuevo Rol y Permisos'}
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.825rem', color: '#64748b' }}>
+                  Configura el perfil de acceso y asigna las opciones del sistema habilitadas para este rol.
+                </p>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -676,36 +951,255 @@ export const UsuariosPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitRole}>
-              <div className="form-group">
-                <label className="form-label">Nombre del Rol *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  required
-                  placeholder="Ej: Supervisor, Auditor, etc."
-                  value={roleForm.nombre}
-                  onChange={(e) => setRoleForm({ ...roleForm, nombre: e.target.value.toUpperCase() })}
-                />
+            <form onSubmit={handleSubmitRole} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              {/* Scrollable Body */}
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                {/* Preset Toolbar */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={15} color="#4f46e5" /> Cargar Plantilla Predefinida:
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSelectAllPermisos}
+                        style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '6px', background: '#fff', border: '1px solid #cbd5e1', cursor: 'pointer', fontWeight: 600, color: '#334155' }}
+                      >
+                        Marcar Todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearAllPermisos}
+                        style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '6px', background: '#fff', border: '1px solid #cbd5e1', cursor: 'pointer', fontWeight: 600, color: '#64748b' }}
+                      >
+                        Desmarcar Todos
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset('ATENCION AL CLIENTE')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        background: '#e0f2fe',
+                        border: '1px solid #bae6fd',
+                        color: '#0369a1',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      Plantilla Atención al Cliente
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset('SUPERVISOR')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        background: '#fef3c7',
+                        border: '1px solid #fde68a',
+                        color: '#b45309',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      Plantilla Supervisor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset('ADMINISTRADOR')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        background: '#ede9fe',
+                        border: '1px solid #ddd6fe',
+                        color: '#6d28d9',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      Plantilla Administrador (Total)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Role Name & Enabled */}
+                <div className="role-header-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'center', marginBottom: '20px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Nombre del Rol *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      required
+                      placeholder="Ej: ATENCION AL CLIENTE, SUPERVISOR, etc."
+                      value={roleForm.nombre}
+                      onChange={(e) => setRoleForm({ ...roleForm, nombre: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+
+                  <div style={{ paddingTop: '22px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={roleForm.habilitado}
+                        onChange={(e) => setRoleForm({ ...roleForm, habilitado: e.target.checked })}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>Rol Habilitado</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Permissions Matrix Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '14px' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#1e293b' }}>
+                    Matriz de Permisos por Opciones del Sistema
+                  </h4>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: roleForm.permisos.length > 0 ? '#4f46e5' : '#dc2626' }}>
+                    {roleForm.permisos.length} de {ALL_PERMISSION_IDS.length} permisos habilitados
+                  </span>
+                </div>
+
+                {/* Permission Groups */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {PERMISSION_GROUPS.map((group) => {
+                    const groupAllChecked = group.items.every(item => roleForm.permisos.includes(item.id));
+                    const checkedCount = group.items.filter(i => roleForm.permisos.includes(i.id)).length;
+
+                    const toggleGroup = () => {
+                      if (groupAllChecked) {
+                        const toRemove = new Set(group.items.map(i => i.id));
+                        setRoleForm(prev => ({ ...prev, permisos: prev.permisos.filter(id => !toRemove.has(id)) }));
+                      } else {
+                        const toAdd = group.items.map(i => i.id);
+                        setRoleForm(prev => ({ ...prev, permisos: Array.from(new Set([...prev.permisos, ...toAdd])) }));
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={group.module}
+                        style={{
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          background: '#ffffff'
+                        }}
+                      >
+                        {/* Group Header */}
+                        <div
+                          style={{
+                            padding: '8px 14px',
+                            background: '#f8fafc',
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: group.iconColor }} />
+                            <span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1e293b' }}>{group.title}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>({checkedCount}/{group.items.length})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={toggleGroup}
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#4f46e5',
+                              fontWeight: 600,
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                            }}
+                          >
+                            {groupAllChecked ? 'Desmarcar sección' : 'Marcar sección'}
+                          </button>
+                        </div>
+
+                        {/* Group Checkbox Items */}
+                        <div className="role-matrix-group-grid" style={{ padding: '10px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
+                          {group.items.map((item) => {
+                            const isChecked = roleForm.permisos.includes(item.id);
+                            return (
+                              <label
+                                key={item.id}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleTogglePermiso(item.id);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '10px',
+                                  padding: '8px 10px',
+                                  borderRadius: '8px',
+                                  border: isChecked ? '1px solid #c7d2fe' : '1px solid #f1f5f9',
+                                  background: isChecked ? '#f5f7ff' : '#fafafa',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {}}
+                                  style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, fontSize: '0.825rem', color: isChecked ? '#1e1b4b' : '#334155' }}>
+                                    {item.name}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px', lineHeight: '1.3' }}>
+                                    {item.desc}
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: '16px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={roleForm.habilitado}
-                    onChange={(e) => setRoleForm({ ...roleForm, habilitado: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>Rol Habilitado</span>
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowRoleModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">
-                  {editingRoleId ? 'Guardar Cambios' : 'Crear Rol'}
-                </button>
+              {/* Modal Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ fontSize: '0.825rem', color: '#64748b' }}>
+                  Permisos activos: <strong style={{ color: '#0f172a' }}>{roleForm.permisos.length}</strong> de {ALL_PERMISSION_IDS.length}
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowRoleModal(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    {editingRoleId ? 'Guardar Cambios' : 'Crear Rol'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

@@ -329,7 +329,11 @@ class ComprobanteController extends Controller
 
         if (!empty($validated['estado_comprobante_id'])) {
             $nuevoEstadoComp = (int)$validated['estado_comprobante_id'];
-            if ($nuevoEstadoComp !== (int)$comprobante->estado_comprobante_id && $nuevoEstadoComp === 4) {
+            if ($nuevoEstadoComp === 3) {
+                // Al anular el comprobante, eliminamos los ingresos reportados para no alterar la caja ni el reporte financiero
+                ReporteIngreso::where('cod_comprobante', $comprobante->cod_comprobante)->delete();
+                $comprobante->monto_abonado = 0;
+            } elseif ($nuevoEstadoComp !== (int)$comprobante->estado_comprobante_id && $nuevoEstadoComp === 4) {
                 $comprobante->fecha_actualizacion_estado_comprobante = $fechaOperacion;
             }
             $comprobante->estado_comprobante_id = $nuevoEstadoComp;
