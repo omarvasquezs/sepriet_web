@@ -171,7 +171,7 @@ export const ReportesPage: React.FC = () => {
               {reporteFinanciero.por_metodo_pago?.map((mp: any) => (
                 <div key={mp.metodo_pago_id} className="glass-card" style={{ padding: '16px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {mp.metodo_pago?.nom_metodo_pago || 'Otros'}
+                    {String(mp.metodo_pago?.nom_metodo_pago || 'OTROS').toUpperCase()}
                   </span>
                   <h4 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginTop: '6px' }}>
                     S/ {Number(mp.total).toFixed(2)}
@@ -202,7 +202,7 @@ export const ReportesPage: React.FC = () => {
                       <tr key={t.id} className="row-item">
                         <td style={{ fontWeight: 700, color: '#4f46e5' }}>{t.cod_comprobante}</td>
                         <td>{t.cliente?.nombres || 'Cliente'}</td>
-                        <td>{t.metodo_pago?.nom_metodo_pago || 'Efectivo'}</td>
+                        <td>{String(t.metodo_pago?.nom_metodo_pago || 'EFECTIVO').toUpperCase()}</td>
                         <td>{new Date(t.fecha).toLocaleDateString('es-PE')}</td>
                         <td style={{ fontWeight: 700 }}>S/ {Number(t.costo_total || 0).toFixed(2)}</td>
                         <td style={{ color: '#059669', fontWeight: 700 }}>S/ {Number(t.monto_abonado).toFixed(2)}</td>

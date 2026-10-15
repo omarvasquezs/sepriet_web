@@ -130,7 +130,7 @@ export const buildWhatsAppMessage = (
           ' ' +
           new Date(ing.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
         : '';
-      const metodo = ing.metodo_pago?.nom_metodo_pago ? ` (${ing.metodo_pago.nom_metodo_pago})` : '';
+      const metodo = ing.metodo_pago?.nom_metodo_pago ? ` (${String(ing.metodo_pago.nom_metodo_pago).toUpperCase()})` : '';
       sb.push(`- ${f}: S/. ${Number(ing.monto_abonado).toFixed(2)}${metodo}`);
     });
     sb.push('');

@@ -902,7 +902,7 @@ export const CajaPage: React.FC = () => {
                               color: eg.id_metodo_pago === 1 ? '#6d28d9' : '#334155',
                             }}
                           >
-                            {eg.metodo_pago?.nom_metodo_pago || 'EFECTIVO'}
+                            {String(eg.metodo_pago?.nom_metodo_pago || 'EFECTIVO').toUpperCase()}
                           </span>
                         </td>
                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
@@ -1034,7 +1034,7 @@ export const CajaPage: React.FC = () => {
                     .filter((mp) => mp.id !== 4 && mp.id !== 1)
                     .map((mp: any) => (
                       <option key={mp.id} value={mp.id}>
-                        {mp.nom_metodo_pago}
+                        {String(mp.nom_metodo_pago || '').toUpperCase()}
                       </option>
                     ))}
                 </select>

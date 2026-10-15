@@ -111,13 +111,35 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         params.preset = filterPreset.id;
       }
 
-      const [compRes, catRes] = await Promise.all([
-        api.get('/comprobantes', { params }),
-        api.get('/catalogos')
-      ]);
+      let compData = comprobantesData;
+      let catData = catalogos;
 
-      setComprobantesData(compRes.data);
-      setCatalogos(catRes.data);
+      try {
+        const compRes = await api.get('/comprobantes', { params });
+        compData = compRes.data;
+        setComprobantesData(compData);
+      } catch (e) {
+        console.error('Error fetching comprobantes:', e);
+      }
+
+      try {
+        const catRes = await api.get('/catalogos');
+        catData = catRes.data;
+        setCatalogos(catData);
+      } catch (e) {
+        console.error('Error fetching catalogos:', e);
+      }
+
+      if (catData?.metodos_pago?.length > 0) {
+        setCreateForm(prev => {
+          const exists = catData.metodos_pago.some((mp: any) => String(mp.id) === String(prev.metodo_pago_id));
+          if (!exists) {
+            const def = catData.metodos_pago.find((mp: any) => String(mp.nom_metodo_pago || '').toUpperCase().includes('EFECTIVO')) || catData.metodos_pago[0];
+            return { ...prev, metodo_pago_id: String(def.id) };
+          }
+          return prev;
+        });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -190,7 +212,14 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   }, []);
 
   const handleOpenCreateModal = () => {
-    setCreateForm(initialCreateForm);
+    const defaultMetodo = catalogos.metodos_pago?.find((mp: any) =>
+      String(mp.nom_metodo_pago || '').toUpperCase().includes('EFECTIVO')
+    ) || catalogos.metodos_pago?.[0];
+
+    setCreateForm({
+      ...initialCreateForm,
+      metodo_pago_id: defaultMetodo ? String(defaultMetodo.id) : (initialCreateForm.metodo_pago_id || '4')
+    });
     setSelectedClienteOption(null);
     setTempServicioId('');
     setTempServicioOption(null);
@@ -1130,9 +1159,15 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           backgroundColor: createForm.estado_comprobante_id === '1' ? '#f1f5f9' : '#ffffff'
                         }}
                       >
-                        {catalogos.metodos_pago.map((mp: any) => (
-                          <option key={mp.id} value={mp.id}>{mp.nom_metodo_pago}</option>
-                        ))}
+                        {(!catalogos.metodos_pago || catalogos.metodos_pago.length === 0) ? (
+                          <option value="">Cargando métodos de pago...</option>
+                        ) : (
+                          catalogos.metodos_pago.map((mp: any) => (
+                            <option key={mp.id} value={mp.id}>
+                              {String(mp.nom_metodo_pago || '').toUpperCase()}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </div>
 
@@ -1675,7 +1710,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                   onChange={(e) => setAbonoMetodoPago(e.target.value)}
                 >
                   {catalogos.metodos_pago.map((mp: any) => (
-                    <option key={mp.id} value={mp.id}>{mp.nom_metodo_pago}</option>
+                    <option key={mp.id} value={mp.id}>
+                      {String(mp.nom_metodo_pago || '').toUpperCase()}
+                    </option>
                   ))}
                 </select>
               </div>

@@ -14,6 +14,7 @@ use App\Models\Local;
 use App\Models\CajaAperturaCierre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -360,11 +361,31 @@ class ComprobanteController extends Controller
 
     public function catalogos()
     {
+        $estadosPagoQuery = EstadoComprobante::query();
+        if (Schema::hasColumn('estado_comprobantes', 'habilitado')) {
+            $estadosPagoQuery->where('habilitado', 1);
+        }
+
+        $metodosPagoQuery = MetodoPago::query();
+        if (Schema::hasColumn('metodo_pago', 'habilitado')) {
+            $metodosPagoQuery->where('habilitado', 1);
+        }
+
+        $localesQuery = Local::query();
+        if (Schema::hasColumn('locales', 'habilitado')) {
+            $localesQuery->where('habilitado', 1);
+        }
+
+        $metodos = $metodosPagoQuery->get()->map(function ($mp) {
+            $mp->nom_metodo_pago = mb_strtoupper((string)$mp->nom_metodo_pago, 'UTF-8');
+            return $mp;
+        });
+
         return response()->json([
-            'estados_pago' => EstadoComprobante::where('habilitado', 1)->get(),
+            'estados_pago' => $estadosPagoQuery->get(),
             'estados_ropa' => EstadoRopa::all(),
-            'metodos_pago' => MetodoPago::where('habilitado', 1)->get(),
-            'locales' => Local::where('habilitado', 1)->get(),
+            'metodos_pago' => $metodos,
+            'locales' => $localesQuery->get(),
         ]);
     }
 
