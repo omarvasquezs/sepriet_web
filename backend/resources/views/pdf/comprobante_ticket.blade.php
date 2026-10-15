@@ -5,8 +5,8 @@
     <title>{{ $comprobante->cod_comprobante }}</title>
     <style>
         @page {
-            margin: 4mm 3mm 4mm 3mm;
-            size: 80mm auto;
+            margin: 1.5mm 1.5mm 1.5mm 1.5mm;
+            size: 72mm auto;
         }
         * {
             box-sizing: border-box;
@@ -15,11 +15,11 @@
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 8pt;
-            line-height: 1.25;
+            font-size: 6.8pt;
+            line-height: 1.15;
             color: #000;
             width: 100%;
-            max-width: 72mm;
+            max-width: 68mm;
             margin: 0 auto;
         }
 
@@ -30,64 +30,64 @@
         .uppercase { text-transform: uppercase; }
 
         .divider {
-            border-top: 1px dashed #222;
-            margin: 5px 0;
+            border-top: 1px dashed #333;
+            margin: 3px 0;
             width: 100%;
         }
 
         /* 1. Header / Empresa */
         .header {
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .logo-img {
-            max-width: 135px;
-            max-height: 48px;
-            margin: 0 auto 3px auto;
+            max-width: 95px;
+            max-height: 30px;
+            margin: 0 auto 1px auto;
             display: block;
         }
         .company-name {
-            font-size: 9.5pt;
+            font-size: 7.8pt;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
             letter-spacing: 0.2px;
         }
         .company-info {
-            font-size: 7.8pt;
+            font-size: 6.3pt;
             color: #111;
-            line-height: 1.2;
-            margin-bottom: 1px;
+            line-height: 1.15;
+            margin-bottom: 0.5px;
         }
 
         /* 2. Título de Comprobante y Número */
         .doc-section {
             text-align: center;
-            margin: 5px 0 6px 0;
+            margin: 3px 0 3px 0;
         }
         .doc-type {
-            font-size: 9.2pt;
+            font-size: 7.6pt;
             font-weight: bold;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }
         .doc-number {
-            font-size: 8.8pt;
+            font-size: 7.5pt;
             font-weight: bold;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         /* 3. Tabla de Metadatos */
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 7.8pt;
-            margin-bottom: 3px;
+            font-size: 6.6pt;
+            margin-bottom: 1px;
         }
         .info-table td {
             vertical-align: top;
-            padding: 1px 0;
+            padding: 0.5px 0;
         }
         .col-label {
-            width: 27%;
+            width: 28%;
             white-space: nowrap;
         }
         .col-sep {
@@ -95,55 +95,56 @@
             text-align: center;
         }
         .col-val {
-            width: 69%;
+            width: 68%;
             word-break: break-word;
         }
 
         /* 4. Sección Cliente */
         .client-header {
-            font-size: 8pt;
+            font-size: 6.8pt;
             font-weight: bold;
-            margin-top: 5px;
-            margin-bottom: 2px;
+            margin-top: 3px;
+            margin-bottom: 1px;
         }
 
         /* 5. Tabla de Ítems (Formato Opeluce) */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 4px 0;
-            font-size: 7.8pt;
+            margin: 2px 0;
+            font-size: 6.6pt;
         }
         .items-table thead th {
-            padding: 3px 0 2px 0;
+            padding: 2px 0 1px 0;
             font-weight: bold;
-            border-top: 1px dashed #222;
-            border-bottom: 1px dashed #222;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+            font-size: 6.6pt;
         }
-        .th-cant { width: 16%; text-align: left; }
+        .th-cant { width: 15%; text-align: left; }
         .th-punit { width: 28%; text-align: center; }
         .th-desc { width: 24%; text-align: center; }
-        .th-importe { width: 32%; text-align: right; padding-right: 2px; }
+        .th-importe { width: 33%; text-align: right; padding-right: 1px; }
 
         .item-data-row td {
-            padding-top: 3px;
+            padding-top: 2px;
             vertical-align: bottom;
         }
         .item-desc-row td {
-            padding-bottom: 4px;
-            line-height: 1.2;
+            padding-bottom: 2px;
+            line-height: 1.15;
             vertical-align: top;
         }
         .td-cant { text-align: left; }
         .td-punit { text-align: center; }
         .td-desc { text-align: center; }
-        .td-importe { text-align: right; padding-right: 2px; }
+        .td-importe { text-align: right; padding-right: 1px; }
         .item-description {
-            font-size: 7.8pt;
+            font-size: 6.6pt;
             text-transform: uppercase;
         }
         .item-obs {
-            font-size: 7pt;
+            font-size: 5.8pt;
             color: #444;
             display: block;
         }
@@ -152,18 +153,18 @@
         .totals-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 7.8pt;
+            font-size: 6.6pt;
             margin-top: 2px;
-            margin-bottom: 4px;
-            border-top: 1px dashed #222;
-            padding-top: 3px;
+            margin-bottom: 2px;
+            border-top: 1px dashed #333;
+            padding-top: 2px;
         }
         .totals-table td {
-            padding: 1.5px 0;
+            padding: 0.5px 0;
             vertical-align: middle;
         }
         .tot-lbl {
-            width: 62%;
+            width: 60%;
             text-align: left;
         }
         .tot-sep {
@@ -171,67 +172,66 @@
             text-align: center;
         }
         .tot-val {
-            width: 34%;
+            width: 36%;
             text-align: right;
-            padding-right: 2px;
-            font-variant-numeric: tabular-nums;
+            padding-right: 1px;
         }
         .tot-total-row td {
             font-weight: bold;
-            font-size: 8.5pt;
-            padding: 2.5px 0;
+            font-size: 7.4pt;
+            padding: 1.5px 0;
         }
 
         /* 7. Monto en letras */
         .letras-box {
-            font-size: 8pt;
+            font-size: 6.6pt;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 5px 0 6px 0;
-            line-height: 1.25;
+            margin: 3px 0 4px 0;
+            line-height: 1.15;
         }
 
-        /* 8. Código QR */
+        /* 8. Código QR (Medida Opeluce: ~25mm) */
         .qr-section {
             text-align: center;
-            margin: 6px 0 4px 0;
+            margin: 4px 0 3px 0;
         }
         .qr-img {
-            width: 110px;
-            height: 110px;
+            width: 70px;
+            height: 70px;
             display: block;
             margin: 0 auto;
         }
         .sunat-caption {
-            font-size: 7.5pt;
-            line-height: 1.25;
-            margin-top: 4px;
+            font-size: 6.0pt;
+            line-height: 1.15;
+            margin-top: 2px;
             color: #111;
         }
         .resumen-hash {
-            font-size: 6.8pt;
+            font-size: 5.5pt;
             color: #333;
-            margin-top: 2px;
+            margin-top: 1px;
             word-break: break-all;
         }
 
         /* 9. Pie de página y condiciones */
         .footer {
-            margin-top: 6px;
-            border-top: 1px dashed #222;
-            padding-top: 5px;
-            font-size: 7.2pt;
-            line-height: 1.25;
+            margin-top: 4px;
+            border-top: 1px dashed #333;
+            padding-top: 3px;
+            font-size: 5.8pt;
+            line-height: 1.15;
             color: #222;
         }
         .footer p {
-            margin-bottom: 2px;
+            margin-bottom: 1.5px;
         }
         .gracias {
             text-align: center;
             font-weight: bold;
-            font-size: 8.5pt;
-            margin-top: 5px;
+            font-size: 7.2pt;
+            margin-top: 3px;
         }
     </style>
 </head>
@@ -243,7 +243,7 @@
         @endif
         <div class="company-name">LAVANDERIA SEPRIET S.A.C.</div>
         <div class="company-info">RUC {{ $empresaRuc }}</div>
-        <div class="company-info">{{ strtoupper($local->direccion ?? 'AV. AGUSTIN DE LA ROSA TORO 318 LIMA - LIMA - SAN LUIS') }}</div>
+        <div class="company-info">{{ strtoupper($local->direccion ?? 'AV. AGUSTIN DE LA ROSA TORO 318 SAN LUIS') }}</div>
         @if(!empty($local->telefono))
             <div class="company-info">Tel: {{ $local->telefono }}</div>
         @endif
@@ -316,7 +316,7 @@
                 <th class="th-importe">Importe</th>
             </tr>
             <tr>
-                <th colspan="4" class="text-left" style="border: none; padding-bottom: 2px;">Descripción</th>
+                <th colspan="4" class="text-left" style="border: none; padding-bottom: 1px;">Descripción</th>
             </tr>
         </thead>
         <tbody>

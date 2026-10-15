@@ -495,9 +495,9 @@ class ComprobanteController extends Controller
                 $logoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath));
             }
 
-            // Generación de Código QR según normativa SUNAT
+            // Generación de Código QR según normativa SUNAT (escala 2 para ancho compacto de ~25mm)
             $qrString = \App\Services\SunatQrService::buildSunatQrString($comprobante, $local);
-            $qrBase64 = \App\Services\SunatQrService::generateQrBase64($qrString, 3);
+            $qrBase64 = \App\Services\SunatQrService::generateQrBase64($qrString, 2);
             $codigoHash = \App\Services\SunatQrService::getCodigoHash($comprobante, $local);
 
             // Cálculos tributarios oficiales
@@ -542,11 +542,11 @@ class ComprobanteController extends Controller
                 'totalLetras'
             ));
 
-            // Dimensiones optimizadas para impresora térmica LN-POS80-CX (rollo 80mm de ancho)
-            // 80mm = 226.77 pt. Altura adaptable según cantidad de ítems para corte continuo
+            // Dimensiones calibradas según especificación de cabezal térmico: ancho 72mm (204.09 pt)
+            // Altura compacta optimizada para corte continuo en página única
             $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
-            $calculatedHeight = max(580.0, 480 + ($itemCount * 32) + 160);
-            $pdf->setPaper([0, 0, 226.77, $calculatedHeight], 'portrait');
+            $calculatedHeight = max(450.0, 420 + ($itemCount * 18));
+            $pdf->setPaper([0, 0, 204.09, $calculatedHeight], 'portrait');
 
             // Asegurar directorio y guardar
             $disk->makeDirectory($relativeDir);
