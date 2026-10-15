@@ -441,6 +441,15 @@ class ComprobanteController extends Controller
 
         // Regenerar si no existe, si se solicita forzar, o si el logo/plantilla es más reciente que el PDF existente
         if ($pdfNeedsRegeneration) {
+            $comprobante->loadMissing([
+                'cliente',
+                'estadoComprobante',
+                'estadoRopa',
+                'metodoPago',
+                'usuario',
+                'detalles.servicio',
+            ]);
+
             $local = Local::where('habilitado', 1)->first();
 
             $empresaRuc = config('services.sunat.ruc', env('EMPRESA_RUC', '20608518855'));
@@ -449,16 +458,30 @@ class ComprobanteController extends Controller
             }
 
             $tipoComprobanteNombre = match ($comprobante->tipo_comprobante) {
-                'F' => 'FACTURA ELECTRÓNICA',
-                'B' => 'BOLETA DE VENTA ELECTRÓNICA',
+                'F' => 'FACTURA ELECTRONICA',
+                'B' => 'BOLETA DE VENTA ELECTRONICA',
                 default => 'NOTA DE VENTA',
             };
 
-            $tipoComprobanteNombreSunat = match ($comprobante->tipo_comprobante) {
-                'F' => 'FACTURA ELECTRÓNICA',
-                'B' => 'BOLETA DE VENTA ELECTRÓNICA',
-                default => 'NOTA DE VENTA / TICKET',
-            };
+            // Formato de serie y número: ej. B001 N° 00078656 / NV001 N° 00005848
+            $parts = explode('-', $comprobante->cod_comprobante ?? '');
+            $serie = $parts[0] ?? ($comprobante->tipo_comprobante === 'F' ? 'F001' : ($comprobante->tipo_comprobante === 'B' ? 'B001' : 'NV001'));
+            $numRaw = isset($parts[1]) ? $parts[1] : (string)$comprobante->id;
+            $correlativoStr = str_pad($numRaw, 8, '0', STR_PAD_LEFT);
+            $numeroComprobanteCompleto = "{$serie} N° {$correlativoStr}";
+
+            $fechaObj = Carbon::parse($comprobante->fecha ?? now());
+            $fechaEmision = $fechaObj->format('d/m/Y');
+            $horaEmision = $fechaObj->format('h:i a');
+
+            $cajeroNombre = strtoupper($comprobante->usuario->name ?? ($comprobante->usuario->username ?? 'CAJERO'));
+            $condicionPago = strtoupper($comprobante->metodoPago->nom_metodo_pago ?? 'EFECTIVO');
+            $estadoRopa = strtoupper($comprobante->estadoRopa->nom_estado_ropa ?? 'RECIBIDO');
+            $estadoPago = strtoupper($comprobante->estadoComprobante->nom_estado ?? 'DEBE');
+
+            $clienteNombre = strtoupper(!empty($comprobante->razon_social) ? $comprobante->razon_social : ($comprobante->cliente->nombres ?? 'CLIENTES VARIOS'));
+            $clienteDocumento = !empty($comprobante->num_ruc) ? $comprobante->num_ruc : ($comprobante->cliente->dni ?? '-');
+            $clienteTelefono = $comprobante->cliente->telefono ?? null;
 
             $badgeClass = match ($comprobante->estado_comprobante_id) {
                 1 => 'badge-debe',
@@ -479,32 +502,50 @@ class ComprobanteController extends Controller
 
             // Cálculos tributarios oficiales
             $costoTotal = (float)($comprobante->costo_total ?? 0);
-            $opGravadas = 0.00;
-            $igv = 0.00;
-            if ($comprobante->tipo_comprobante === 'F' || $comprobante->tipo_comprobante === 'B') {
-                $opGravadas = round($costoTotal / 1.18, 2);
-                $igv = round($costoTotal - $opGravadas, 2);
-            }
+            $montoAbonado = (float)($comprobante->monto_abonado ?? 0);
+            $montoRestante = max(0, round($costoTotal - $montoAbonado, 2));
+
+            $opGravadas = round($costoTotal / 1.18, 2);
+            $igv = round($costoTotal - $opGravadas, 2);
+            $opInafectas = 0.00;
+            $opExoneradas = 0.00;
+
+            $totalLetras = \App\Services\NumeroALetras::convertir($costoTotal, 'SOLES');
 
             $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
                 'comprobante',
                 'local',
                 'empresaRuc',
                 'tipoComprobanteNombre',
-                'tipoComprobanteNombreSunat',
+                'numeroComprobanteCompleto',
+                'fechaEmision',
+                'horaEmision',
+                'cajeroNombre',
+                'condicionPago',
+                'estadoRopa',
+                'estadoPago',
+                'clienteNombre',
+                'clienteDocumento',
+                'clienteTelefono',
                 'badgeClass',
                 'logoBase64',
                 'qrBase64',
                 'qrString',
                 'codigoHash',
+                'costoTotal',
+                'montoAbonado',
+                'montoRestante',
                 'opGravadas',
-                'igv'
+                'opInafectas',
+                'opExoneradas',
+                'igv',
+                'totalLetras'
             ));
 
             // Dimensiones optimizadas para impresora térmica LN-POS80-CX (rollo 80mm de ancho)
             // 80mm = 226.77 pt. Altura adaptable según cantidad de ítems para corte continuo
             $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
-            $calculatedHeight = max(566.93, 470 + ($itemCount * 24) + 150);
+            $calculatedHeight = max(580.0, 480 + ($itemCount * 32) + 160);
             $pdf->setPaper([0, 0, 226.77, $calculatedHeight], 'portrait');
 
             // Asegurar directorio y guardar
