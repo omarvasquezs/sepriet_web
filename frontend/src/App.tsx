@@ -52,7 +52,12 @@ const MainLayout: React.FC = () => {
 
   const handleTabChange = (newTab: string) => {
     setIsSidebarOpen(false);
-    if (newTab === activeTab) return;
+    if (newTab === activeTab) {
+      if (newTab === 'dashboard') {
+        window.dispatchEvent(new CustomEvent('caja:updated'));
+      }
+      return;
+    }
     setIsTransitioning(true);
     setProgressWidth(30);
 
@@ -234,6 +239,7 @@ const MainLayout: React.FC = () => {
         onClose={() => setShowGlobalAperturaModal(false)}
         onSuccess={() => {
           setShowGlobalAperturaModal(false);
+          window.dispatchEvent(new CustomEvent('caja:updated'));
         }}
       />
 

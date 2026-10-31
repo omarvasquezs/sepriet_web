@@ -408,6 +408,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
       const res = await api.post('/comprobantes', payload);
       const createdTicket = res.data;
+      window.dispatchEvent(new CustomEvent('caja:updated'));
 
       setShowCreateModal(false);
       setPage(1);
@@ -438,6 +439,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
       const res = await api.post(`/comprobantes/${selectedTicket.id}/abono`, payload);
       const updatedTicket = res.data;
+      window.dispatchEvent(new CustomEvent('caja:updated'));
 
       setShowAbonoModal(false);
       setAbonoAmount('');
@@ -480,6 +482,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
     try {
       await api.put(`/comprobantes/${ticket.id}/estado`, { estado_comprobante_id: 3 });
+      window.dispatchEvent(new CustomEvent('caja:updated'));
       fetchData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al anular comprobante');

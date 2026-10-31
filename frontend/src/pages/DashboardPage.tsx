@@ -81,65 +81,102 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     day: 'numeric',
   });
 
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const [comprobantesRes, cajaRes, clientesRes] = await Promise.all([
+        api.get('/comprobantes', { params: { per_page: 25 } }),
+        api.get('/caja/estado'),
+        api.get('/clientes', { params: { per_page: 1 } }),
+      ]);
+
+      const compData = comprobantesRes.data;
+      const totalTickets = compData.total || (compData.data ? compData.data.length : 0);
+      const tickets: any[] = compData.data || [];
+      const clientesCount = clientesRes.data?.total || (clientesRes.data?.data ? clientesRes.data.data.length : 0);
+
+      const cajaData = cajaRes.data || {};
+      const isCajaAbierta = cajaData.estado === 'abierta' || (!!cajaData.caja && !cajaData.caja.datetime_cierre);
+      const ventasHoy = Number(cajaData.total_ingresos ?? cajaData.caja?.total_ventas ?? 0);
+      const cajaSaldo = Number(cajaData.saldo_estimado || 0);
+      const ingresosEfectivo = Number(cajaData.ingresos_efectivo || 0);
+      const ingresosDigitales = Number(cajaData.ingresos_yape_plin || 0);
+      const totalEgresos = Number(cajaData.total_egresos || 0);
+      const montoTeoricoEfectivo = Number(cajaData.monto_teorico_efectivo || 0);
+      const montoApertura = Number(cajaData.caja?.monto_apertura || cajaData.monto_apertura || 0);
+
+      let horaApertura = cajaData.hora_apertura || '';
+      if (!horaApertura && cajaData.caja?.datetime_apertura) {
+        try {
+          const dt = new Date(cajaData.caja.datetime_apertura);
+          horaApertura = dt.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+          horaApertura = '';
+        }
+      }
+
+      // Calculate pending debt tickets from recent
+      const pendingTickets = tickets.filter(
+        (t) => Number(t.monto_restante) > 0 && t.estado_comprobante?.nom_estado !== 'ANULADO'
+      );
+      const montoDeudaPendiente = pendingTickets.reduce(
+        (acc, cur) => acc + Number(cur.monto_restante || 0),
+        0
+      );
+
+      setStats({
+        totalTickets,
+        ventasHoy,
+        cajaSaldo,
+        clientesCount,
+        ingresosEfectivo,
+        ingresosDigitales,
+        totalEgresos,
+        montoTeoricoEfectivo,
+        montoApertura,
+        cajaAbierta: isCajaAbierta,
+        horaApertura,
+        ticketsPendientes: pendingTickets.length,
+        montoDeudaPendiente,
+      });
+
+      setRecentTickets(tickets);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [comprobantesRes, cajaRes, clientesRes] = await Promise.all([
-          api.get('/comprobantes', { params: { per_page: 25 } }),
-          api.get('/caja/estado'),
-          api.get('/clientes', { params: { per_page: 1 } }),
-        ]);
+    fetchData();
 
-        const compData = comprobantesRes.data;
-        const totalTickets = compData.total || (compData.data ? compData.data.length : 0);
-        const tickets: any[] = compData.data || [];
-        const clientesCount = clientesRes.data?.total || (clientesRes.data?.data ? clientesRes.data.data.length : 0);
+    // 1. Instant event listener for caja changes anywhere in the app
+    const handleCajaUpdated = () => {
+      fetchData(true);
+    };
+    window.addEventListener('caja:updated', handleCajaUpdated);
 
-        const cajaData = cajaRes.data || {};
-        const isCajaAbierta = !!cajaData.caja && !cajaData.caja.datetime_cierre;
-        const ventasHoy = Number(cajaData.total_ingresos ?? cajaData.caja?.total_ventas ?? 0);
-        const cajaSaldo = Number(cajaData.saldo_estimado || 0);
-        const ingresosEfectivo = Number(cajaData.ingresos_efectivo || 0);
-        const ingresosDigitales = Number(cajaData.ingresos_yape_plin || 0);
-        const totalEgresos = Number(cajaData.total_egresos || 0);
-        const montoTeoricoEfectivo = Number(cajaData.monto_teorico_efectivo || 0);
-        const montoApertura = Number(cajaData.caja?.monto_apertura || cajaData.monto_apertura || 0);
-        const horaApertura = cajaData.hora_apertura || '';
-
-        // Calculate pending debt tickets from recent
-        const pendingTickets = tickets.filter(
-          (t) => Number(t.monto_restante) > 0 && t.estado_comprobante?.nom_estado !== 'ANULADO'
-        );
-        const montoDeudaPendiente = pendingTickets.reduce(
-          (acc, cur) => acc + Number(cur.monto_restante || 0),
-          0
-        );
-
-        setStats({
-          totalTickets,
-          ventasHoy,
-          cajaSaldo,
-          clientesCount,
-          ingresosEfectivo,
-          ingresosDigitales,
-          totalEgresos,
-          montoTeoricoEfectivo,
-          montoApertura,
-          cajaAbierta: isCajaAbierta,
-          horaApertura,
-          ticketsPendientes: pendingTickets.length,
-          montoDeudaPendiente,
-        });
-
-        setRecentTickets(tickets);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
+    // 2. Refresh on window focus and tab visibility change
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData(true);
       }
     };
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleCajaUpdated);
 
-    fetchData();
+    // 3. Fast background polling (every 15s)
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('caja:updated', handleCajaUpdated);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleCajaUpdated);
+      clearInterval(interval);
+    };
   }, []);
 
   const getBadgeClassPago = (nombre: string) => {

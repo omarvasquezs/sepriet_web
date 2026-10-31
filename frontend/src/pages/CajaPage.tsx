@@ -99,6 +99,12 @@ export const CajaPage: React.FC = () => {
 
   useEffect(() => {
     fetchCaja();
+
+    const handleCajaUpdated = () => {
+      fetchCaja();
+    };
+    window.addEventListener('caja:updated', handleCajaUpdated);
+    return () => window.removeEventListener('caja:updated', handleCajaUpdated);
   }, []);
 
   useEffect(() => {
@@ -144,6 +150,7 @@ export const CajaPage: React.FC = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      window.dispatchEvent(new CustomEvent('caja:updated'));
       setShowEgresoModal(false);
       setEgresoForm({ descripcion: '', monto: '', id_metodo_pago: '4' });
       setEgresoImageFile(null);
@@ -161,6 +168,7 @@ export const CajaPage: React.FC = () => {
     setSubmittingCierre(true);
     try {
       const res = await api.post('/caja/cierre', { monto_cierre: Number(montoCierre) });
+      window.dispatchEvent(new CustomEvent('caja:updated'));
       setShowCierreModal(false);
       setMontoCierre('');
       setCierreResumen(res.data.resumen);

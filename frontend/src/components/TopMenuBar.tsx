@@ -57,7 +57,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   const fetchCajaStatus = () => {
     api.get('/caja/estado')
       .then((res) => {
-        const isAbierta = !!res.data.caja && !res.data.caja.datetime_cierre;
+        const isAbierta = res.data.estado === 'abierta' || (!!res.data.caja && !res.data.caja.datetime_cierre);
         setCajaAbierta(isAbierta);
         if (isAbierta && res.data.monto_teorico_efectivo !== undefined) {
           setSaldoEfectivo(Number(res.data.monto_teorico_efectivo));
@@ -83,8 +83,23 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
 
   useEffect(() => {
     fetchCajaStatus();
-    const interval = setInterval(fetchCajaStatus, 60000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchCajaStatus, 15000);
+
+    const handleCajaUpdated = () => fetchCajaStatus();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCajaStatus();
+    };
+
+    window.addEventListener('caja:updated', handleCajaUpdated);
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleCajaUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('caja:updated', handleCajaUpdated);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleCajaUpdated);
+    };
   }, []);
 
   // Close dropdown on outside click
