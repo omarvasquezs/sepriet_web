@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, UserPlus, Ban } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, Ban } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
@@ -67,12 +67,15 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
   // Quick Client Modal State
   const [showQuickClienteModal, setShowQuickClienteModal] = useState(false);
-  const [quickClienteForm, setQuickClienteForm] = useState({
+  const initialQuickClienteForm = {
     nombres: '',
     dni: '',
+    codigo_pais: '+51',
     telefono: '',
+    email: '',
     direccion: ''
-  });
+  };
+  const [quickClienteForm, setQuickClienteForm] = useState(initialQuickClienteForm);
 
   // Temp service selection for Java/VJS style add row
   const [tempServicioId, setTempServicioId] = useState<string>('');
@@ -335,10 +338,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       return;
     }
     try {
-      const res = await api.post('/clientes', {
-        ...quickClienteForm,
-        codigo_pais: '+51'
-      });
+      const res = await api.post('/clientes', quickClienteForm);
       const newClient = res.data;
       setCreateForm(prev => ({ ...prev, cliente_id: String(newClient.id) }));
       setSelectedClienteOption({
@@ -349,7 +349,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         raw: newClient
       });
       setShowQuickClienteModal(false);
-      setQuickClienteForm({ nombres: '', dni: '', telefono: '', direccion: '' });
+      setQuickClienteForm(initialQuickClienteForm);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar cliente');
     }
@@ -1031,7 +1031,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                         <button
                           type="button"
                           className="btn-primary"
-                          onClick={() => setShowQuickClienteModal(true)}
+                          onClick={() => {
+                            setQuickClienteForm(initialQuickClienteForm);
+                            setShowQuickClienteModal(true);
+                          }}
                           style={{
                             padding: '9px 16px',
                             fontSize: '0.82rem',
@@ -1502,7 +1505,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         );
       })()}
 
-      {/* Modal Rápido Añadir Nuevo Cliente */}
+      {/* MODAL HOMOLOGADO: REGISTRAR NUEVO CLIENTE (Rápido desde Comprobante) */}
       {showQuickClienteModal && (
         <div
           className="modal-overlay"
@@ -1515,40 +1518,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         >
           <div
             className="modal-content"
-            style={{
-              maxWidth: '520px',
-              padding: '26px 28px',
-              borderRadius: '16px',
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45)',
-              position: 'relative'
-            }}
+            style={{ maxWidth: '580px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header" style={{ marginBottom: '18px', paddingBottom: '14px', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: '#eff6ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#0d6efd'
-                  }}
-                >
-                  <UserPlus size={20} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.25rem', color: '#0f172a' }}>
-                    AÑADIR NUEVO CLIENTE
-                  </h3>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-                    Registrar datos para asociar directamente al comprobante
-                  </p>
-                </div>
-              </div>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Registrar Nuevo Cliente
+              </h3>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -1560,101 +1536,81 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
             </div>
 
             <form onSubmit={handleQuickClienteSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '22px' }}>
-                {/* Nombres / Razón Social */}
-                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
-                    Nombres y Apellidos / Razón Social *
-                  </label>
+              <div className="form-group">
+                <label className="form-label">Nombres y Apellidos *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  required
+                  value={quickClienteForm.nombres}
+                  onChange={(e) => setQuickClienteForm({ ...quickClienteForm, nombres: e.target.value.toUpperCase() })}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">DNI / Documento</label>
                   <input
                     type="text"
                     className="form-input"
-                    required
-                    placeholder="EJ: JUAN PÉREZ O COMERCIAL S.A.C."
-                    value={quickClienteForm.nombres}
-                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, nombres: e.target.value.toUpperCase() })}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    value={quickClienteForm.dni}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, dni: e.target.value.toUpperCase() })}
                   />
                 </div>
 
-                {/* DNI / RUC y Teléfono */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
-                      DNI / RUC
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="8 u 11 DÍGITOS"
-                      value={quickClienteForm.dni}
-                      onChange={(e) => setQuickClienteForm({ ...quickClienteForm, dni: e.target.value })}
-                      style={{ width: '100%', boxSizing: 'border-box' }}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
-                      Teléfono (WhatsApp)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="9 DÍGITOS"
-                      value={quickClienteForm.telefono}
-                      onChange={(e) => setQuickClienteForm({ ...quickClienteForm, telefono: e.target.value })}
-                      style={{ width: '100%', boxSizing: 'border-box' }}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label">Código País</label>
+                  <select
+                    className="form-select"
+                    value={quickClienteForm.codigo_pais}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, codigo_pais: e.target.value })}
+                  >
+                    <option value="+51">+51 (Perú)</option>
+                    <option value="+54">+54 (Argentina)</option>
+                    <option value="+56">+56 (Chile)</option>
+                    <option value="+57">+57 (Colombia)</option>
+                  </select>
                 </div>
+              </div>
 
-                {/* Dirección */}
-                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label className="form-label" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#334155', margin: 0 }}>
-                    Dirección (Opcional)
-                  </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Teléfono</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="AV., JR., CALLE O REFERENCIA..."
-                    value={quickClienteForm.direccion}
-                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, direccion: e.target.value.toUpperCase() })}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    value={quickClienteForm.telefono}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, telefono: e.target.value.toUpperCase() })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={quickClienteForm.email}
+                    onChange={(e) => setQuickClienteForm({ ...quickClienteForm, email: e.target.value.toUpperCase() })}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowQuickClienteModal(false)}
-                  style={{
-                    padding: '9px 18px',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    borderRadius: '8px'
-                  }}
-                >
+              <div className="form-group">
+                <label className="form-label">Dirección</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={quickClienteForm.direccion}
+                  onChange={(e) => setQuickClienteForm({ ...quickClienteForm, direccion: e.target.value.toUpperCase() })}
+                />
+              </div>
+
+              <div className="modal-actions-responsive" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowQuickClienteModal(false)}>
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  style={{
-                    padding: '9px 20px',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    backgroundColor: '#0d6efd',
-                    borderColor: '#0d6efd',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 6px rgba(13, 110, 253, 0.3)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Plus size={16} /> Guardar y Seleccionar
+                <button type="submit" className="btn-primary">
+                  Guardar Cliente
                 </button>
               </div>
             </form>
