@@ -133,11 +133,12 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         console.error('Error fetching catalogos:', e);
       }
 
-      if (catData?.metodos_pago?.length > 0) {
+      const validMetodos = (catData?.metodos_pago || []).filter((mp: any) => !mp.nom_metodo_pago?.includes('/') && mp.habilitado !== 0);
+      if (validMetodos.length > 0) {
         setCreateForm(prev => {
-          const exists = catData.metodos_pago.some((mp: any) => String(mp.id) === String(prev.metodo_pago_id));
+          const exists = validMetodos.some((mp: any) => String(mp.id) === String(prev.metodo_pago_id));
           if (!exists) {
-            const def = catData.metodos_pago.find((mp: any) => String(mp.nom_metodo_pago || '').toUpperCase().includes('EFECTIVO')) || catData.metodos_pago[0];
+            const def = validMetodos.find((mp: any) => String(mp.nom_metodo_pago || '').toUpperCase().includes('EFECTIVO')) || validMetodos[0];
             return { ...prev, metodo_pago_id: String(def.id) };
           }
           return prev;
@@ -215,9 +216,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   }, []);
 
   const handleOpenCreateModal = () => {
-    const defaultMetodo = catalogos.metodos_pago?.find((mp: any) =>
+    const validMetodos = (catalogos.metodos_pago || []).filter((mp: any) => !mp.nom_metodo_pago?.includes('/') && mp.habilitado !== 0);
+    const defaultMetodo = validMetodos.find((mp: any) =>
       String(mp.nom_metodo_pago || '').toUpperCase().includes('EFECTIVO')
-    ) || catalogos.metodos_pago?.[0];
+    ) || validMetodos[0];
 
     setCreateForm({
       ...initialCreateForm,
@@ -1168,11 +1170,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                         {(!catalogos.metodos_pago || catalogos.metodos_pago.length === 0) ? (
                           <option value="">Cargando métodos de pago...</option>
                         ) : (
-                          catalogos.metodos_pago.map((mp: any) => (
-                            <option key={mp.id} value={mp.id}>
-                              {String(mp.nom_metodo_pago || '').toUpperCase()}
-                            </option>
-                          ))
+                          catalogos.metodos_pago
+                            .filter((mp: any) => !mp.nom_metodo_pago?.includes('/') && mp.habilitado !== 0)
+                            .map((mp: any) => (
+                              <option key={mp.id} value={mp.id}>
+                                {String(mp.nom_metodo_pago || '').toUpperCase()}
+                              </option>
+                            ))
                         )}
                       </select>
                     </div>
@@ -1668,11 +1672,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                   value={abonoMetodoPago}
                   onChange={(e) => setAbonoMetodoPago(e.target.value)}
                 >
-                  {catalogos.metodos_pago.map((mp: any) => (
-                    <option key={mp.id} value={mp.id}>
-                      {String(mp.nom_metodo_pago || '').toUpperCase()}
-                    </option>
-                  ))}
+                  {catalogos.metodos_pago
+                    .filter((mp: any) => !mp.nom_metodo_pago?.includes('/') && mp.habilitado !== 0)
+                    .map((mp: any) => (
+                      <option key={mp.id} value={mp.id}>
+                        {String(mp.nom_metodo_pago || '').toUpperCase()}
+                      </option>
+                    ))}
                 </select>
               </div>
 

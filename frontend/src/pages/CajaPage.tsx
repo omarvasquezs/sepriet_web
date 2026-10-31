@@ -491,9 +491,12 @@ export const CajaPage: React.FC = () => {
               </div>
 
               <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ color: '#6d28d9', fontSize: '0.82rem', fontWeight: 600 }}>Ingresos YAPE / PLIN:</div>
+                <div style={{ color: '#6d28d9', fontSize: '0.82rem', fontWeight: 600 }}>Ingresos Digitales (Yape/Plin):</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#7c3aed', marginTop: '4px' }}>
                   + S/. {Number(cajaInfo.ingresos_yape_plin || 0).toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
+                  YAPE: S/. {Number(cajaInfo.ingresos_yape || 0).toFixed(2)} | PLIN: S/. {Number(cajaInfo.ingresos_plin || 0).toFixed(2)}
                 </div>
               </div>
 
@@ -695,14 +698,17 @@ export const CajaPage: React.FC = () => {
                 }}
               >
                 <div style={{ color: '#6d28d9', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Smartphone size={14} /> 2. Total Ingresos YAPE / PLIN:
+                  <Smartphone size={14} /> 2. Total Ingresos Digitales (Yape/Plin):
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#7c3aed', marginTop: '4px' }}>
                   + S/. {Number(cajaInfo.ingresos_yape_plin || 0).toFixed(2)}
                 </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px' }}>
+                  YAPE: S/. {Number(cajaInfo.ingresos_yape || 0).toFixed(2)} &bull; PLIN: S/. {Number(cajaInfo.ingresos_plin || 0).toFixed(2)}
+                </div>
               </div>
 
-              {/* 4. Gastos / Egresos YAPE / PLIN */}
+              {/* 4. Gastos / Egresos Digitales */}
               <div
                 style={{
                   background: 'rgba(234, 88, 12, 0.05)',
@@ -712,10 +718,13 @@ export const CajaPage: React.FC = () => {
                 }}
               >
                 <div style={{ color: '#c2410c', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MinusCircle size={14} /> 4. Total Gastos YAPE / PLIN:
+                  <MinusCircle size={14} /> 4. Total Gastos Digitales (Yape/Plin):
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#ea580c', marginTop: '4px' }}>
                   - S/. {Number(cajaInfo.egresos_yape_plin || 0).toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px' }}>
+                  YAPE: S/. {Number(cajaInfo.egresos_yape || 0).toFixed(2)} &bull; PLIN: S/. {Number(cajaInfo.egresos_plin || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -1036,15 +1045,21 @@ export const CajaPage: React.FC = () => {
                   value={egresoForm.id_metodo_pago}
                   onChange={(e) => setEgresoForm({ ...egresoForm, id_metodo_pago: e.target.value })}
                 >
-                  <option value="4">EFECTIVO</option>
-                  <option value="1">YAPE / PLIN</option>
-                  {metodosPago
-                    .filter((mp) => mp.id !== 4 && mp.id !== 1)
-                    .map((mp: any) => (
-                      <option key={mp.id} value={mp.id}>
-                        {String(mp.nom_metodo_pago || '').toUpperCase()}
-                      </option>
-                    ))}
+                  {metodosPago && metodosPago.length > 0 ? (
+                    metodosPago
+                      .filter((mp: any) => !mp.nom_metodo_pago?.includes('/') && mp.habilitado !== 0)
+                      .map((mp: any) => (
+                        <option key={mp.id} value={mp.id}>
+                          {String(mp.nom_metodo_pago || '').toUpperCase()}
+                        </option>
+                      ))
+                  ) : (
+                    <>
+                      <option value="4">EFECTIVO</option>
+                      <option value="5">YAPE</option>
+                      <option value="6">PLIN</option>
+                    </>
+                  )}
                 </select>
               </div>
 

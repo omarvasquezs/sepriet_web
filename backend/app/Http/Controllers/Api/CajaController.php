@@ -72,12 +72,22 @@ class CajaController extends Controller
                     })
                     ->sum('monto_abonado');
 
-                $ingresosYapePlin = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+                $ingresosYape = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+                    ->where('metodo_pago_id', 5)
+                    ->sum('monto_abonado');
+
+                $ingresosPlin = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+                    ->where('metodo_pago_id', 6)
+                    ->sum('monto_abonado');
+
+                $ingresosYapePlinLegacy = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
                     ->where('metodo_pago_id', 1)
                     ->sum('monto_abonado');
 
+                $ingresosYapePlin = $ingresosYape + $ingresosPlin + $ingresosYapePlinLegacy;
+
                 $ingresosOtros = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
-                    ->whereNotIn('metodo_pago_id', [1, 4])
+                    ->whereNotIn('metodo_pago_id', [1, 4, 5, 6])
                     ->whereNotNull('metodo_pago_id')
                     ->sum('monto_abonado');
 
@@ -89,7 +99,10 @@ class CajaController extends Controller
                     ->get();
 
                 $egresosEfectivo = (float)$egresos->where('id_metodo_pago', 4)->sum('monto');
-                $egresosYapePlin = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+                $egresosYape = (float)$egresos->where('id_metodo_pago', 5)->sum('monto');
+                $egresosPlin = (float)$egresos->where('id_metodo_pago', 6)->sum('monto');
+                $egresosYapePlinLegacy = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+                $egresosYapePlin = $egresosYape + $egresosPlin + $egresosYapePlinLegacy;
                 $totalEgresos = (float)$egresos->sum('monto');
 
                 $montoInicial = (float)$cajaCerradaHoy->monto_apertura;
@@ -110,10 +123,14 @@ class CajaController extends Controller
                     'hora_cierre' => Carbon::parse($cajaCerradaHoy->datetime_cierre)->format('h:i a'),
                     'monto_inicial' => $montoInicial,
                     'ingresos_efectivo' => $ingresosEfectivo,
+                    'ingresos_yape' => $ingresosYape,
+                    'ingresos_plin' => $ingresosPlin,
                     'ingresos_yape_plin' => $ingresosYapePlin,
                     'ingresos_otros' => $ingresosOtros,
                     'total_ingresos' => $totalIngresos,
                     'egresos_efectivo' => $egresosEfectivo,
+                    'egresos_yape' => $egresosYape,
+                    'egresos_plin' => $egresosPlin,
                     'egresos_yape_plin' => $egresosYapePlin,
                     'total_egresos' => $totalEgresos,
                     'monto_teorico_efectivo' => $montoTeoricoEfectivo,
@@ -151,12 +168,22 @@ class CajaController extends Controller
             })
             ->sum('monto_abonado');
 
-        $ingresosYapePlin = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+        $ingresosYape = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+            ->where('metodo_pago_id', 5)
+            ->sum('monto_abonado');
+
+        $ingresosPlin = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
+            ->where('metodo_pago_id', 6)
+            ->sum('monto_abonado');
+
+        $ingresosYapePlinLegacy = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
             ->where('metodo_pago_id', 1)
             ->sum('monto_abonado');
 
+        $ingresosYapePlin = $ingresosYape + $ingresosPlin + $ingresosYapePlinLegacy;
+
         $ingresosOtros = (float)ReporteIngreso::whereBetween('fecha', [$fechaDesde, $fechaHasta])
-            ->whereNotIn('metodo_pago_id', [1, 4])
+            ->whereNotIn('metodo_pago_id', [1, 4, 5, 6])
             ->whereNotNull('metodo_pago_id')
             ->sum('monto_abonado');
 
@@ -173,7 +200,10 @@ class CajaController extends Controller
         $egresos = $egresosQuery->orderBy('fecha', 'desc')->get();
 
         $egresosEfectivo = (float)$egresos->where('id_metodo_pago', 4)->sum('monto');
-        $egresosYapePlin = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+        $egresosYape = (float)$egresos->where('id_metodo_pago', 5)->sum('monto');
+        $egresosPlin = (float)$egresos->where('id_metodo_pago', 6)->sum('monto');
+        $egresosYapePlinLegacy = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+        $egresosYapePlin = $egresosYape + $egresosPlin + $egresosYapePlinLegacy;
         $totalEgresos = (float)$egresos->sum('monto');
 
         // 6. Calculate Balances
@@ -191,10 +221,14 @@ class CajaController extends Controller
             'hora_apertura' => Carbon::parse($cajaAbierta->datetime_apertura)->format('h:i a'),
             'monto_inicial' => $montoInicial,
             'ingresos_efectivo' => $ingresosEfectivo,
+            'ingresos_yape' => $ingresosYape,
+            'ingresos_plin' => $ingresosPlin,
             'ingresos_yape_plin' => $ingresosYapePlin,
             'ingresos_otros' => $ingresosOtros,
             'total_ingresos' => $totalIngresos,
             'egresos_efectivo' => $egresosEfectivo,
+            'egresos_yape' => $egresosYape,
+            'egresos_plin' => $egresosPlin,
             'egresos_yape_plin' => $egresosYapePlin,
             'total_egresos' => $totalEgresos,
             'monto_teorico_efectivo' => $montoTeoricoEfectivo,
@@ -254,14 +288,26 @@ class CajaController extends Controller
             })
             ->sum('monto_abonado');
 
-        $ingresosYapePlin = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
+        $ingresosYape = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
+            ->where('fecha', '<=', $now)
+            ->where('metodo_pago_id', 5)
+            ->sum('monto_abonado');
+
+        $ingresosPlin = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
+            ->where('fecha', '<=', $now)
+            ->where('metodo_pago_id', 6)
+            ->sum('monto_abonado');
+
+        $ingresosYapePlinLegacy = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
             ->where('fecha', '<=', $now)
             ->where('metodo_pago_id', 1)
             ->sum('monto_abonado');
 
+        $ingresosYapePlin = $ingresosYape + $ingresosPlin + $ingresosYapePlinLegacy;
+
         $ingresosOtros = (float)ReporteIngreso::where('fecha', '>=', $cajaAbierta->datetime_apertura)
             ->where('fecha', '<=', $now)
-            ->whereNotIn('metodo_pago_id', [1, 4])
+            ->whereNotIn('metodo_pago_id', [1, 4, 5, 6])
             ->whereNotNull('metodo_pago_id')
             ->sum('monto_abonado');
 
@@ -269,7 +315,10 @@ class CajaController extends Controller
 
         $egresos = CajaEgreso::where('id_caja', $cajaAbierta->id)->get();
         $egresosEfectivo = (float)$egresos->where('id_metodo_pago', 4)->sum('monto');
-        $egresosYapePlin = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+        $egresosYape = (float)$egresos->where('id_metodo_pago', 5)->sum('monto');
+        $egresosPlin = (float)$egresos->where('id_metodo_pago', 6)->sum('monto');
+        $egresosYapePlinLegacy = (float)$egresos->where('id_metodo_pago', 1)->sum('monto');
+        $egresosYapePlin = $egresosYape + $egresosPlin + $egresosYapePlinLegacy;
         $totalEgresos = (float)$egresos->sum('monto');
 
         $montoInicial = (float)$cajaAbierta->monto_apertura;
@@ -292,10 +341,14 @@ class CajaController extends Controller
                 'datetime_cierre' => $now->toDateTimeString(),
                 'monto_inicial' => $montoInicial,
                 'ingresos_efectivo' => $ingresosEfectivo,
+                'ingresos_yape' => $ingresosYape,
+                'ingresos_plin' => $ingresosPlin,
                 'ingresos_yape_plin' => $ingresosYapePlin,
                 'ingresos_otros' => $ingresosOtros,
                 'total_ingresos' => $totalIngresos,
                 'egresos_efectivo' => $egresosEfectivo,
+                'egresos_yape' => $egresosYape,
+                'egresos_plin' => $egresosPlin,
                 'egresos_yape_plin' => $egresosYapePlin,
                 'total_egresos' => $totalEgresos,
                 'monto_teorico_efectivo' => $montoTeoricoEfectivo,

@@ -376,10 +376,19 @@ class ComprobanteController extends Controller
             $localesQuery->where('habilitado', 1);
         }
 
-        $metodos = $metodosPagoQuery->get()->map(function ($mp) {
-            $mp->nom_metodo_pago = mb_strtoupper((string)$mp->nom_metodo_pago, 'UTF-8');
-            return $mp;
-        });
+        $metodos = $metodosPagoQuery
+            ->where('nom_metodo_pago', 'NOT LIKE', '%/%')
+            ->orderByRaw("CASE 
+                WHEN UPPER(nom_metodo_pago) LIKE '%EFECTIVO%' THEN 1
+                WHEN UPPER(nom_metodo_pago) = 'YAPE' THEN 2
+                WHEN UPPER(nom_metodo_pago) = 'PLIN' THEN 3
+                WHEN UPPER(nom_metodo_pago) LIKE '%TARJETA%' THEN 4
+                ELSE 5 END, id ASC")
+            ->get()
+            ->map(function ($mp) {
+                $mp->nom_metodo_pago = mb_strtoupper((string)$mp->nom_metodo_pago, 'UTF-8');
+                return $mp;
+            });
 
         return response()->json([
             'estados_pago' => $estadosPagoQuery->get(),
