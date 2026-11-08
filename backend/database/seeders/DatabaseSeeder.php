@@ -157,7 +157,7 @@ class DatabaseSeeder extends Seeder
                 ['nombre' => 'Oficina Principal'],
                 [
                     'direccion' => 'Jr. Enrique Nerini N° 995 Urb. San Luis',
-                    'telefono' => '913027176',
+                    'telefono' => '+51 944 864 652',
                     'observaciones' => 'vjslaundry@mypefact.com',
                     'habilitado' => 1,
                 ]

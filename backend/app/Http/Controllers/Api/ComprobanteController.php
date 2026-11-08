@@ -415,9 +415,9 @@ class ComprobanteController extends Controller
         ])->findOrFail($id);
 
         $force = $request->boolean('force', false);
-        $format = strtolower($request->query('format', $request->query('formato', 'ticket')));
+        $format = strtolower($request->query('format', $request->query('formato', 'a4')));
         if (!in_array($format, ['ticket', 'a4'], true)) {
-            $format = 'ticket';
+            $format = 'a4';
         }
 
         $result = $this->createOrRetrievePdf($comprobante, $force, $format);
@@ -426,9 +426,9 @@ class ComprobanteController extends Controller
     }
 
     /**
-     * Crea o recupera el archivo PDF físico en disco (formato ticket o a4).
+     * Crea o recupera el archivo PDF físico en disco (formato a4 por defecto o ticket).
      */
-    private function createOrRetrievePdf(Comprobante $comprobante, bool $force = false, string $format = 'ticket'): array
+    private function createOrRetrievePdf(Comprobante $comprobante, bool $force = false, string $format = 'a4'): array
     {
         $date = Carbon::parse($comprobante->fecha ?? now());
         $year = $date->format('Y');
@@ -619,11 +619,11 @@ class ComprobanteController extends Controller
             'detalles.servicio'
         ])->findOrFail($id);
 
-        // 1. Generar o recuperar PDF (ticket o a4)
+        // 1. Generar o recuperar PDF (a4 por defecto o ticket)
         $force = !empty($validated['force_regenerate_pdf']);
         $format = !empty($validated['format']) && in_array(strtolower($validated['format']), ['ticket', 'a4'], true)
             ? strtolower($validated['format'])
-            : 'ticket';
+            : 'a4';
         $pdfInfo = $this->createOrRetrievePdf($comprobante, $force, $format);
 
         // 2. Obtener credenciales y parámetros de TextMeBot

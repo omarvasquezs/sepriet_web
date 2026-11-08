@@ -195,10 +195,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       setCopied(false);
       setBotStatusMessage(null);
 
-      // Trigger background PDF generation
+      // Trigger background PDF generation (A4 format by default)
       setIsGeneratingPdf(true);
       api
-        .get(`/comprobantes/${ticket.id}/pdf`)
+        .get(`/comprobantes/${ticket.id}/pdf?format=a4`)
         .then((res) => {
           if (res.data?.success) {
             let cleanUrl = res.data.url;
@@ -285,6 +285,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         phone: fullNumber,
         apikey: textMeBotKey.trim(),
         message: message,
+        format: 'a4',
       });
 
       if (res.data?.success) {

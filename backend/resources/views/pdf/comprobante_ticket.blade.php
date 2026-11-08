@@ -246,9 +246,7 @@
         <div class="company-name">LAVANDERIA SEPRIET</div>
         <div class="company-info">RUC {{ $empresaRuc }}</div>
         <div class="company-info">{{ strtoupper($local->direccion ?? 'JR. ENRIQUE NERINI N° 995 URB. SAN LUIS') }}</div>
-        @if(!empty($local->telefono))
-            <div class="company-info">Tel: {{ $local->telefono }}</div>
-        @endif
+        <div class="company-info">Tel / Cel: {{ $local->telefono ?? '+51 944 864 652' }}</div>
     </div>
 
     {{-- 2. Tipo de Comprobante y Serie/Correlativo --}}
@@ -392,9 +390,8 @@
     <div class="qr-section">
         <img src="{{ $qrBase64 }}" class="qr-img" alt="QR SUNAT" />
         <div class="sunat-caption">
-            Representación impresa de Comprobante electrónica ,<br>
-            consulte en:<br>
-            <strong>https://app.sepriet.com</strong>
+            Representación impresa de Comprobante electrónico.<br>
+            Autorizada mediante resolución de la SUNAT.
             @if(!empty($codigoHash))
                 <div class="resumen-hash">Resumen: {{ $codigoHash }}</div>
             @endif

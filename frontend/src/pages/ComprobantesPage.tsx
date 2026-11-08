@@ -46,7 +46,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [printPdfLoading, setPrintPdfLoading] = useState(false);
   const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
   const [printPdfError, setPrintPdfError] = useState<string | null>(null);
-  const [printPdfFormat, setPrintPdfFormat] = useState<'ticket' | 'a4'>('ticket');
+  const [printPdfFormat, setPrintPdfFormat] = useState<'ticket' | 'a4'>('a4');
   const pdfIframeRef = useRef<HTMLIFrameElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
@@ -514,7 +514,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     return rawUrl;
   };
 
-  const handleOpenPrintModal = async (ticket: any, format: 'ticket' | 'a4' = 'ticket') => {
+  const handleOpenPrintModal = async (ticket: any, format: 'ticket' | 'a4' = 'a4') => {
     setSelectedTicket(ticket);
     setShowPrintModal(true);
     setPrintPdfLoading(true);
@@ -1819,27 +1819,6 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
             >
               <button
                 type="button"
-                onClick={() => handleChangePrintFormat('ticket')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: printPdfFormat === 'ticket' ? 700 : 500,
-                  borderRadius: '6px',
-                  border: '1px solid',
-                  borderColor: printPdfFormat === 'ticket' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
-                  background: printPdfFormat === 'ticket' ? '#4f46e5' : '#ffffff',
-                  color: printPdfFormat === 'ticket' ? '#ffffff' : 'var(--text-main, #334155)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                🧾 Ticket Térmico (80mm)
-              </button>
-              <button
-                type="button"
                 onClick={() => handleChangePrintFormat('a4')}
                 style={{
                   padding: '6px 14px',
@@ -1858,6 +1837,27 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                 }}
               >
                 📄 Hoja A4
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangePrintFormat('ticket')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: printPdfFormat === 'ticket' ? 700 : 500,
+                  borderRadius: '6px',
+                  border: '1px solid',
+                  borderColor: printPdfFormat === 'ticket' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
+                  background: printPdfFormat === 'ticket' ? '#4f46e5' : '#ffffff',
+                  color: printPdfFormat === 'ticket' ? '#ffffff' : 'var(--text-main, #334155)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                🧾 Ticket Térmico (80mm)
               </button>
             </div>
 

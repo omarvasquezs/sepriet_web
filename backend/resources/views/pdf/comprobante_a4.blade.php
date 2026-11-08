@@ -6,7 +6,7 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 12mm 14mm 12mm 14mm;
+            margin: 20mm 20mm 20mm 20mm;
         }
         * {
             box-sizing: border-box;
@@ -16,7 +16,7 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 8.5pt;
-            line-height: 1.25;
+            line-height: 1.3;
             color: #1e293b;
             background: #ffffff;
         }
@@ -257,10 +257,7 @@
                 <div class="company-name">LAVANDERIA SEPRIET</div>
                 <div class="company-info">RUC {{ $empresaRuc }}</div>
                 <div class="company-info">{{ strtoupper($local->direccion ?? 'JR. ENRIQUE NERINI N° 995 URB. SAN LUIS') }}</div>
-                @if(!empty($local->telefono))
-                    <div class="company-info">Tel: {{ $local->telefono }}</div>
-                @endif
-                <div class="company-info">Web: https://app.sepriet.com</div>
+                <div class="company-info">Tel / Cel: {{ $local->telefono ?? '+51 944 864 652' }}</div>
             </td>
             <td class="sunat-box-cell">
                 <div class="sunat-box">
@@ -356,7 +353,6 @@
                         <td class="legal-text">
                             <div><strong>Representación impresa de la {{ $tipoComprobanteNombre }}</strong></div>
                             <div>Autorizada mediante resolución de superintendencia de la SUNAT.</div>
-                            <div>Consulte la validez de este comprobante en: <strong>https://app.sepriet.com</strong></div>
                             @if(!empty($codigoHash))
                                 <div class="legal-hash">Código Hash: {{ $codigoHash }}</div>
                             @endif
