@@ -461,7 +461,7 @@ class ComprobanteController extends Controller
 
             $local = Local::where('habilitado', 1)->first();
 
-            $empresaRuc = config('services.sunat.ruc', env('EMPRESA_RUC', '20608518855'));
+            $empresaRuc = config('services.sunat.ruc', env('EMPRESA_RUC', '15614550373'));
             if ($local && !empty($local->ruc)) {
                 $empresaRuc = preg_replace('/\D/', '', $local->ruc);
             }
@@ -554,7 +554,7 @@ class ComprobanteController extends Controller
             // Dimensiones calibradas según especificación de cabezal térmico: ancho 72mm (204.09 pt)
             // Altura compacta optimizada para corte continuo en página única
             $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
-            $calculatedHeight = max(450.0, 420 + ($itemCount * 18));
+            $calculatedHeight = max(470.0, 440 + ($itemCount * 18));
             $pdf->setPaper([0, 0, 204.09, $calculatedHeight], 'portrait');
 
             // Asegurar directorio y guardar

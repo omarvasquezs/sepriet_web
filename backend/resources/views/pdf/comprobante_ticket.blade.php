@@ -41,9 +41,9 @@
             margin-bottom: 2px;
         }
         .logo-img {
-            max-width: 95px;
-            max-height: 30px;
-            margin: 0 auto 1px auto;
+            max-width: 145px;
+            max-height: 48px;
+            margin: 0 auto 2px auto;
             display: block;
         }
         .company-name {
@@ -241,9 +241,9 @@
         @if(!empty($logoBase64))
             <img src="{{ $logoBase64 }}" alt="Logo Sepriet" class="logo-img" />
         @endif
-        <div class="company-name">LAVANDERIA SEPRIET S.A.C.</div>
+        <div class="company-name">LAVANDERIA SEPRIET</div>
         <div class="company-info">RUC {{ $empresaRuc }}</div>
-        <div class="company-info">{{ strtoupper($local->direccion ?? 'AV. AGUSTIN DE LA ROSA TORO 318 SAN LUIS') }}</div>
+        <div class="company-info">{{ strtoupper($local->direccion ?? 'JR. ENRIQUE NERINI N° 995 URB. SAN LUIS') }}</div>
         @if(!empty($local->telefono))
             <div class="company-info">Tel: {{ $local->telefono }}</div>
         @endif

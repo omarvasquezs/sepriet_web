@@ -39,4 +39,8 @@ return [
         'api_key' => env('TEXTMEBOT_API_KEY', 'hCS2aZ9aHwhF'),
     ],
 
+    'sunat' => [
+        'ruc' => env('EMPRESA_RUC', '15614550373'),
+    ],
+
 ];

@@ -18,7 +18,7 @@ class SunatQrService
     public static function buildSunatQrString(Comprobante $comprobante, ?Local $local = null): string
     {
         // 1. RUC Emisor de la empresa
-        $rucEmisor = config('services.sunat.ruc', env('EMPRESA_RUC', '20608518855'));
+        $rucEmisor = config('services.sunat.ruc', env('EMPRESA_RUC', '15614550373'));
         if ($local && !empty($local->ruc)) {
             $rucEmisor = preg_replace('/\D/', '', $local->ruc);
         }

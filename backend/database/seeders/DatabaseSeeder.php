@@ -156,7 +156,7 @@ class DatabaseSeeder extends Seeder
             Local::firstOrCreate(
                 ['nombre' => 'Oficina Principal'],
                 [
-                    'direccion' => 'Av Agustín de la Rosa Toro 318 SAN LUIS',
+                    'direccion' => 'Jr. Enrique Nerini N° 995 Urb. San Luis',
                     'telefono' => '913027176',
                     'observaciones' => 'vjslaundry@mypefact.com',
                     'habilitado' => 1,
