@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Role extends Model
 {
     public $timestamps = false;
-    protected $fillable = ['nom_rol', 'role_name', 'habilitado'];
+    protected $fillable = ['nom_rol', 'role_name', 'habilitado', 'permisos'];
+
+    protected $casts = [
+        'permisos' => 'array',
+        'habilitado' => 'boolean',
+    ];
 
     protected $appends = ['nombre'];
 

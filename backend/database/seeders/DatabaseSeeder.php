@@ -24,13 +24,17 @@ class DatabaseSeeder extends Seeder
         $cajeroRole = null;
 
         if (Schema::hasColumn('roles', 'nom_rol')) {
-            $adminRole = Role::whereRaw('LOWER(nom_rol) = ?', ['admin'])->first();
+            $adminRole = Role::whereRaw('LOWER(nom_rol) = ?', ['admin'])
+                ->orWhereRaw('LOWER(nom_rol) = ?', ['administrador'])
+                ->first();
             if (!$adminRole) {
-                $adminRole = Role::create(['nom_rol' => 'Admin']);
+                $adminRole = Role::create(['nom_rol' => 'ADMINISTRADOR']);
             }
-            $cajeroRole = Role::whereRaw('LOWER(nom_rol) = ?', ['cajero'])->first();
+            $cajeroRole = Role::whereRaw('LOWER(nom_rol) = ?', ['cajero'])
+                ->orWhereRaw('LOWER(nom_rol) = ?', ['atencion al cliente'])
+                ->first();
             if (!$cajeroRole) {
-                $cajeroRole = Role::create(['nom_rol' => 'Cajero']);
+                $cajeroRole = Role::create(['nom_rol' => 'ATENCION AL CLIENTE']);
             }
         } elseif (Schema::hasColumn('roles', 'role_name')) {
             $adminRole = Role::whereRaw('LOWER(role_name) = ?', ['admin'])
@@ -40,15 +44,16 @@ class DatabaseSeeder extends Seeder
                 $adminRole = Role::create(['role_name' => 'ADMINISTRADOR', 'habilitado' => 1]);
             }
             $cajeroRole = Role::whereRaw('LOWER(role_name) = ?', ['cajero'])
+                ->orWhereRaw('LOWER(role_name) = ?', ['atencion al cliente'])
                 ->orWhereRaw('LOWER(role_name) = ?', ['asistente'])
                 ->first();
             if (!$cajeroRole) {
-                $cajeroRole = Role::create(['role_name' => 'CAJERO', 'habilitado' => 1]);
+                $cajeroRole = Role::create(['role_name' => 'ATENCION AL CLIENTE', 'habilitado' => 1]);
             }
         }
 
-        // 2. Users (Idempotent updateOrCreate)
-        User::updateOrCreate(
+        // 2. Users (Idempotent firstOrCreate)
+        User::firstOrCreate(
             ['username' => 'admin'],
             [
                 'name' => 'Administrador',
@@ -59,7 +64,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['username' => 'cajero'],
             [
                 'name' => 'Cajero 1',

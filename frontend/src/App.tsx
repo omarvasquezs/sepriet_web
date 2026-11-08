@@ -52,7 +52,12 @@ const MainLayout: React.FC = () => {
 
   const handleTabChange = (newTab: string) => {
     setIsSidebarOpen(false);
-    if (newTab === activeTab) return;
+    if (newTab === activeTab) {
+      if (newTab === 'dashboard') {
+        window.dispatchEvent(new CustomEvent('caja:updated'));
+      }
+      return;
+    }
     setIsTransitioning(true);
     setProgressWidth(30);
 
@@ -153,7 +158,15 @@ const MainLayout: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div key={activeTab} className="page-transition">
-            {activeTab === 'dashboard' && <DashboardPage onNavigate={handleTabChange} />}
+            {activeTab === 'dashboard' && (
+              <DashboardPage
+                onNavigate={handleTabChange}
+                onRegistrarComprobante={handleRegistrarComprobante}
+                onRegistrarCliente={handleRegistrarCliente}
+                onConsultarComprobantes={handleConsultarComprobantes}
+                onOpenAperturaModal={() => setShowGlobalAperturaModal(true)}
+              />
+            )}
             {activeTab === 'comprobantes' && (
               <ComprobantesPage
                 filterPreset={comprobanteFilterPreset}
@@ -167,7 +180,8 @@ const MainLayout: React.FC = () => {
             {activeTab === 'servicios' && <ServiciosPage />}
             {activeTab === 'caja' && <CajaPage />}
             {activeTab === 'reportes' && <ReportesPage />}
-            {activeTab === 'usuarios' && <UsuariosPage />}
+            {activeTab === 'usuarios' && <UsuariosPage initialTab="usuarios" />}
+            {activeTab === 'roles' && <UsuariosPage initialTab="roles" />}
           </div>
         </div>
 
@@ -225,6 +239,7 @@ const MainLayout: React.FC = () => {
         onClose={() => setShowGlobalAperturaModal(false)}
         onSuccess={() => {
           setShowGlobalAperturaModal(false);
+          window.dispatchEvent(new CustomEvent('caja:updated'));
         }}
       />
 

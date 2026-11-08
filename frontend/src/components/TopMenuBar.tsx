@@ -17,6 +17,7 @@ import {
   History,
   Layers,
   Sparkles,
+  Home,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -40,8 +41,12 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   onOpenAperturaModal,
   onToggleMobileDrawer,
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const isAdmin = user?.role?.toUpperCase().includes('ADMIN') || user?.role_id === 1;
+  const canAccessServicios = isAdmin || hasPermission('servicios');
+  const canAccessSistemas = isAdmin || hasPermission('sistemas');
+  const canAccessCaja = isAdmin || hasPermission('caja_apertura') || hasPermission('caja_cierre') || hasPermission('caja_egresos') || hasPermission('caja_historial');
+  const canAccessReportes = isAdmin || hasPermission('reportes');
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [cajaAbierta, setCajaAbierta] = useState<boolean>(false);
@@ -52,7 +57,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   const fetchCajaStatus = () => {
     api.get('/caja/estado')
       .then((res) => {
-        const isAbierta = !!res.data.caja && !res.data.caja.datetime_cierre;
+        const isAbierta = res.data.estado === 'abierta' || (!!res.data.caja && !res.data.caja.datetime_cierre);
         setCajaAbierta(isAbierta);
         if (isAbierta && res.data.monto_teorico_efectivo !== undefined) {
           setSaldoEfectivo(Number(res.data.monto_teorico_efectivo));
@@ -78,8 +83,23 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
 
   useEffect(() => {
     fetchCajaStatus();
-    const interval = setInterval(fetchCajaStatus, 60000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchCajaStatus, 15000);
+
+    const handleCajaUpdated = () => fetchCajaStatus();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCajaStatus();
+    };
+
+    window.addEventListener('caja:updated', handleCajaUpdated);
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleCajaUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('caja:updated', handleCajaUpdated);
+      window.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleCajaUpdated);
+    };
   }, []);
 
   // Close dropdown on outside click
@@ -129,24 +149,17 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               marginRight: '8px',
             }}
           >
-            <div
+            <img
+              src="/images/logo_sepriet.png"
+              alt="Lavandería Seprie't"
               style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '1rem',
-                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.3)',
+                height: '40px',
+                width: 'auto',
+                maxWidth: '95px',
+                objectFit: 'contain',
                 flexShrink: 0,
               }}
-            >
-              S
-            </div>
+            />
             <div className="top-menu-brand-text">
               <span className="desktop-brand-title top-menu-brand-title">
                 LAVANDERIA SEPRIET
@@ -163,6 +176,21 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
 
         {/* Center: Desktop Navigation Dropdown Menus (Java / VJS structure) */}
         <nav className="top-menu-nav">
+          {/* 0. INICIO */}
+          <div className="top-menu-item">
+            <button
+              type="button"
+              className={`top-menu-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                setOpenDropdown(null);
+                onNavigate('dashboard');
+              }}
+            >
+              <Home size={15} color={activeTab === 'dashboard' ? '#4f46e5' : '#64748b'} />
+              <span>Inicio</span>
+            </button>
+          </div>
+
           {/* 1. REGISTRAR */}
           <div
             className={`top-menu-item ${openDropdown === 'registrar' ? 'open' : ''}`}
@@ -280,19 +308,19 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
             </div>
           </div>
 
-          {/* 3. OPCIONES AVANZADAS (Admin only or authorized) */}
-          {isAdmin && (
+          {/* 3. SERVICIOS Y TARIFAS */}
+          {canAccessServicios && (
             <div
-              className={`top-menu-item ${openDropdown === 'avanzadas' ? 'open' : ''}`}
-              onMouseEnter={() => setOpenDropdown('avanzadas')}
+              className={`top-menu-item ${openDropdown === 'servicios' ? 'open' : ''}`}
+              onMouseEnter={() => setOpenDropdown('servicios')}
               onMouseLeave={() => setOpenDropdown(null)}
             >
               <button
                 type="button"
-                className={`top-menu-btn ${activeTab === 'servicios' || activeTab === 'usuarios' ? 'active' : ''}`}
-                onClick={() => handleMenuClick('avanzadas')}
+                className={`top-menu-btn ${activeTab === 'servicios' ? 'active' : ''}`}
+                onClick={() => handleAction(() => onNavigate('servicios'))}
               >
-                <span>Opciones Avanzadas</span>
+                <span>Servicios y Tarifas</span>
                 <ChevronDown size={14} className="top-menu-arrow" />
               </button>
               <div className="top-menu-dropdown">
@@ -302,18 +330,48 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   onClick={() => handleAction(() => onNavigate('servicios'))}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Shirt size={16} color="#8b5cf6" />
-                    <span>Servicios y Tarifas</span>
+                    <Shirt size={16} color="#10b981" />
+                    <span>Catálogo y Tarifario de Precios</span>
                   </div>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* 4. SISTEMAS (Usuarios y Perfiles) */}
+          {canAccessSistemas && (
+            <div
+              className={`top-menu-item ${openDropdown === 'sistemas' ? 'open' : ''}`}
+              onMouseEnter={() => setOpenDropdown('sistemas')}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <button
+                type="button"
+                className={`top-menu-btn ${activeTab === 'usuarios' || activeTab === 'roles' ? 'active' : ''}`}
+                onClick={() => handleMenuClick('sistemas')}
+              >
+                <span>Sistemas</span>
+                <ChevronDown size={14} className="top-menu-arrow" />
+              </button>
+              <div className="top-menu-dropdown">
                 <button
                   type="button"
                   className="top-menu-subitem"
                   onClick={() => handleAction(() => onNavigate('usuarios'))}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Shield size={16} color="#3b82f6" />
-                    <span>Usuarios y Permisos</span>
+                    <Users size={16} color="#3b82f6" />
+                    <span>Gestión de Usuarios</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('roles'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={16} color="#8b5cf6" />
+                    <span>Perfiles y Permisos</span>
                   </div>
                 </button>
               </div>
@@ -321,86 +379,90 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
           )}
 
           {/* 4. CAJA */}
-          <div
-            className={`top-menu-item ${openDropdown === 'caja' ? 'open' : ''}`}
-            onMouseEnter={() => setOpenDropdown('caja')}
-            onMouseLeave={() => setOpenDropdown(null)}
-          >
-            <button
-              type="button"
-              className={`top-menu-btn ${activeTab === 'caja' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('caja')}
+          {canAccessCaja && (
+            <div
+              className={`top-menu-item ${openDropdown === 'caja' ? 'open' : ''}`}
+              onMouseEnter={() => setOpenDropdown('caja')}
+              onMouseLeave={() => setOpenDropdown(null)}
             >
-              <span>Caja</span>
-              <ChevronDown size={14} className="top-menu-arrow" />
-            </button>
-            <div className="top-menu-dropdown">
               <button
                 type="button"
-                className="top-menu-subitem"
-                onClick={() => handleAction(() => onNavigate('caja'))}
+                className={`top-menu-btn ${activeTab === 'caja' ? 'active' : ''}`}
+                onClick={() => handleMenuClick('caja')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Wallet size={16} color="#059669" />
-                  <span>Estado de Caja / Egresos</span>
-                </div>
+                <span>Caja</span>
+                <ChevronDown size={14} className="top-menu-arrow" />
               </button>
-              <button
-                type="button"
-                className="top-menu-subitem"
-                onClick={() => handleAction(() => {
-                  if (!cajaAbierta) {
-                    onOpenAperturaModal();
-                  } else {
-                    onNavigate('caja');
-                  }
-                })}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {cajaAbierta ? <LockIcon size={16} color="#dc2626" /> : <Unlock size={16} color="#16a34a" />}
-                  <span>{cajaAbierta ? 'Cerrar Turno de Caja' : 'Aperturar Caja del Día'}</span>
-                </div>
-              </button>
+              <div className="top-menu-dropdown">
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('caja'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Wallet size={16} color="#059669" />
+                    <span>Estado de Caja / Egresos</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => {
+                    if (!cajaAbierta) {
+                      onOpenAperturaModal();
+                    } else {
+                      onNavigate('caja');
+                    }
+                  })}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {cajaAbierta ? <LockIcon size={16} color="#dc2626" /> : <Unlock size={16} color="#16a34a" />}
+                    <span>{cajaAbierta ? 'Cerrar Turno de Caja' : 'Aperturar Caja del Día'}</span>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 5. REPORTES */}
-          <div
-            className={`top-menu-item ${openDropdown === 'reportes' ? 'open' : ''}`}
-            onMouseEnter={() => setOpenDropdown('reportes')}
-            onMouseLeave={() => setOpenDropdown(null)}
-          >
-            <button
-              type="button"
-              className={`top-menu-btn ${activeTab === 'reportes' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('reportes')}
+          {canAccessReportes && (
+            <div
+              className={`top-menu-item ${openDropdown === 'reportes' ? 'open' : ''}`}
+              onMouseEnter={() => setOpenDropdown('reportes')}
+              onMouseLeave={() => setOpenDropdown(null)}
             >
-              <span>Reportes</span>
-              <ChevronDown size={14} className="top-menu-arrow" />
-            </button>
-            <div className="top-menu-dropdown">
               <button
                 type="button"
-                className="top-menu-subitem"
-                onClick={() => handleAction(() => onNavigate('reportes'))}
+                className={`top-menu-btn ${activeTab === 'reportes' ? 'active' : ''}`}
+                onClick={() => handleMenuClick('reportes')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <TrendingUp size={16} color="#4f46e5" />
-                  <span>Financieros</span>
-                </div>
+                <span>Reportes</span>
+                <ChevronDown size={14} className="top-menu-arrow" />
               </button>
-              <button
-                type="button"
-                className="top-menu-subitem"
-                onClick={() => handleAction(() => onNavigate('reportes'))}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={16} color="#0284c7" />
-                  <span>Carga de Trabajo</span>
-                </div>
-              </button>
+              <div className="top-menu-dropdown">
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('reportes'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <TrendingUp size={16} color="#4f46e5" />
+                    <span>Financieros</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('reportes'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="#0284c7" />
+                    <span>Carga de Trabajo</span>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </nav>
 
         {/* Right Side: Status Badge, Live Clock, User Pill */}

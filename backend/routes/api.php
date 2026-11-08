@@ -43,6 +43,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Caja Chica / Turnos
     Route::get('/caja/estado', [CajaController::class, 'estado']);
+    Route::get('/caja/historial', [CajaController::class, 'historial']);
     Route::post('/caja/apertura', [CajaController::class, 'apertura']);
     Route::post('/caja/cierre', [CajaController::class, 'cierre']);
     Route::post('/caja/egreso', [CajaController::class, 'registrarEgreso']);

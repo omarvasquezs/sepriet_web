@@ -5,217 +5,408 @@
     <title>{{ $comprobante->cod_comprobante }}</title>
     <style>
         @page {
-            margin: 24px 15px 12px 15px;
-            size: 80mm 200mm; /* Formato Ticket Térmico estándar 80mm */
+            margin: 1.5mm 1.5mm 1.5mm 1.5mm;
+            size: 72mm auto;
         }
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 11px;
-            line-height: 1.25;
-            color: #111;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 6.8pt;
+            line-height: 1.15;
+            color: #000;
+            width: 100%;
+            max-width: 68mm;
+            margin: 0 auto;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+
+        .divider {
+            border-top: 1px dashed #333;
+            margin: 3px 0;
+            width: 100%;
+        }
+
+        /* 1. Header / Empresa */
         .header {
             text-align: center;
-            border-bottom: 1px dashed #444;
-            padding-top: 4px;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
-        }
-        .logo-container {
-            text-align: center;
-            margin-top: 2px;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
         }
         .logo-img {
-            width: 140px;
-            max-width: 155px;
-            height: auto;
-            margin-bottom: 4px;
+            max-width: 95px;
+            max-height: 30px;
+            margin: 0 auto 1px auto;
+            display: block;
         }
-        .logo-title {
-            font-size: 15px;
+        .company-name {
+            font-size: 7.8pt;
             font-weight: bold;
-            margin: 0;
-            letter-spacing: 0.5px;
+            margin-bottom: 1px;
+            letter-spacing: 0.2px;
         }
-        .subtitle {
-            font-size: 9px;
-            color: #444;
-            margin: 2px 0;
+        .company-info {
+            font-size: 6.3pt;
+            color: #111;
+            line-height: 1.15;
+            margin-bottom: 0.5px;
         }
-        .ticket-code {
-            font-size: 13px;
+
+        /* 2. Título de Comprobante y Número */
+        .doc-section {
+            text-align: center;
+            margin: 3px 0 3px 0;
+        }
+        .doc-type {
+            font-size: 7.6pt;
             font-weight: bold;
-            margin-top: 5px;
-            padding: 3px 0;
-            border-top: 1px dotted #ccc;
-            border-bottom: 1px dotted #ccc;
+            letter-spacing: 0.2px;
         }
-        .info-section {
-            margin-bottom: 8px;
-            font-size: 10px;
-        }
-        .info-row {
-            margin: 2px 0;
-        }
-        .info-label {
+        .doc-number {
+            font-size: 7.5pt;
             font-weight: bold;
-            display: inline-block;
-            width: 75px;
+            margin-top: 1px;
         }
+
+        /* 3. Tabla de Metadatos */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 6.6pt;
+            margin-bottom: 1px;
+        }
+        .info-table td {
+            vertical-align: top;
+            padding: 0.5px 0;
+        }
+        .col-label {
+            width: 28%;
+            white-space: nowrap;
+        }
+        .col-sep {
+            width: 4%;
+            text-align: center;
+        }
+        .col-val {
+            width: 68%;
+            word-break: break-word;
+        }
+
+        /* 4. Sección Cliente */
+        .client-header {
+            font-size: 6.8pt;
+            font-weight: bold;
+            margin-top: 3px;
+            margin-bottom: 1px;
+        }
+
+        /* 5. Tabla de Ítems (Formato Opeluce) */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
-            margin-bottom: 8px;
+            margin: 2px 0;
+            font-size: 6.6pt;
         }
-        .items-table th {
-            border-top: 1px dashed #444;
-            border-bottom: 1px dashed #444;
-            text-align: left;
-            padding: 4px 0;
-            font-size: 9.5px;
+        .items-table thead th {
+            padding: 2px 0 1px 0;
+            font-weight: bold;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+            font-size: 6.6pt;
         }
-        .items-table td {
-            padding: 3px 0;
+        .th-cant { width: 15%; text-align: left; }
+        .th-punit { width: 28%; text-align: center; }
+        .th-desc { width: 24%; text-align: center; }
+        .th-importe { width: 33%; text-align: right; padding-right: 1px; }
+
+        .item-data-row td {
+            padding-top: 2px;
+            vertical-align: bottom;
+        }
+        .item-desc-row td {
+            padding-bottom: 2px;
+            line-height: 1.15;
             vertical-align: top;
         }
-        .text-right {
-            text-align: right;
+        .td-cant { text-align: left; }
+        .td-punit { text-align: center; }
+        .td-desc { text-align: center; }
+        .td-importe { text-align: right; padding-right: 1px; }
+        .item-description {
+            font-size: 6.6pt;
+            text-transform: uppercase;
         }
-        .text-center {
+        .item-obs {
+            font-size: 5.8pt;
+            color: #444;
+            display: block;
+        }
+
+        /* 6. Totales (Alineados estilo Opeluce) */
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 6.6pt;
+            margin-top: 2px;
+            margin-bottom: 2px;
+            border-top: 1px dashed #333;
+            padding-top: 2px;
+        }
+        .totals-table td {
+            padding: 0.5px 0;
+            vertical-align: middle;
+        }
+        .tot-lbl {
+            width: 60%;
+            text-align: left;
+        }
+        .tot-sep {
+            width: 4%;
             text-align: center;
         }
-        .totals-section {
-            border-top: 1px dashed #444;
-            padding-top: 6px;
-            margin-bottom: 10px;
-            font-size: 10.5px;
-        }
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 2px 0;
+        .tot-val {
+            width: 36%;
             text-align: right;
+            padding-right: 1px;
         }
-        .total-highlight {
-            font-size: 12px;
+        .tot-total-row td {
             font-weight: bold;
+            font-size: 7.4pt;
+            padding: 1.5px 0;
         }
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
+
+        /* 7. Monto en letras */
+        .letras-box {
+            font-size: 6.6pt;
             font-weight: bold;
-            font-size: 9px;
-            border-radius: 3px;
+            text-transform: uppercase;
+            margin: 3px 0 4px 0;
+            line-height: 1.15;
         }
-        .badge-debe { background-color: #fee2e2; color: #991b1b; }
-        .badge-abono { background-color: #fef3c7; color: #92400e; }
-        .badge-cancelado { background-color: #d1fae5; color: #065f46; }
+
+        /* 8. Código QR (Medida Opeluce: ~25mm) */
+        .qr-section {
+            text-align: center;
+            margin: 4px 0 3px 0;
+        }
+        .qr-img {
+            width: 70px;
+            height: 70px;
+            display: block;
+            margin: 0 auto;
+        }
+        .sunat-caption {
+            font-size: 6.0pt;
+            line-height: 1.15;
+            margin-top: 2px;
+            color: #111;
+        }
+        .resumen-hash {
+            font-size: 5.5pt;
+            color: #333;
+            margin-top: 1px;
+            word-break: break-all;
+        }
+
+        /* 9. Pie de página y condiciones */
         .footer {
-            border-top: 1px dashed #444;
-            padding-top: 8px;
+            margin-top: 4px;
+            border-top: 1px dashed #333;
+            padding-top: 3px;
+            font-size: 5.8pt;
+            line-height: 1.15;
+            color: #222;
+        }
+        .footer p {
+            margin-bottom: 1.5px;
+        }
+        .gracias {
             text-align: center;
-            font-size: 8px;
-            color: #555;
-            line-height: 1.2;
+            font-weight: bold;
+            font-size: 7.2pt;
+            margin-top: 3px;
         }
     </style>
 </head>
 <body>
+    {{-- 1. Logo y Datos de la Empresa --}}
     <div class="header">
         @if(!empty($logoBase64))
-            <div class="logo-container">
-                <img src="{{ $logoBase64 }}" class="logo-img" alt="Logo" />
-            </div>
+            <img src="{{ $logoBase64 }}" alt="Logo Sepriet" class="logo-img" />
         @endif
-        <h1 class="logo-title">LAVANDERIA SEPRIET</h1>
-        <div class="subtitle">{{ $local->nombre ?? 'Oficina Principal' }}</div>
-        <div class="subtitle">{{ $local->direccion ?? 'Av. Agustín de la Rosa Toro 318, San Luis' }}</div>
-        <div class="subtitle">Tel: {{ $local->telefono ?? '913 027 176' }}</div>
-        <div class="ticket-code">
-            {{ $tipoComprobanteNombre }}: {{ $comprobante->cod_comprobante }}
-        </div>
+        <div class="company-name">LAVANDERIA SEPRIET S.A.C.</div>
+        <div class="company-info">RUC {{ $empresaRuc }}</div>
+        <div class="company-info">{{ strtoupper($local->direccion ?? 'AV. AGUSTIN DE LA ROSA TORO 318 SAN LUIS') }}</div>
+        @if(!empty($local->telefono))
+            <div class="company-info">Tel: {{ $local->telefono }}</div>
+        @endif
     </div>
 
-    <div class="info-section">
-        <div class="info-row">
-            <span class="info-label">CLIENTE:</span>
-            <span>{{ strtoupper($comprobante->cliente->nombres ?? 'CLIENTE VARIOS') }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">DNI / RUC:</span>
-            <span>{{ $comprobante->cliente->dni ?? 'N/A' }}</span>
-        </div>
-        @if(!empty($comprobante->cliente->telefono))
-        <div class="info-row">
-            <span class="info-label">TELÉFONO:</span>
-            <span>{{ $comprobante->cliente->telefono }}</span>
-        </div>
-        @endif
-        <div class="info-row">
-            <span class="info-label">FECHA:</span>
-            <span>{{ \Carbon\Carbon::parse($comprobante->fecha)->format('d/m/Y h:i A') }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">ESTADO PAGO:</span>
-            <span class="badge {{ $badgeClass }}">
-                {{ $comprobante->estadoComprobante->nom_estado ?? 'DEBE' }}
-            </span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">ESTADO PRENDA:</span>
-            <span><b>{{ $comprobante->estadoRopa->nom_estado_ropa ?? 'RECIBIDO' }}</b></span>
-        </div>
+    {{-- 2. Tipo de Comprobante y Serie/Correlativo --}}
+    <div class="doc-section">
+        <div class="doc-type">{{ $tipoComprobanteNombre }}</div>
+        <div class="doc-number">{{ $numeroComprobanteCompleto }}</div>
     </div>
 
+    {{-- 3. Metadatos de Emisión --}}
+    <table class="info-table">
+        <tr>
+            <td class="col-label">Fecha Emisión</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $fechaEmision }} &nbsp; <strong>Hora :</strong> {{ $horaEmision }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Usuario</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $cajeroNombre }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Cond. Pago</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $condicionPago }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Estado Pago</td>
+            <td class="col-sep">:</td>
+            <td class="col-val"><strong>{{ $estadoPago }}</strong></td>
+        </tr>
+        <tr>
+            <td class="col-label">Estado Prenda</td>
+            <td class="col-sep">:</td>
+            <td class="col-val"><strong>{{ $estadoRopa }}</strong></td>
+        </tr>
+    </table>
+
+    {{-- 4. Sección Cliente --}}
+    <div class="client-header">COMPROBANTE A NOMBRE DE :</div>
+    <table class="info-table">
+        <tr>
+            <td class="col-label">Nombre</td>
+            <td class="col-sep">:</td>
+            <td class="col-val"><strong>{{ $clienteNombre }}</strong></td>
+        </tr>
+        <tr>
+            <td class="col-label">Nro. Iden.</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $clienteDocumento }}</td>
+        </tr>
+        @if(!empty($clienteTelefono))
+        <tr>
+            <td class="col-label">Teléfono</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $clienteTelefono }}</td>
+        </tr>
+        @endif
+    </table>
+
+    {{-- 5. Tabla de Ítems (Distribución exacta Opeluce) --}}
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 20%;">CANT/KG</th>
-                <th style="width: 55%;">SERVICIO</th>
-                <th style="width: 25%;" class="text-right">TOTAL</th>
+                <th class="th-cant">Cant.</th>
+                <th class="th-punit">P.Unitario</th>
+                <th class="th-desc">Desc.</th>
+                <th class="th-importe">Importe</th>
+            </tr>
+            <tr>
+                <th colspan="4" class="text-left" style="border: none; padding-bottom: 1px;">Descripción</th>
             </tr>
         </thead>
         <tbody>
             @foreach($comprobante->detalles as $detalle)
-            <tr>
-                <td>{{ number_format($detalle->peso_kg, 2) }}</td>
-                <td>
-                    {{ $detalle->servicio->nom_servicio ?? 'Servicio' }}
+            <tr class="item-data-row">
+                <td class="td-cant">{{ number_format($detalle->peso_kg, 2) }}</td>
+                <td class="td-punit">{{ number_format($detalle->costo_kilo, 2) }}</td>
+                <td class="td-desc">0.00</td>
+                <td class="td-importe">{{ number_format($detalle->subtotal, 2) }}</td>
+            </tr>
+            <tr class="item-desc-row">
+                <td colspan="4">
+                    <span class="item-description">{{ strtoupper($detalle->servicio->nom_servicio ?? 'SERVICIO') }}</span>
                     @if(!empty($detalle->observaciones))
-                        <br><small style="color: #666;">({{ $detalle->observaciones }})</small>
+                        <span class="item-obs">({{ $detalle->observaciones }})</span>
                     @endif
                 </td>
-                <td class="text-right">S/ {{ number_format($detalle->subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
-    <div class="totals-section">
-        <div class="total-row">
-            <span>COSTO TOTAL: </span>
-            <span><b>S/ {{ number_format($comprobante->costo_total, 2) }}</b></span>
-        </div>
-        <div class="total-row">
-            <span>MONTO ABONADO: </span>
-            <span>S/ {{ number_format($comprobante->monto_abonado, 2) }}</span>
-        </div>
-        <div class="total-row total-highlight">
-            <span>SALDO PENDIENTE: </span>
-            <span>S/ {{ number_format($comprobante->monto_restante, 2) }}</span>
-        </div>
+    {{-- 6. Totales y Cálculos Tributarios --}}
+    <table class="totals-table">
+        <tr>
+            <td class="tot-lbl">Total V.Venta Op. Gravadas</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($opGravadas, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="tot-lbl">Total V.Venta Op. Inafectas</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($opInafectas, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="tot-lbl">Total V.Venta Op.Exonerada</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($opExoneradas, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="tot-lbl">IGV (18%)</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($igv, 2) }}</td>
+        </tr>
+        <tr class="tot-total-row">
+            <td class="tot-lbl">Importe Total</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($costoTotal, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="tot-lbl">Monto Abonado</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val">{{ number_format($montoAbonado, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="tot-lbl" style="font-weight: bold;">Saldo Pendiente</td>
+            <td class="tot-sep">:</td>
+            <td class="tot-val" style="font-weight: bold; color: {{ $montoRestante > 0 ? '#b91c1c' : '#047857' }};">
+                {{ number_format($montoRestante, 2) }}
+            </td>
+        </tr>
+    </table>
+
+    {{-- 7. Monto en letras --}}
+    <div class="letras-box">
+        Son {{ $totalLetras }}
     </div>
 
+    {{-- 8. Código QR SUNAT y Leyenda Oficial --}}
+    @if(!empty($qrBase64))
+    <div class="qr-section">
+        <img src="{{ $qrBase64 }}" class="qr-img" alt="QR SUNAT" />
+        <div class="sunat-caption">
+            Representación impresa de Comprobante electrónica ,<br>
+            consulte en:<br>
+            <strong>https://app.sepriet.com</strong>
+            @if(!empty($codigoHash))
+                <div class="resumen-hash">Resumen: {{ $codigoHash }}</div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- 9. Términos y Condiciones --}}
     <div class="footer">
         <p>• Conserve este ticket para retirar sus prendas.</p>
         <p>• Plazo máximo de retiro: 30 días calendario.</p>
         <p>• Pasados los 30 días, la empresa no se responsabiliza por prendas no reclamadas.</p>
         <p>• No se aceptan reclamos una vez retirada la prenda.</p>
-        <p style="margin-top: 5px; font-weight: bold;">¡Gracias por su preferencia!</p>
+        <p class="gracias">¡Gracias por su preferencia!</p>
     </div>
 </body>
 </html>

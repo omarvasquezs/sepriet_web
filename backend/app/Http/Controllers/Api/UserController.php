@@ -129,6 +129,19 @@ class UserController extends Controller
             return response()->json(['message' => 'No puedes eliminar tu propia cuenta.'], 422);
         }
 
+        $hasCaja = \App\Models\CajaAperturaCierre::where('id_usuario_apertura', $id)
+            ->orWhere('id_usuario_cierre', $id)
+            ->exists();
+        $hasEgresos = \App\Models\CajaEgreso::where('id_usuario', $id)->exists();
+        $hasComprobantes = \App\Models\Comprobante::where('user_id', $id)->exists();
+        $hasIngresos = \App\Models\ReporteIngreso::where('user_id', $id)->exists();
+
+        if ($hasCaja || $hasEgresos || $hasComprobantes || $hasIngresos) {
+            return response()->json([
+                'message' => 'No se puede eliminar el usuario porque tiene transacciones de caja o comprobantes registrados. Puede deshabilitarlo para revocar su acceso.'
+            ], 422);
+        }
+
         $user->delete();
 
         return response()->json(['message' => 'Usuario eliminado correctamente.']);

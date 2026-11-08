@@ -36,8 +36,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRegistrarCliente,
   onConsultarComprobantes,
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const isAdmin = user?.role?.toUpperCase().includes('ADMIN') || user?.role_id === 1;
+  const canAccessServicios = isAdmin || hasPermission('servicios');
+  const canAccessSistemas = isAdmin || hasPermission('sistemas');
+  const canAccessCaja = isAdmin || hasPermission('caja_apertura') || hasPermission('caja_cierre') || hasPermission('caja_egresos') || hasPermission('caja_historial');
+  const canAccessReportes = isAdmin || hasPermission('reportes');
 
   const handleSelectTab = (tabId: string) => {
     setActiveTab(tabId);
@@ -84,24 +88,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
+            <img
+              src="/images/logo_sepriet.png"
+              alt="Sepriet"
               style={{
-                width: '38px',
                 height: '38px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '1.15rem',
-                color: 'white',
-                boxShadow: '0 3px 10px rgba(79, 70, 229, 0.3)',
+                width: 'auto',
+                maxWidth: '90px',
+                objectFit: 'contain',
                 flexShrink: 0,
               }}
-            >
-              S
-            </div>
+            />
             <div>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.2px' }}>
                 SEPRIET
@@ -170,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
           >
             <LayoutDashboard size={20} color={activeTab === 'dashboard' ? '#4f46e5' : '#64748b'} />
-            <span>Dashboard Principal</span>
+            <span>Inicio (Dashboard)</span>
           </button>
 
           {/* Group 1: REGISTRAR */}
@@ -403,8 +400,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Group 3: OPCIONES AVANZADAS */}
-          {isAdmin && (
+          {/* Group 3: SISTEMAS */}
+          {canAccessSistemas && (
             <div style={{ marginBottom: '18px' }}>
               <span
                 style={{
@@ -418,7 +415,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   marginBottom: '8px',
                 }}
               >
-                Opciones Avanzadas
+                Sistemas
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab('usuarios')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '11px 14px',
+                    minHeight: '44px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: activeTab === 'usuarios' ? '#eef2ff' : 'transparent',
+                    color: activeTab === 'usuarios' ? '#4f46e5' : '#1e293b',
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontWeight: activeTab === 'usuarios' ? 700 : 600,
+                  }}
+                >
+                  <Users size={19} color="#3b82f6" />
+                  <span>Gestión de Usuarios</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab('roles')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '11px 14px',
+                    minHeight: '44px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: activeTab === 'roles' ? '#eef2ff' : 'transparent',
+                    color: activeTab === 'roles' ? '#4f46e5' : '#1e293b',
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontWeight: activeTab === 'roles' ? 700 : 600,
+                  }}
+                >
+                  <Shield size={19} color="#8b5cf6" />
+                  <span>Perfiles y Permisos</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Group: SERVICIOS Y TARIFAS */}
+          {canAccessServicios && (
+            <div style={{ marginBottom: '18px' }}>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  padding: '0 8px',
+                  display: 'block',
+                  marginBottom: '8px',
+                }}
+              >
+                Servicios
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <button
@@ -441,103 +507,85 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     fontWeight: activeTab === 'servicios' ? 700 : 600,
                   }}
                 >
-                  <Shirt size={19} color="#8b5cf6" />
+                  <Shirt size={19} color="#10b981" />
                   <span>Servicios y Tarifas</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSelectTab('usuarios')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '11px 14px',
-                    minHeight: '44px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: activeTab === 'usuarios' ? '#eef2ff' : 'transparent',
-                    color: activeTab === 'usuarios' ? '#4f46e5' : '#1e293b',
-                    fontSize: '0.92rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontWeight: activeTab === 'usuarios' ? 700 : 600,
-                  }}
-                >
-                  <Shield size={19} color="#3b82f6" />
-                  <span>Usuarios y Roles</span>
                 </button>
               </div>
             </div>
           )}
 
           {/* Group 4: CAJA & REPORTES */}
-          <div style={{ marginBottom: '18px' }}>
-            <span
-              style={{
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                color: '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                padding: '0 8px',
-                display: 'block',
-                marginBottom: '8px',
-              }}
-            >
-              Caja y Reportes
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <button
-                type="button"
-                onClick={() => handleSelectTab('caja')}
+          {(canAccessCaja || canAccessReportes) && (
+            <div style={{ marginBottom: '18px' }}>
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  width: '100%',
-                  padding: '11px 14px',
-                  minHeight: '44px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: activeTab === 'caja' ? '#eef2ff' : 'transparent',
-                  color: activeTab === 'caja' ? '#4f46e5' : '#1e293b',
-                  fontSize: '0.92rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontWeight: activeTab === 'caja' ? 700 : 600,
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  padding: '0 8px',
+                  display: 'block',
+                  marginBottom: '8px',
                 }}
               >
-                <Wallet size={19} color="#059669" />
-                <span>Control de Caja Chica</span>
-              </button>
+                Caja y Reportes
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {canAccessCaja && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTab('caja')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '11px 14px',
+                      minHeight: '44px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: activeTab === 'caja' ? '#eef2ff' : 'transparent',
+                      color: activeTab === 'caja' ? '#4f46e5' : '#1e293b',
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontWeight: activeTab === 'caja' ? 700 : 600,
+                    }}
+                  >
+                    <Wallet size={19} color="#059669" />
+                    <span>Control de Caja Chica</span>
+                  </button>
+                )}
 
-              <button
-                type="button"
-                onClick={() => handleSelectTab('reportes')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  width: '100%',
-                  padding: '11px 14px',
-                  minHeight: '44px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: activeTab === 'reportes' ? '#eef2ff' : 'transparent',
-                  color: activeTab === 'reportes' ? '#4f46e5' : '#1e293b',
-                  fontSize: '0.92rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontWeight: activeTab === 'reportes' ? 700 : 600,
-                }}
-              >
-                <TrendingUp size={19} color="#4f46e5" />
-                <span>Reportes Financieros</span>
-              </button>
+                {canAccessReportes && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTab('reportes')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '11px 14px',
+                      minHeight: '44px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: activeTab === 'reportes' ? '#eef2ff' : 'transparent',
+                      color: activeTab === 'reportes' ? '#4f46e5' : '#1e293b',
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontWeight: activeTab === 'reportes' ? 700 : 600,
+                    }}
+                  >
+                    <TrendingUp size={19} color="#4f46e5" />
+                    <span>Reportes Financieros</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer User & Logout - Fixed at Bottom */}

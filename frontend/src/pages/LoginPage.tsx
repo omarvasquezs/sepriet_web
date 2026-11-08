@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
@@ -42,21 +42,26 @@ export const LoginPage: React.FC = () => {
         boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 10px 20px -5px rgba(15, 23, 42, 0.04)',
         borderRadius: '20px'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '18px',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #0284c7 100%)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '16px',
-            boxShadow: '0 10px 25px rgba(79, 70, 229, 0.25)'
           }}>
-            <Sparkles size={30} color="white" />
+            <img
+              src="/images/logo_sepriet.png"
+              alt="Lavandería Seprie't"
+              style={{
+                width: '100%',
+                maxWidth: '220px',
+                height: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 6px 16px rgba(15, 23, 42, 0.08))'
+              }}
+            />
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>SEPRIET WEB</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px', margin: 0 }}>SEPRIET WEB</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
             Sistema de Control de Lavandería
           </p>

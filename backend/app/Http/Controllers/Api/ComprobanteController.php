@@ -14,6 +14,7 @@ use App\Models\Local;
 use App\Models\CajaAperturaCierre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -329,7 +330,11 @@ class ComprobanteController extends Controller
 
         if (!empty($validated['estado_comprobante_id'])) {
             $nuevoEstadoComp = (int)$validated['estado_comprobante_id'];
-            if ($nuevoEstadoComp !== (int)$comprobante->estado_comprobante_id && $nuevoEstadoComp === 4) {
+            if ($nuevoEstadoComp === 3) {
+                // Al anular el comprobante, eliminamos los ingresos reportados para no alterar la caja ni el reporte financiero
+                ReporteIngreso::where('cod_comprobante', $comprobante->cod_comprobante)->delete();
+                $comprobante->monto_abonado = 0;
+            } elseif ($nuevoEstadoComp !== (int)$comprobante->estado_comprobante_id && $nuevoEstadoComp === 4) {
                 $comprobante->fecha_actualizacion_estado_comprobante = $fechaOperacion;
             }
             $comprobante->estado_comprobante_id = $nuevoEstadoComp;
@@ -356,11 +361,40 @@ class ComprobanteController extends Controller
 
     public function catalogos()
     {
+        $estadosPagoQuery = EstadoComprobante::query();
+        if (Schema::hasColumn('estado_comprobantes', 'habilitado')) {
+            $estadosPagoQuery->where('habilitado', 1);
+        }
+
+        $metodosPagoQuery = MetodoPago::query();
+        if (Schema::hasColumn('metodo_pago', 'habilitado')) {
+            $metodosPagoQuery->where('habilitado', 1);
+        }
+
+        $localesQuery = Local::query();
+        if (Schema::hasColumn('locales', 'habilitado')) {
+            $localesQuery->where('habilitado', 1);
+        }
+
+        $metodos = $metodosPagoQuery
+            ->where('nom_metodo_pago', 'NOT LIKE', '%/%')
+            ->orderByRaw("CASE 
+                WHEN UPPER(nom_metodo_pago) LIKE '%EFECTIVO%' THEN 1
+                WHEN UPPER(nom_metodo_pago) = 'YAPE' THEN 2
+                WHEN UPPER(nom_metodo_pago) = 'PLIN' THEN 3
+                WHEN UPPER(nom_metodo_pago) LIKE '%TARJETA%' THEN 4
+                ELSE 5 END, id ASC")
+            ->get()
+            ->map(function ($mp) {
+                $mp->nom_metodo_pago = mb_strtoupper((string)$mp->nom_metodo_pago, 'UTF-8');
+                return $mp;
+            });
+
         return response()->json([
-            'estados_pago' => EstadoComprobante::where('habilitado', 1)->get(),
+            'estados_pago' => $estadosPagoQuery->get(),
             'estados_ropa' => EstadoRopa::all(),
-            'metodos_pago' => MetodoPago::where('habilitado', 1)->get(),
-            'locales' => Local::where('habilitado', 1)->get(),
+            'metodos_pago' => $metodos,
+            'locales' => $localesQuery->get(),
         ]);
     }
 
@@ -416,13 +450,47 @@ class ComprobanteController extends Controller
 
         // Regenerar si no existe, si se solicita forzar, o si el logo/plantilla es más reciente que el PDF existente
         if ($pdfNeedsRegeneration) {
+            $comprobante->loadMissing([
+                'cliente',
+                'estadoComprobante',
+                'estadoRopa',
+                'metodoPago',
+                'usuario',
+                'detalles.servicio',
+            ]);
+
             $local = Local::where('habilitado', 1)->first();
 
+            $empresaRuc = config('services.sunat.ruc', env('EMPRESA_RUC', '20608518855'));
+            if ($local && !empty($local->ruc)) {
+                $empresaRuc = preg_replace('/\D/', '', $local->ruc);
+            }
+
             $tipoComprobanteNombre = match ($comprobante->tipo_comprobante) {
-                'F' => 'FACTURA DE VENTA',
-                'B' => 'BOLETA DE VENTA',
+                'F' => 'FACTURA ELECTRONICA',
+                'B' => 'BOLETA DE VENTA ELECTRONICA',
                 default => 'NOTA DE VENTA',
             };
+
+            // Formato de serie y número: ej. B001 N° 00078656 / NV001 N° 00005848
+            $parts = explode('-', $comprobante->cod_comprobante ?? '');
+            $serie = $parts[0] ?? ($comprobante->tipo_comprobante === 'F' ? 'F001' : ($comprobante->tipo_comprobante === 'B' ? 'B001' : 'NV001'));
+            $numRaw = isset($parts[1]) ? $parts[1] : (string)$comprobante->id;
+            $correlativoStr = str_pad($numRaw, 8, '0', STR_PAD_LEFT);
+            $numeroComprobanteCompleto = "{$serie} N° {$correlativoStr}";
+
+            $fechaObj = Carbon::parse($comprobante->fecha ?? now());
+            $fechaEmision = $fechaObj->format('d/m/Y');
+            $horaEmision = $fechaObj->format('h:i a');
+
+            $cajeroNombre = strtoupper($comprobante->usuario->name ?? ($comprobante->usuario->username ?? 'CAJERO'));
+            $condicionPago = strtoupper($comprobante->metodoPago->nom_metodo_pago ?? 'EFECTIVO');
+            $estadoRopa = strtoupper($comprobante->estadoRopa->nom_estado_ropa ?? 'RECIBIDO');
+            $estadoPago = strtoupper($comprobante->estadoComprobante->nom_estado ?? 'DEBE');
+
+            $clienteNombre = strtoupper(!empty($comprobante->razon_social) ? $comprobante->razon_social : ($comprobante->cliente->nombres ?? 'CLIENTES VARIOS'));
+            $clienteDocumento = !empty($comprobante->num_ruc) ? $comprobante->num_ruc : ($comprobante->cliente->dni ?? '-');
+            $clienteTelefono = $comprobante->cliente->telefono ?? null;
 
             $badgeClass = match ($comprobante->estado_comprobante_id) {
                 1 => 'badge-debe',
@@ -436,16 +504,58 @@ class ComprobanteController extends Controller
                 $logoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath));
             }
 
+            // Generación de Código QR según normativa SUNAT (escala 2 para ancho compacto de ~25mm)
+            $qrString = \App\Services\SunatQrService::buildSunatQrString($comprobante, $local);
+            $qrBase64 = \App\Services\SunatQrService::generateQrBase64($qrString, 2);
+            $codigoHash = \App\Services\SunatQrService::getCodigoHash($comprobante, $local);
+
+            // Cálculos tributarios oficiales
+            $costoTotal = (float)($comprobante->costo_total ?? 0);
+            $montoAbonado = (float)($comprobante->monto_abonado ?? 0);
+            $montoRestante = max(0, round($costoTotal - $montoAbonado, 2));
+
+            $opGravadas = round($costoTotal / 1.18, 2);
+            $igv = round($costoTotal - $opGravadas, 2);
+            $opInafectas = 0.00;
+            $opExoneradas = 0.00;
+
+            $totalLetras = \App\Services\NumeroALetras::convertir($costoTotal, 'SOLES');
+
             $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
                 'comprobante',
                 'local',
+                'empresaRuc',
                 'tipoComprobanteNombre',
+                'numeroComprobanteCompleto',
+                'fechaEmision',
+                'horaEmision',
+                'cajeroNombre',
+                'condicionPago',
+                'estadoRopa',
+                'estadoPago',
+                'clienteNombre',
+                'clienteDocumento',
+                'clienteTelefono',
                 'badgeClass',
-                'logoBase64'
+                'logoBase64',
+                'qrBase64',
+                'qrString',
+                'codigoHash',
+                'costoTotal',
+                'montoAbonado',
+                'montoRestante',
+                'opGravadas',
+                'opInafectas',
+                'opExoneradas',
+                'igv',
+                'totalLetras'
             ));
 
-            // Dimensiones estándar ticket térmico 80mm
-            $pdf->setPaper([0, 0, 226.77, 566.93], 'portrait');
+            // Dimensiones calibradas según especificación de cabezal térmico: ancho 72mm (204.09 pt)
+            // Altura compacta optimizada para corte continuo en página única
+            $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
+            $calculatedHeight = max(450.0, 420 + ($itemCount * 18));
+            $pdf->setPaper([0, 0, 204.09, $calculatedHeight], 'portrait');
 
             // Asegurar directorio y guardar
             $disk->makeDirectory($relativeDir);

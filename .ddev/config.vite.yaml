@@ -1,0 +1,6 @@
+# Automatically run Vite dev server in the background as a DDEV daemon
+web_extra_daemons:
+  - name: "vite"
+    command: "npm run dev"
+    directory: /var/www/html/frontend
+

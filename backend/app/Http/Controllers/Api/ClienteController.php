@@ -72,6 +72,16 @@ class ClienteController extends Controller
     public function destroy($id)
     {
         $cliente = Cliente::findOrFail($id);
+
+        $hasComprobantes = \App\Models\Comprobante::where('cliente_id', $id)->exists();
+        $hasIngresos = \App\Models\ReporteIngreso::where('cliente_id', $id)->exists();
+
+        if ($hasComprobantes || $hasIngresos) {
+            return response()->json([
+                'message' => 'No se puede eliminar el cliente porque tiene comprobantes o pagos registrados en el sistema.'
+            ], 422);
+        }
+
         $cliente->delete();
 
         return response()->json(['message' => 'Cliente eliminado correctamente']);

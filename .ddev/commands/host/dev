@@ -13,8 +13,12 @@ fi
 # Check if frontend node_modules exists, install if missing
 if [ -f "$DDEV_APPROOT/frontend/package.json" ] && [ ! -d "$DDEV_APPROOT/frontend/node_modules" ]; then
     echo "Installing frontend dependencies..."
-    cd "$DDEV_APPROOT/frontend" && npm install
+    ddev exec --dir /var/www/html/frontend npm install
 fi
 
-echo "🚀 Starting React Frontend Dev Server..."
-cd "$DDEV_APPROOT/frontend" && npm run dev
+# Ensure Vite daemon is running
+ddev exec supervisorctl start webextradaemons:vite >/dev/null 2>&1
+
+echo "🚀 Servidor React Frontend activo en: http://localhost:5173"
+echo "Mostrando logs en vivo (Presiona Ctrl+C para salir de los logs; el servidor seguirá corriendo):"
+ddev logs -s web -f

@@ -30,6 +30,7 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
       await api.post('/caja/apertura', {
         monto_apertura: parsedMonto,
       });
+      window.dispatchEvent(new CustomEvent('caja:updated'));
       setSuccessMonto(parsedMonto);
     } catch (err: any) {
       console.error(err);
@@ -43,6 +44,7 @@ export const AperturaCajaModal: React.FC<AperturaCajaModalProps> = ({
 
   const handleSuccessClose = () => {
     setSuccessMonto(null);
+    window.dispatchEvent(new CustomEvent('caja:updated'));
     onSuccess();
     onClose();
   };
