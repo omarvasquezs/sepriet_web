@@ -638,10 +638,12 @@ class ComprobanteController extends Controller
         try {
             $apiUrl = 'https://api.textmebot.com/send.php';
             $response = Http::timeout(25)->get($apiUrl, [
-                'recipient' => $cleanPhone,
+                'recipient' => '+' . ltrim($cleanPhone, '+'),
                 'apikey' => $apiKey,
                 'document' => $pdfInfo['url'],
+                'filename' => $pdfInfo['filename'] ?? "{$comprobante->cod_comprobante}.pdf",
                 'text' => $captionMessage,
+                'json' => 'yes',
             ]);
 
             $body = $response->body();

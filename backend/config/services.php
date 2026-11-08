@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'textmebot' => [
+        'api_key' => env('TEXTMEBOT_API_KEY', 'hCS2aZ9aHwhF'),
+    ],
+
 ];

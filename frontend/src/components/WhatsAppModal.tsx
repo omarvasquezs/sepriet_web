@@ -166,7 +166,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   // Send Mode: 'whatsapp' (manual web link) or 'textmebot' (automated bot with document)
   const [sendMode, setSendMode] = useState<'whatsapp' | 'textmebot'>('whatsapp');
   const [textMeBotKey, setTextMeBotKey] = useState<string>(
-    localStorage.getItem('textmebot_api_key') || ''
+    localStorage.getItem('textmebot_api_key') || 'hCS2aZ9aHwhF'
   );
 
   // PDF Generation State
