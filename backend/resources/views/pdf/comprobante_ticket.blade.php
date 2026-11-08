@@ -41,9 +41,11 @@
             margin-bottom: 2px;
         }
         .logo-img {
-            max-width: 145px;
-            max-height: 48px;
-            margin: 0 auto 2px auto;
+            max-width: 180px;
+            max-height: 72px;
+            width: auto;
+            height: auto;
+            margin: 0 auto 3px auto;
             display: block;
         }
         .company-name {
