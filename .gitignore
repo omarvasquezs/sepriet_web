@@ -7,3 +7,5 @@ backend/.env
 backend/storage/*.key
 backend/storage/logs/*
 .vscode/
+*.sql
+*.sql.gz
