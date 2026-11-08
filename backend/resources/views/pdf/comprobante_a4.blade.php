@@ -6,7 +6,7 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 20mm 20mm 20mm 20mm;
+            margin: 24mm 22mm 24mm 22mm;
         }
         * {
             box-sizing: border-box;
@@ -15,8 +15,8 @@
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 8.5pt;
-            line-height: 1.3;
+            font-size: 9pt;
+            line-height: 1.35;
             color: #1e293b;
             background: #ffffff;
         }
@@ -32,86 +32,88 @@
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 18px;
         }
         .header-table td {
             vertical-align: top;
         }
         .header-logo-cell {
-            width: 58%;
-            padding-right: 15px;
+            width: 56%;
+            padding-right: 18px;
         }
         .logo-img {
-            max-width: 220px;
-            max-height: 65px;
+            max-width: 240px;
+            max-height: 75px;
             width: auto;
             height: auto;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             display: block;
         }
         .company-name {
-            font-size: 11pt;
+            font-size: 12.5pt;
             font-weight: bold;
             color: #0f172a;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             letter-spacing: 0.3px;
         }
         .company-info {
-            font-size: 7.8pt;
+            font-size: 8.5pt;
             color: #475569;
-            line-height: 1.25;
+            line-height: 1.35;
+            margin-bottom: 1px;
         }
 
         /* SUNAT Box */
         .sunat-box-cell {
-            width: 42%;
+            width: 44%;
         }
         .sunat-box {
             border: 2px solid #1e3a8a;
             border-radius: 8px;
             text-align: center;
-            padding: 8px 10px;
-            background: #f8fafc;
+            padding: 10px 14px;
+            background: #ffffff;
         }
         .sunat-box-ruc {
-            font-size: 10.5pt;
-            font-weight: bold;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-        .sunat-box-type {
-            font-size: 10pt;
-            font-weight: bold;
-            background: #1e3a8a;
-            color: #ffffff;
-            padding: 4px 6px;
-            margin: 4px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .sunat-box-number {
             font-size: 11pt;
             font-weight: bold;
             color: #0f172a;
-            margin-top: 4px;
+            margin-bottom: 5px;
+        }
+        .sunat-box-type {
+            font-size: 10.5pt;
+            font-weight: bold;
+            background: #1e3a8a;
+            color: #ffffff;
+            padding: 5px 8px;
+            margin: 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 3px;
+        }
+        .sunat-box-number {
+            font-size: 11.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 5px;
         }
 
         /* Client Info Section */
         .client-box {
             width: 100%;
             border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            background: #ffffff;
-            margin-bottom: 12px;
-            padding: 7px 10px;
+            border-radius: 8px;
+            background: #f8fafc;
+            margin-bottom: 18px;
+            padding: 10px 14px;
         }
         .client-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8pt;
+            font-size: 8.5pt;
         }
         .client-table td {
-            padding: 2px 4px;
+            padding: 3.5px 6px;
             vertical-align: top;
         }
         .lbl {
@@ -124,30 +126,30 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 8pt;
+            margin-bottom: 18px;
+            font-size: 8.5pt;
         }
         .items-table th {
             background-color: #1e3a8a;
             color: #ffffff;
             font-weight: bold;
-            padding: 6px 6px;
+            padding: 8px 10px;
             border: 1px solid #1e3a8a;
             text-align: center;
         }
         .items-table td {
-            padding: 5px 6px;
-            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
             vertical-align: middle;
         }
         .items-table tbody tr:nth-child(even) {
             background-color: #f8fafc;
         }
         .item-obs {
-            font-size: 7pt;
+            font-size: 7.5pt;
             color: #64748b;
             font-style: italic;
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         /* Bottom Section: Left (Legal/QR) + Right (Totals) */
@@ -159,79 +161,80 @@
             vertical-align: top;
         }
         .bottom-left-cell {
-            width: 58%;
-            padding-right: 15px;
+            width: 56%;
+            padding-right: 18px;
         }
         .bottom-right-cell {
-            width: 42%;
+            width: 44%;
         }
 
         /* Monto en letras */
         .letras-card {
             border: 1px solid #cbd5e1;
             background: #f8fafc;
-            border-radius: 4px;
-            padding: 5px 8px;
-            font-size: 7.8pt;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 8.5pt;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         /* QR + Legal Text */
         .qr-legal-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .qr-legal-table td {
             vertical-align: middle;
         }
         .qr-img {
-            width: 80px;
-            height: 80px;
+            width: 85px;
+            height: 85px;
             display: block;
         }
         .legal-text {
-            font-size: 7pt;
+            font-size: 7.5pt;
             color: #475569;
-            line-height: 1.25;
-            padding-left: 10px;
+            line-height: 1.35;
+            padding-left: 12px;
         }
         .legal-hash {
-            font-size: 6.5pt;
+            font-size: 6.8pt;
             color: #64748b;
-            margin-top: 3px;
+            margin-top: 4px;
             word-break: break-all;
         }
 
         /* Terms / Notes */
         .terms-box {
             border-top: 1px dashed #cbd5e1;
-            padding-top: 6px;
-            margin-top: 6px;
-            font-size: 6.8pt;
+            padding-top: 8px;
+            margin-top: 8px;
+            font-size: 7.2pt;
             color: #64748b;
-            line-height: 1.25;
+            line-height: 1.35;
         }
 
         /* Totals Table */
         .totals-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8pt;
+            font-size: 8.5pt;
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
         }
         .totals-table td {
-            padding: 3.5px 8px;
+            padding: 5px 10px;
             border-bottom: 1px solid #e2e8f0;
         }
         .tot-row-total td {
             background-color: #f1f5f9;
-            font-size: 9pt;
+            font-size: 9.5pt;
             font-weight: bold;
             color: #0f172a;
+            padding: 7px 10px;
             border-top: 1.5px solid #cbd5e1;
             border-bottom: 1.5px solid #cbd5e1;
         }
@@ -274,9 +277,9 @@
         <table class="client-table">
             <tr>
                 <td style="width: 14%;" class="lbl">SEÑOR(ES):</td>
-                <td style="width: 46%;" class="bold uppercase">{{ $clienteNombre }}</td>
+                <td style="width: 44%;" class="bold uppercase">{{ $clienteNombre }}</td>
                 <td style="width: 18%;" class="lbl">FECHA EMISIÓN:</td>
-                <td style="width: 22%;">{{ $fechaEmision }} {{ $horaEmision }}</td>
+                <td style="width: 24%;">{{ $fechaEmision }} {{ $horaEmision }}</td>
             </tr>
             <tr>
                 <td class="lbl">N° IDENT.:</td>
@@ -309,12 +312,12 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 5%;">ITEM</th>
+                <th style="width: 6%;">ITEM</th>
                 <th style="width: 12%;">CANTIDAD</th>
                 <th style="width: 10%;">UNIDAD</th>
-                <th style="width: 45%; text-align: left; padding-left: 8px;">DESCRIPCIÓN DEL SERVICIO</th>
-                <th style="width: 14%; text-align: right; padding-right: 8px;">P. UNITARIO</th>
-                <th style="width: 14%; text-align: right; padding-right: 8px;">TOTAL</th>
+                <th style="width: 44%; text-align: left; padding-left: 10px;">DESCRIPCIÓN DEL SERVICIO</th>
+                <th style="width: 14%; text-align: right; padding-right: 10px;">P. UNITARIO</th>
+                <th style="width: 14%; text-align: right; padding-right: 10px;">TOTAL</th>
             </tr>
         </thead>
         <tbody>
@@ -323,14 +326,14 @@
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td class="text-center">{{ number_format($detalle->peso_kg, 2) }}</td>
                 <td class="text-center">{{ $detalle->peso_kg > 0 ? 'KGM' : 'NIU' }}</td>
-                <td style="padding-left: 8px;">
+                <td style="padding-left: 10px;">
                     <span class="bold uppercase">{{ $detalle->servicio->nom_servicio ?? 'SERVICIO DE LAVANDERIA' }}</span>
                     @if(!empty($detalle->observaciones))
                         <div class="item-obs">Obs: {{ $detalle->observaciones }}</div>
                     @endif
                 </td>
-                <td class="text-right" style="padding-right: 8px;">S/ {{ number_format($detalle->costo_kilo, 2) }}</td>
-                <td class="text-right bold" style="padding-right: 8px;">S/ {{ number_format($detalle->subtotal, 2) }}</td>
+                <td class="text-right" style="padding-right: 10px;">S/ {{ number_format($detalle->costo_kilo, 2) }}</td>
+                <td class="text-right bold" style="padding-right: 10px;">S/ {{ number_format($detalle->subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -365,7 +368,7 @@
                     <p>• Conserve este comprobante para retirar sus prendas del establecimiento.</p>
                     <p>• Plazo máximo de retiro: 30 días calendario contados desde la recepción.</p>
                     <p>• No se aceptan reclamos una vez retiradas las prendas del local.</p>
-                    <p style="margin-top: 3px; font-weight: bold; color: #1e3a8a;">¡Gracias por su preferencia!</p>
+                    <p style="margin-top: 4px; font-weight: bold; color: #1e3a8a;">¡Gracias por su preferencia!</p>
                 </div>
             </td>
 
@@ -388,8 +391,8 @@
                         <td class="text-right">S/ {{ number_format($igv, 2) }}</td>
                     </tr>
                     <tr class="tot-row-total">
-                        <td class="lbl" style="font-size: 9pt;">TOTAL A PAGAR</td>
-                        <td class="text-right" style="font-size: 9pt;">S/ {{ number_format($costoTotal, 2) }}</td>
+                        <td class="lbl">TOTAL A PAGAR</td>
+                        <td class="text-right">S/ {{ number_format($costoTotal, 2) }}</td>
                     </tr>
                     <tr>
                         <td class="lbl">Monto Abonado</td>
