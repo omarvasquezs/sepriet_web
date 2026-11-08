@@ -401,6 +401,7 @@ class ComprobanteController extends Controller
     /**
      * Genera y retorna la información/URL del PDF del comprobante.
      * Almacenamiento organizado por año/mes: storage/app/public/comprobantes/YYYY/MM/*.pdf
+     * Soporta formatos: ticket (por defecto, 80mm/72mm) y a4 (hoja estándar A4).
      */
     public function generarPdf(Request $request, int $id)
     {
@@ -414,22 +415,27 @@ class ComprobanteController extends Controller
         ])->findOrFail($id);
 
         $force = $request->boolean('force', false);
-        $result = $this->createOrRetrievePdf($comprobante, $force);
+        $format = strtolower($request->query('format', $request->query('formato', 'ticket')));
+        if (!in_array($format, ['ticket', 'a4'], true)) {
+            $format = 'ticket';
+        }
+
+        $result = $this->createOrRetrievePdf($comprobante, $force, $format);
 
         return response()->json($result);
     }
 
     /**
-     * Crea o recupera el archivo PDF físico en disco.
+     * Crea o recupera el archivo PDF físico en disco (formato ticket o a4).
      */
-    private function createOrRetrievePdf(Comprobante $comprobante, bool $force = false): array
+    private function createOrRetrievePdf(Comprobante $comprobante, bool $force = false, string $format = 'ticket'): array
     {
         $date = Carbon::parse($comprobante->fecha ?? now());
         $year = $date->format('Y');
         $month = $date->format('m');
 
         $safeCode = preg_replace('/[^A-Za-z0-9_\-]/', '_', $comprobante->cod_comprobante);
-        $filename = "{$safeCode}.pdf";
+        $filename = $format === 'a4' ? "{$safeCode}_a4.pdf" : "{$safeCode}.pdf";
         $relativeDir = "comprobantes/{$year}/{$month}";
         $relativePath = "{$relativeDir}/{$filename}";
 
@@ -440,7 +446,8 @@ class ComprobanteController extends Controller
             $logoPath = public_path('images/logo_sepreit.jpeg');
         }
         $logoTimestamp = file_exists($logoPath) ? filemtime($logoPath) : 0;
-        $viewPath = resource_path('views/pdf/comprobante_ticket.blade.php');
+        $viewName = $format === 'a4' ? 'pdf.comprobante_a4' : 'pdf.comprobante_ticket';
+        $viewPath = resource_path('views/' . str_replace('.', '/', $viewName) . '.blade.php');
         $viewTimestamp = file_exists($viewPath) ? filemtime($viewPath) : 0;
         $templateTimestamp = max($logoTimestamp, $viewTimestamp);
 
@@ -521,7 +528,7 @@ class ComprobanteController extends Controller
 
             $totalLetras = \App\Services\NumeroALetras::convertir($costoTotal, 'SOLES');
 
-            $pdf = Pdf::loadView('pdf.comprobante_ticket', compact(
+            $pdf = Pdf::loadView($viewName, compact(
                 'comprobante',
                 'local',
                 'empresaRuc',
@@ -551,11 +558,15 @@ class ComprobanteController extends Controller
                 'totalLetras'
             ));
 
-            // Dimensiones calibradas según especificación de cabezal térmico: ancho 72mm (204.09 pt)
-            // Altura compacta optimizada para corte continuo en página única
-            $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
-            $calculatedHeight = max(510.0, 470 + ($itemCount * 18));
-            $pdf->setPaper([0, 0, 204.09, $calculatedHeight], 'portrait');
+            if ($format === 'a4') {
+                $pdf->setPaper('a4', 'portrait');
+            } else {
+                // Dimensiones calibradas según especificación de cabezal térmico: ancho 72mm (204.09 pt)
+                // Altura compacta optimizada para corte continuo en página única
+                $itemCount = $comprobante->detalles ? $comprobante->detalles->count() : 1;
+                $calculatedHeight = max(510.0, 470 + ($itemCount * 18));
+                $pdf->setPaper([0, 0, 204.09, $calculatedHeight], 'portrait');
+            }
 
             // Asegurar directorio y guardar
             $disk->makeDirectory($relativeDir);
@@ -577,6 +588,7 @@ class ComprobanteController extends Controller
             'success' => true,
             'comprobante_id' => $comprobante->id,
             'cod_comprobante' => $comprobante->cod_comprobante,
+            'format' => $format,
             'filename' => $filename,
             'relative_path' => $relativePath,
             'url' => $publicUrl,
@@ -595,6 +607,7 @@ class ComprobanteController extends Controller
             'apikey' => 'nullable|string',
             'message' => 'nullable|string',
             'force_regenerate_pdf' => 'nullable|boolean',
+            'format' => 'nullable|string',
         ]);
 
         $comprobante = Comprobante::with([
@@ -606,9 +619,12 @@ class ComprobanteController extends Controller
             'detalles.servicio'
         ])->findOrFail($id);
 
-        // 1. Generar o recuperar PDF
+        // 1. Generar o recuperar PDF (ticket o a4)
         $force = !empty($validated['force_regenerate_pdf']);
-        $pdfInfo = $this->createOrRetrievePdf($comprobante, $force);
+        $format = !empty($validated['format']) && in_array(strtolower($validated['format']), ['ticket', 'a4'], true)
+            ? strtolower($validated['format'])
+            : 'ticket';
+        $pdfInfo = $this->createOrRetrievePdf($comprobante, $force, $format);
 
         // 2. Obtener credenciales y parámetros de TextMeBot
         $apiKey = !empty($validated['apikey'])

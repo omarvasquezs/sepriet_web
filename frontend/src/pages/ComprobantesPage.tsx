@@ -46,6 +46,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [printPdfLoading, setPrintPdfLoading] = useState(false);
   const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
   const [printPdfError, setPrintPdfError] = useState<string | null>(null);
+  const [printPdfFormat, setPrintPdfFormat] = useState<'ticket' | 'a4'>('ticket');
   const pdfIframeRef = useRef<HTMLIFrameElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
@@ -513,15 +514,16 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     return rawUrl;
   };
 
-  const handleOpenPrintModal = async (ticket: any) => {
+  const handleOpenPrintModal = async (ticket: any, format: 'ticket' | 'a4' = 'ticket') => {
     setSelectedTicket(ticket);
     setShowPrintModal(true);
     setPrintPdfLoading(true);
     setPrintPdfError(null);
     setPrintPdfUrl(null);
+    setPrintPdfFormat(format);
 
     try {
-      const res = await api.get(`/comprobantes/${ticket.id}/pdf`);
+      const res = await api.get(`/comprobantes/${ticket.id}/pdf?format=${format}`);
       const url = resolvePdfUrl(res.data?.url);
       if (url) {
         setPrintPdfUrl(url);
@@ -530,6 +532,27 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       }
     } catch (err: any) {
       setPrintPdfError(err.response?.data?.message || 'Error al generar la vista previa del comprobante en PDF');
+    } finally {
+      setPrintPdfLoading(false);
+    }
+  };
+
+  const handleChangePrintFormat = async (newFormat: 'ticket' | 'a4') => {
+    if (!selectedTicket || (newFormat === printPdfFormat && printPdfUrl)) return;
+    setPrintPdfFormat(newFormat);
+    setPrintPdfLoading(true);
+    setPrintPdfError(null);
+
+    try {
+      const res = await api.get(`/comprobantes/${selectedTicket.id}/pdf?format=${newFormat}`);
+      const url = resolvePdfUrl(res.data?.url);
+      if (url) {
+        setPrintPdfUrl(url);
+      } else {
+        setPrintPdfError('No se pudo obtener la URL del comprobante');
+      }
+    } catch (err: any) {
+      setPrintPdfError(err.response?.data?.message || 'Error al cambiar el formato del comprobante');
     } finally {
       setPrintPdfLoading(false);
     }
@@ -1715,7 +1738,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
           <div
             className="modal-content pdf-preview-modal"
             style={{
-              maxWidth: '560px',
+              maxWidth: printPdfFormat === 'a4' ? '820px' : '560px',
+              transition: 'max-width 0.25s ease',
               width: '95%',
               height: '95dvh',
               maxHeight: '96dvh',
@@ -1778,6 +1802,62 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                 title="Cerrar"
               >
                 <X size={20} />
+              </button>
+            </div>
+
+            {/* Format Switcher Tabs */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '8px 16px',
+                background: 'var(--bg-secondary, #f8fafc)',
+                borderBottom: '1px solid var(--border-color)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleChangePrintFormat('ticket')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: printPdfFormat === 'ticket' ? 700 : 500,
+                  borderRadius: '6px',
+                  border: '1px solid',
+                  borderColor: printPdfFormat === 'ticket' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
+                  background: printPdfFormat === 'ticket' ? '#4f46e5' : '#ffffff',
+                  color: printPdfFormat === 'ticket' ? '#ffffff' : 'var(--text-main, #334155)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                🧾 Ticket Térmico (80mm)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangePrintFormat('a4')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: printPdfFormat === 'a4' ? 700 : 500,
+                  borderRadius: '6px',
+                  border: '1px solid',
+                  borderColor: printPdfFormat === 'a4' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
+                  background: printPdfFormat === 'a4' ? '#4f46e5' : '#ffffff',
+                  color: printPdfFormat === 'a4' ? '#ffffff' : 'var(--text-main, #334155)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                📄 Hoja A4
               </button>
             </div>
 
@@ -1870,7 +1950,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                     href={printPdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    download={`${selectedTicket.cod_comprobante}.pdf`}
+                    download={`${selectedTicket.cod_comprobante}${printPdfFormat === 'a4' ? '_a4' : ''}.pdf`}
                     className="btn-secondary pdf-btn-download"
                     style={{
                       display: 'inline-flex',
