@@ -6,7 +6,7 @@
     <style>
         @page {
             size: a4 portrait;
-            margin: 24mm 22mm 24mm 22mm;
+            margin: 0;
         }
         * {
             box-sizing: border-box;
@@ -19,6 +19,9 @@
             line-height: 1.35;
             color: #1e293b;
             background: #ffffff;
+        }
+        .page-container {
+            margin: 25mm 24mm;
         }
 
         .w-100 { width: 100%; }
@@ -38,8 +41,7 @@
             vertical-align: top;
         }
         .header-logo-cell {
-            width: 56%;
-            padding-right: 18px;
+            width: 55%;
         }
         .logo-img {
             max-width: 240px;
@@ -65,7 +67,8 @@
 
         /* SUNAT Box */
         .sunat-box-cell {
-            width: 44%;
+            width: 45%;
+            padding-left: 15px;
         }
         .sunat-box {
             border: 2px solid #1e3a8a;
@@ -100,7 +103,6 @@
 
         /* Client Info Section */
         .client-box {
-            width: 100%;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             background: #f8fafc;
@@ -161,11 +163,11 @@
             vertical-align: top;
         }
         .bottom-left-cell {
-            width: 56%;
-            padding-right: 18px;
+            width: 55%;
         }
         .bottom-right-cell {
-            width: 44%;
+            width: 45%;
+            padding-left: 15px;
         }
 
         /* Monto en letras */
@@ -249,6 +251,7 @@
     </style>
 </head>
 <body>
+<div class="page-container">
 
     {{-- 1. Cabecera / Header --}}
     <table class="header-table">
@@ -408,6 +411,6 @@
             </td>
         </tr>
     </table>
-
+</div>
 </body>
 </html>
