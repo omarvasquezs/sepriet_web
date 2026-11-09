@@ -402,8 +402,8 @@
     {{-- 9. Términos y Condiciones --}}
     <div class="footer">
         <p>• Conserve este ticket para retirar sus prendas.</p>
-        <p>• Plazo máximo de retiro: 30 días calendario.</p>
-        <p>• Pasados los 30 días, la empresa no se responsabiliza por prendas no reclamadas.</p>
+        <p>• Plazo máximo de retiro: 7 días calendario.</p>
+        <p>• Pasados los 7 días, la empresa no se responsabiliza por prendas no reclamadas.</p>
         <p>• No se aceptan reclamos una vez retirada la prenda.</p>
         <p class="gracias">¡Gracias por su preferencia!</p>
     </div>

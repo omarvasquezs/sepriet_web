@@ -17,7 +17,7 @@ export const buildWhatsAppMessage = (
   const montoAbonado = Number(ticket.monto_abonado || 0);
   const descuento = Number(ticket.descuento || 0);
   const deuda = Math.max(0, costoTotal - montoAbonado);
-  const diasRecojo = 30;
+  const diasRecojo = 7;
 
   const sb: string[] = [];
 

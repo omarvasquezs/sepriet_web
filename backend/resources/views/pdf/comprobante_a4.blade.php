@@ -369,7 +369,7 @@
 
                 <div class="terms-box">
                     <p>• Conserve este comprobante para retirar sus prendas del establecimiento.</p>
-                    <p>• Plazo máximo de retiro: 30 días calendario contados desde la recepción.</p>
+                    <p>• Plazo máximo de retiro: 7 días calendario contados desde la recepción.</p>
                     <p>• No se aceptan reclamos una vez retiradas las prendas del local.</p>
                     <p style="margin-top: 4px; font-weight: bold; color: #1e3a8a;">¡Gracias por su preferencia!</p>
                 </div>
