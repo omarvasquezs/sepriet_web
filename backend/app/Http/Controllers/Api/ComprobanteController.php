@@ -62,21 +62,25 @@ class ComprobanteController extends Controller
             }
         }
 
-        if ($request->filled('estado_comprobante_id')) {
-            $val = (string)$request->estado_comprobante_id;
-            if (str_contains($val, ',')) {
-                $query->whereIn('estado_comprobante_id', explode(',', $val));
+        if ($request->has('estado_comprobante_id') && !empty($request->estado_comprobante_id)) {
+            $val = $request->estado_comprobante_id;
+            if (is_array($val)) {
+                $query->whereIn('estado_comprobante_id', array_filter($val));
+            } elseif (str_contains((string)$val, ',')) {
+                $query->whereIn('estado_comprobante_id', explode(',', (string)$val));
             } else {
-                $query->where('estado_comprobante_id', $val);
+                $query->where('estado_comprobante_id', (string)$val);
             }
         }
 
-        if ($request->filled('estado_ropa_id')) {
-            $val = (string)$request->estado_ropa_id;
-            if (str_contains($val, ',')) {
-                $query->whereIn('estado_ropa_id', explode(',', $val));
+        if ($request->has('estado_ropa_id') && !empty($request->estado_ropa_id)) {
+            $val = $request->estado_ropa_id;
+            if (is_array($val)) {
+                $query->whereIn('estado_ropa_id', array_filter($val));
+            } elseif (str_contains((string)$val, ',')) {
+                $query->whereIn('estado_ropa_id', explode(',', (string)$val));
             } else {
-                $query->where('estado_ropa_id', $val);
+                $query->where('estado_ropa_id', (string)$val);
             }
         }
 

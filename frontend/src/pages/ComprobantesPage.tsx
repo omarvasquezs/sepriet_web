@@ -6,6 +6,7 @@ import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AsyncSelect2, type SelectOption } from '../components/AsyncSelect2';
 import { sendWhatsAppBotNotification } from '../services/whatsappBotService';
+import { MultiSelectFilterDropdown, type FilterOption } from '../components/MultiSelectFilterDropdown';
 
 const toDateTimeLocal = (d: Date = new Date()) => {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -36,8 +37,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [catalogos, setCatalogos] = useState<any>({ estados_pago: [], estados_ropa: [], metodos_pago: [] });
 
   const [search, setSearch] = useState('');
-  const [estadoPagoFilter, setEstadoPagoFilter] = useState('');
-  const [estadoRopaFilter, setEstadoRopaFilter] = useState('');
+  const [selectedPagoIds, setSelectedPagoIds] = useState<number[]>([]);
+  const [selectedRopaIds, setSelectedRopaIds] = useState<number[]>([]);
+  const [showCheckboxesPanel, setShowCheckboxesPanel] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -103,9 +105,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     setLoading(true);
     try {
       const params: any = { search, page };
-      if (estadoPagoFilter) params.estado_comprobante_id = estadoPagoFilter;
-      if (estadoRopaFilter) params.estado_ropa_id = estadoRopaFilter;
-      if (filterPreset?.id && !estadoPagoFilter && !estadoRopaFilter) {
+      if (selectedPagoIds.length > 0) {
+        params.estado_comprobante_id = selectedPagoIds.join(',');
+      }
+      if (selectedRopaIds.length > 0) {
+        params.estado_ropa_id = selectedRopaIds.join(',');
+      }
+      if (filterPreset?.id && selectedPagoIds.length === 0 && selectedRopaIds.length === 0) {
         params.preset = filterPreset.id;
       }
 
@@ -146,11 +152,25 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
   };
 
-  // Reset filters when filterPreset changes from top navigation
+  // Sync preset selections when filterPreset changes from top navigation
   useEffect(() => {
     if (filterPreset) {
-      setEstadoPagoFilter('');
-      setEstadoRopaFilter('');
+      if (filterPreset.id === 'no_cancelados') {
+        setSelectedPagoIds([1, 2]); // DEBE (1), ABONO (2)
+        setSelectedRopaIds([]);
+      } else if (filterPreset.id === 'cancelados') {
+        setSelectedPagoIds([4]); // CANCELADO (4)
+        setSelectedRopaIds([]);
+      } else if (filterPreset.id === 'activos') {
+        setSelectedPagoIds([1, 2, 4]); // DEBE, ABONO, CANCELADO (exclude ANULADO 3)
+        setSelectedRopaIds([1, 3]); // RECIBIDO (1), LISTO PARA RECOGER (3) (exclude RECOGIDO 4)
+      } else if (filterPreset.id === 'recogidos_cancelados') {
+        setSelectedPagoIds([4]);
+        setSelectedRopaIds([4]);
+      } else {
+        setSelectedPagoIds([]);
+        setSelectedRopaIds([]);
+      }
       setSearch('');
       setPage(1);
     }
@@ -168,7 +188,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
   useEffect(() => {
     fetchData();
-  }, [search, estadoPagoFilter, estadoRopaFilter, filterPreset?.timestamp, page]);
+  }, [search, selectedPagoIds, selectedRopaIds, filterPreset?.timestamp, page]);
 
   // Loaders for Select2 with search & lazy loading
   const loadClienteOptions = useCallback(async (query: string, pageNum: number) => {
@@ -496,10 +516,40 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
   };
 
+  // Map catalog items to FilterOption for multi-select checkboxes
+  const estadosPagoOptions: FilterOption[] = (catalogos.estados_pago || []).map((ep: any) => {
+    let dotColor = '#64748b';
+    const name = (ep.nom_estado || ep.nombre || '').toUpperCase();
+    if (name.includes('CANCELADO')) dotColor = '#16a34a';
+    else if (name.includes('ABONO')) dotColor = '#3b82f6';
+    else if (name.includes('DEBE')) dotColor = '#eab308';
+    else if (name.includes('ANULADO')) dotColor = '#ef4444';
+
+    return {
+      id: Number(ep.id),
+      name: ep.nom_estado || ep.nombre,
+      dotColor,
+    };
+  });
+
+  const estadosRopaOptions: FilterOption[] = (catalogos.estados_ropa || []).map((er: any) => {
+    let dotColor = '#64748b';
+    const name = (er.nom_estado_ropa || er.nombre || '').toUpperCase();
+    if (name.includes('RECIBIDO')) dotColor = '#3b82f6';
+    else if (name.includes('LISTO')) dotColor = '#10b981';
+    else if (name.includes('RECOGIDO')) dotColor = '#6b7280';
+
+    return {
+      id: Number(er.id),
+      name: er.nom_estado_ropa || er.nombre,
+      dotColor,
+    };
+  });
+
   return (
     <div className="page-container">
       {/* Active Filter Preset Notification from Top Menu CONSULTAR */}
-      {filterPreset && !estadoPagoFilter && !estadoRopaFilter && (
+      {filterPreset && selectedPagoIds.length === 0 && selectedRopaIds.length === 0 && (
         <div
           style={{
             display: 'flex',
@@ -542,7 +592,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         </div>
       )}
 
-      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
           <div className="comprobantes-search-wrapper">
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
@@ -556,30 +606,68 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
             />
           </div>
 
-          <div className="comprobantes-filters-wrapper">
-            <select
-              className="form-select"
-              style={{ flex: 1, minWidth: 0 }}
-              value={estadoPagoFilter}
-              onChange={(e) => { setEstadoPagoFilter(e.target.value); setPage(1); }}
-            >
-              <option value="">Pago: Todos</option>
-              {catalogos.estados_pago.map((ep: any) => (
-                <option key={ep.id} value={ep.id}>{ep.nom_estado || ep.nombre}</option>
-              ))}
-            </select>
+          <div className="comprobantes-filters-wrapper" style={{ display: 'flex', gap: '8px', flex: '1 1 360px', flexWrap: 'wrap' }}>
+            {/* Multi-Select Dropdown: Estado de Pago */}
+            <MultiSelectFilterDropdown
+              labelPrefix="Pago"
+              title="Estado de Pago (Comprobante)"
+              options={estadosPagoOptions}
+              selectedIds={selectedPagoIds}
+              onChange={(ids) => {
+                setSelectedPagoIds(ids);
+                setPage(1);
+              }}
+            />
 
-            <select
-              className="form-select"
-              style={{ flex: 1, minWidth: 0 }}
-              value={estadoRopaFilter}
-              onChange={(e) => { setEstadoRopaFilter(e.target.value); setPage(1); }}
+            {/* Multi-Select Dropdown: Estado de Ropa / Prendas */}
+            <MultiSelectFilterDropdown
+              labelPrefix="Prendas"
+              title="Estado de Ropa (Prendas)"
+              options={estadosRopaOptions}
+              selectedIds={selectedRopaIds}
+              onChange={(ids) => {
+                setSelectedRopaIds(ids);
+                setPage(1);
+              }}
+            />
+
+            {/* Toggle Button for Java-Style Checkbox Panel */}
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 12px',
+                height: '42px',
+                flexShrink: 0,
+                background: showCheckboxesPanel ? '#e0e7ff' : '#ffffff',
+                borderColor: showCheckboxesPanel ? '#818cf8' : 'var(--border-color)',
+                color: showCheckboxesPanel ? '#3730a3' : '#475569',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              onClick={() => setShowCheckboxesPanel(prev => !prev)}
+              title="Ver panel de checkboxes de filtros (Estilo Java)"
             >
-              <option value="">Prendas: Todos</option>
-              {catalogos.estados_ropa.map((er: any) => (
-                <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
-              ))}
-            </select>
+              <Filter size={15} />
+              <span>Panel Filtros</span>
+              {(selectedPagoIds.length > 0 || selectedRopaIds.length > 0) && (
+                <span
+                  style={{
+                    background: '#4f46e5',
+                    color: '#ffffff',
+                    borderRadius: '9999px',
+                    padding: '1px 6px',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {selectedPagoIds.length + selectedRopaIds.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -591,6 +679,145 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
           <Plus size={18} /> Registrar Comprobante
         </button>
       </div>
+
+      {/* Java-Style Checkbox Filter Panel */}
+      {showCheckboxesPanel && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '14px 18px',
+            marginBottom: '16px',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            animation: 'modalSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={17} color="#4f46e5" />
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
+                Filtros Multiselección con Checkboxes (Estilo Sistema Java)
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                onClick={() => {
+                  setSelectedPagoIds([]);
+                  setSelectedRopaIds([]);
+                  setPage(1);
+                }}
+              >
+                Resetear Filtros
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {/* Columna Estado Ropa */}
+            <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Estado Ropa:</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b' }}>
+                  {selectedRopaIds.length === 0 ? 'Todos' : `${selectedRopaIds.length} seleccionados`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+                {estadosRopaOptions.map((er) => {
+                  const isChecked = selectedRopaIds.includes(er.id);
+                  return (
+                    <label
+                      key={er.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        padding: '3px 6px',
+                        borderRadius: '4px',
+                        background: isChecked ? '#dcfce7' : 'transparent',
+                        fontWeight: isChecked ? 700 : 500,
+                        fontSize: '0.84rem',
+                        color: isChecked ? '#14532d' : '#475569',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedRopaIds(selectedRopaIds.filter(id => id !== er.id));
+                          } else {
+                            setSelectedRopaIds([...selectedRopaIds, er.id]);
+                          }
+                          setPage(1);
+                        }}
+                        style={{ width: '16px', height: '16px', accentColor: '#16a34a', cursor: 'pointer' }}
+                      />
+                      {er.dotColor && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: er.dotColor }} />}
+                      <span>{er.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Columna Estado Comprobante (Pago) */}
+            <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Estado Comprobante:</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b' }}>
+                  {selectedPagoIds.length === 0 ? 'Todos' : `${selectedPagoIds.length} seleccionados`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+                {estadosPagoOptions.map((ep) => {
+                  const isChecked = selectedPagoIds.includes(ep.id);
+                  return (
+                    <label
+                      key={ep.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        padding: '3px 6px',
+                        borderRadius: '4px',
+                        background: isChecked ? '#dcfce7' : 'transparent',
+                        fontWeight: isChecked ? 700 : 500,
+                        fontSize: '0.84rem',
+                        color: isChecked ? '#14532d' : '#475569',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedPagoIds(selectedPagoIds.filter(id => id !== ep.id));
+                          } else {
+                            setSelectedPagoIds([...selectedPagoIds, ep.id]);
+                          }
+                          setPage(1);
+                        }}
+                        style={{ width: '16px', height: '16px', accentColor: '#16a34a', cursor: 'pointer' }}
+                      />
+                      {ep.dotColor && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: ep.dotColor }} />}
+                      <span>{ep.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass-panel" style={{ padding: '16px' }}>
         {loading ? (
