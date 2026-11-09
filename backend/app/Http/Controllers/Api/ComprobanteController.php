@@ -629,6 +629,7 @@ class ComprobanteController extends Controller
             'second_message' => 'nullable|string',
             'force_regenerate_pdf' => 'nullable|boolean',
             'format' => 'nullable|string',
+            'only_text' => 'nullable|boolean',
         ]);
 
         $comprobante = Comprobante::with([
@@ -640,12 +641,17 @@ class ComprobanteController extends Controller
             'detalles.servicio'
         ])->findOrFail($id);
 
-        // 1. Generar o recuperar PDF (a4 por defecto o ticket)
-        $force = !empty($validated['force_regenerate_pdf']);
-        $format = !empty($validated['format']) && in_array(strtolower($validated['format']), ['ticket', 'a4'], true)
-            ? strtolower($validated['format'])
-            : 'a4';
-        $pdfInfo = $this->createOrRetrievePdf($comprobante, $force, $format);
+        $onlyText = $request->boolean('only_text', false);
+
+        // 1. Generar o recuperar PDF (a4 por defecto o ticket) solo si se requiere adjuntar documento
+        $pdfInfo = null;
+        if (!$onlyText) {
+            $force = !empty($validated['force_regenerate_pdf']);
+            $format = !empty($validated['format']) && in_array(strtolower($validated['format']), ['ticket', 'a4'], true)
+                ? strtolower($validated['format'])
+                : 'a4';
+            $pdfInfo = $this->createOrRetrievePdf($comprobante, $force, $format);
+        }
 
         // 2. Obtener credenciales y parámetros de TextMeBot
         $apiKey = !empty($validated['apikey'])
@@ -671,17 +677,22 @@ class ComprobanteController extends Controller
 
         $captionMessage = !empty($validated['message']) ? $validated['message'] : "Comprobante {$comprobante->cod_comprobante}";
 
-        // 3. Ejecutar petición a TextMeBot API (Endpoint oficial de envío de documento con mensaje)
+        // 3. Ejecutar petición a TextMeBot API (con documento o solo texto)
         try {
             $apiUrl = 'https://api.textmebot.com/send.php';
-            $response = Http::timeout(25)->get($apiUrl, [
+            $params = [
                 'recipient' => '+' . ltrim($cleanPhone, '+'),
                 'apikey' => $apiKey,
-                'document' => $pdfInfo['url'],
-                'filename' => $pdfInfo['filename'] ?? "{$comprobante->cod_comprobante}.pdf",
                 'text' => $captionMessage,
                 'json' => 'yes',
-            ]);
+            ];
+
+            if (!$onlyText && $pdfInfo) {
+                $params['document'] = $pdfInfo['url'];
+                $params['filename'] = $pdfInfo['filename'] ?? "{$comprobante->cod_comprobante}.pdf";
+            }
+
+            $response = Http::timeout(25)->get($apiUrl, $params);
 
             $body = $response->body();
             $status = $response->status();

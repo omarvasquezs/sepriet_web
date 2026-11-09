@@ -299,28 +299,56 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const fullNumber = `${cleanCountry}${phone}`;
 
     try {
-      const payload: any = {
+      // 1. Enviar comprobante oficial (con documento PDF adjunto)
+      const res = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, {
         phone: fullNumber,
         apikey: textMeBotKey.trim(),
         message: message,
         format: 'a4',
-      };
+      });
 
-      if (currentActionType === 'recogido' && includeSecondMessage && secondMessage.trim()) {
-        payload.second_message = secondMessage.trim();
-      }
-
-      const res = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, payload);
-
-      if (res.data?.success) {
-        setBotStatusMessage({
-          type: 'success',
-          text: res.data?.message || '✅ ¡Comprobante y mensaje de agradecimiento enviados con éxito vía TextMeBot!',
-        });
-      } else {
+      if (!res.data?.success) {
         setBotStatusMessage({
           type: 'error',
-          text: `⚠️ ${res.data?.message || 'Error al enviar vía TextMeBot'}`,
+          text: `⚠️ ${res.data?.message || 'Error al enviar comprobante vía TextMeBot'}`,
+        });
+        setIsSendingBot(false);
+        return;
+      }
+
+      // 2. Si es estado RECOGIDO y se incluye el 2do mensaje de agradecimiento:
+      if (currentActionType === 'recogido' && includeSecondMessage && secondMessage.trim()) {
+        // Cuenta regresiva de 8 segundos requerida por TextMeBot para mensajes consecutivos
+        for (let i = 8; i > 0; i--) {
+          setBotStatusMessage({
+            type: 'success',
+            text: `✅ Comprobante enviado. Enviando mensaje de agradecimiento en ${i} seg...`,
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+
+        const res2 = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, {
+          phone: fullNumber,
+          apikey: textMeBotKey.trim(),
+          message: secondMessage.trim(),
+          only_text: true,
+        });
+
+        if (res2.data?.success) {
+          setBotStatusMessage({
+            type: 'success',
+            text: '✅ ¡Comprobante actualizado y mensaje de agradecimiento enviados con éxito vía TextMeBot!',
+          });
+        } else {
+          setBotStatusMessage({
+            type: 'error',
+            text: `⚠️ Comprobante enviado, pero el agradecimiento falló: ${res2.data?.message || 'Error'}`,
+          });
+        }
+      } else {
+        setBotStatusMessage({
+          type: 'success',
+          text: '✅ ¡Comprobante y PDF enviados con éxito al cliente vía TextMeBot!',
         });
       }
     } catch (err: any) {
