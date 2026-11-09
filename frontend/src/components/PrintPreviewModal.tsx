@@ -137,8 +137,45 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   const fechaStr = ticket.fecha ? new Date(ticket.fecha).toLocaleDateString('es-PE') : '';
 
   return (
-    <div className="pdf-modal-overlay" style={{ zIndex: 100040 }}>
-      <div className="pdf-modal-container">
+    <div
+      className="modal-overlay"
+      style={{
+        zIndex: 100040,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        padding: '16px',
+        overflowY: 'auto',
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-content pdf-preview-modal"
+        style={{
+          maxWidth: printPdfFormat === 'a4' ? '860px' : '560px',
+          transition: 'max-width 0.25s ease',
+          width: '95%',
+          height: '92vh',
+          maxHeight: '92vh',
+          padding: '0',
+          overflow: 'hidden',
+          borderRadius: '14px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#ffffff',
+          position: 'relative',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div
           style={{
