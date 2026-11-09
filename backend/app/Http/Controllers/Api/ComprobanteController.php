@@ -84,6 +84,14 @@ class ComprobanteController extends Controller
             }
         }
 
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            $query->whereBetween(DB::raw('DATE(fecha)'), [$request->fecha_desde, $request->fecha_hasta]);
+        } elseif ($request->filled('fecha_desde')) {
+            $query->where(DB::raw('DATE(fecha)'), '>=', $request->fecha_desde);
+        } elseif ($request->filled('fecha_hasta')) {
+            $query->where(DB::raw('DATE(fecha)'), '<=', $request->fecha_hasta);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -98,6 +106,134 @@ class ComprobanteController extends Controller
 
         $perPage = (int)$request->get('per_page', 50);
         return response()->json($query->orderBy('id', 'desc')->paginate($perPage));
+    }
+
+    /**
+     * Retorna las estadísticas detalladas por fecha para el panel superior (idéntico a frmConsultarComprobantes de Java).
+     */
+    public function estadisticasFecha(Request $request)
+    {
+        $d1 = $request->query('fecha_desde');
+        $d2 = $request->query('fecha_hasta');
+
+        if (!$d1 && !$d2) {
+            return response()->json([
+                'success' => false,
+                'stats' => null,
+            ]);
+        }
+
+        $carbon1 = $d1 ? Carbon::parse($d1) : null;
+        $carbon2 = $d2 ? Carbon::parse($d2) : null;
+        $fechaStr = '';
+
+        if ($carbon1 && $carbon2) {
+            if ($carbon1->isSameDay($carbon2)) {
+                $fechaStr = 'desde el ' . $carbon1->format('d/m/Y');
+            } else {
+                $fechaStr = 'del ' . $carbon1->format('d/m/Y') . ' al ' . $carbon2->format('d/m/Y');
+            }
+        } elseif ($carbon1) {
+            $fechaStr = 'desde el ' . $carbon1->format('d/m/Y');
+        } elseif ($carbon2) {
+            $fechaStr = 'hasta el ' . $carbon2->format('d/m/Y');
+        }
+
+        $applyDate = function ($q, $col = 'fecha') use ($carbon1, $carbon2) {
+            if ($carbon1 && $carbon2) {
+                $q->whereBetween(DB::raw("DATE({$col})"), [$carbon1->format('Y-m-d'), $carbon2->format('Y-m-d')]);
+            } elseif ($carbon1) {
+                $q->where(DB::raw("DATE({$col})"), '>=', $carbon1->format('Y-m-d'));
+            } elseif ($carbon2) {
+                $q->where(DB::raw("DATE({$col})"), '<=', $carbon2->format('Y-m-d'));
+            }
+        };
+
+        // 1. Comprobantes generados: cantidad, total abonos, costo total
+        $compQuery = Comprobante::where('activado', 1);
+        $applyDate($compQuery, 'fecha');
+        $compStats = $compQuery->selectRaw('COUNT(*) as cantidad, COALESCE(SUM(monto_abonado), 0) as total_abonos, COALESCE(SUM(costo_total), 0) as suma_costo_total')->first();
+
+        $cantidad = (int)($compStats->cantidad ?? 0);
+        $totalAbonos = (float)($compStats->total_abonos ?? 0);
+        $sumaCostoTotal = (float)($compStats->suma_costo_total ?? 0);
+
+        // 2. Reporte ingresos query: total ingresos en rango
+        $riQuery = ReporteIngreso::query();
+        $applyDate($riQuery, 'fecha');
+        $totalIngresos = (float)($riQuery->sum('monto_abonado') ?? 0);
+
+        // 3. Reporte ingresos por método de pago (Efectivo vs Yape/Plin)
+        $riMetodosQuery = ReporteIngreso::query();
+        $applyDate($riMetodosQuery, 'fecha');
+        $riMetodos = $riMetodosQuery->selectRaw("
+            COALESCE(SUM(CASE WHEN metodo_pago_id = 4 THEN monto_abonado ELSE 0 END), 0) as total_efectivo,
+            COALESCE(SUM(CASE WHEN metodo_pago_id IN (1, 2) THEN monto_abonado ELSE 0 END), 0) as total_yape_plin
+        ")->first();
+
+        $totalEfectivo = (float)($riMetodos->total_efectivo ?? 0);
+        $totalYapePlin = (float)($riMetodos->total_yape_plin ?? 0);
+
+        // 4. Comprobantes generados por método de pago inicial
+        $compMetodosQuery = Comprobante::where('activado', 1);
+        $applyDate($compMetodosQuery, 'fecha');
+        $compMetodos = $compMetodosQuery->selectRaw("
+            COALESCE(SUM(CASE WHEN metodo_pago_id = 4 THEN monto_abonado ELSE 0 END), 0) as comp_efectivo,
+            COALESCE(SUM(CASE WHEN metodo_pago_id IN (1, 2) THEN monto_abonado ELSE 0 END), 0) as comp_yape_plin
+        ")->first();
+
+        $compEfectivo = (float)($compMetodos->comp_efectivo ?? 0);
+        $compYapePlin = (float)($compMetodos->comp_yape_plin ?? 0);
+
+        // 5. Caja logic: aperturada / cerrada
+        $cajaAperturaTexto = null;
+        $cajaCierreTexto = null;
+
+        if ($carbon1 && $carbon2 && !$carbon1->isSameDay($carbon2)) {
+            $cajaAperturaTexto = 'Caja: No aplicable por rango de fechas.';
+        } else {
+            $checkDate = $carbon1 ? $carbon1->format('Y-m-d') : ($carbon2 ? $carbon2->format('Y-m-d') : Carbon::today()->format('Y-m-d'));
+            $caja = CajaAperturaCierre::whereDate('datetime_apertura', $checkDate)
+                ->orderBy('datetime_apertura', 'desc')
+                ->first();
+
+            if ($caja) {
+                $horaAp = $caja->datetime_apertura ? Carbon::parse($caja->datetime_apertura)->format('H:i:s') : 'N/A';
+                $montoAp = number_format($caja->monto_apertura ?? 0, 2);
+                $cajaAperturaTexto = "Caja aperturada el {$fechaStr} a las {$horaAp} con: S/. {$montoAp}";
+
+                if ($caja->datetime_cierre) {
+                    $horaCi = Carbon::parse($caja->datetime_cierre)->format('H:i:s');
+                    $montoCi = number_format($caja->monto_cierre ?? 0, 2);
+                    $cajaCierreTexto = "Caja cerrada el {$fechaStr} a las {$horaCi} con: S/. {$montoCi}";
+                } else {
+                    $cajaCierreTexto = "Caja aún no ha sido cerrada el {$fechaStr}";
+                }
+            } else {
+                $cajaAperturaTexto = "No se ha aperturado caja el {$fechaStr}";
+            }
+        }
+
+        // 6. Deuda Total: comprobantes con estado DEBE (1) o ABONO (2)
+        $deudaQuery = Comprobante::where('activado', 1)->whereIn('estado_comprobante_id', [1, 2]);
+        $applyDate($deudaQuery, 'fecha');
+        $deudaTotal = (float)$deudaQuery->selectRaw('COALESCE(SUM(costo_total - IFNULL(monto_abonado, 0)), 0) as suma_deuda')->value('suma_deuda');
+
+        return response()->json([
+            'success' => true,
+            'fechaStr' => $fechaStr,
+            'cantidad' => $cantidad,
+            'totalAbonos' => $totalAbonos,
+            'totalIngresos' => $totalIngresos,
+            'sumaCostoTotal' => $sumaCostoTotal,
+            'totalEfectivo' => $totalEfectivo,
+            'totalYapePlin' => $totalYapePlin,
+            'compEfectivo' => $compEfectivo,
+            'compYapePlin' => $compYapePlin,
+            'cajaApertura' => $cajaAperturaTexto,
+            'cajaCierre' => $cajaCierreTexto,
+            'deudaTotal' => $deudaTotal,
+        ]);
     }
 
     public function store(Request $request)

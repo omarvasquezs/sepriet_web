@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('servicios', ServicioController::class);
 
     // Comprobantes (Tickets)
+    Route::get('/comprobantes/estadisticas-fecha', [ComprobanteController::class, 'estadisticasFecha']);
     Route::get('/comprobantes', [ComprobanteController::class, 'index']);
     Route::post('/comprobantes', [ComprobanteController::class, 'store']);
     Route::get('/comprobantes/{id}', [ComprobanteController::class, 'show']);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Filter, Ban } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Filter, Ban, RotateCcw } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
@@ -39,6 +39,11 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [search, setSearch] = useState('');
   const [selectedPagoIds, setSelectedPagoIds] = useState<number[]>([]);
   const [selectedRopaIds, setSelectedRopaIds] = useState<number[]>([]);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [fechaHoyDia, setFechaHoyDia] = useState(false);
+  const [dateStats, setDateStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [showCheckboxesPanel, setShowCheckboxesPanel] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -101,6 +106,85 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [createForm, setCreateForm] = useState(initialCreateForm);
 
 
+  const getTodayDateStr = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const fetchDateStats = async (d1?: string, d2?: string) => {
+    const from = d1 !== undefined ? d1 : fechaDesde;
+    const to = d2 !== undefined ? d2 : fechaHasta;
+    if (!from && !to) {
+      setDateStats(null);
+      return;
+    }
+    setLoadingStats(true);
+    try {
+      const res = await api.get('/comprobantes/estadisticas-fecha', {
+        params: {
+          fecha_desde: from || undefined,
+          fecha_hasta: to || undefined,
+        }
+      });
+      if (res.data?.success) {
+        setDateStats(res.data);
+      } else {
+        setDateStats(null);
+      }
+    } catch (err) {
+      console.error('Error fetching date stats:', err);
+      setDateStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleToggleFechaHoy = (checked: boolean) => {
+    setFechaHoyDia(checked);
+    if (checked) {
+      const today = getTodayDateStr();
+      setFechaDesde(today);
+      setFechaHasta(today);
+    } else {
+      setFechaDesde('');
+      setFechaHasta('');
+    }
+    setPage(1);
+  };
+
+  const handleFechaDesdeChange = (val: string) => {
+    setFechaDesde(val);
+    const today = getTodayDateStr();
+    if (fechaHoyDia && (val !== today || fechaHasta !== today)) {
+      setFechaHoyDia(false);
+    }
+    setPage(1);
+  };
+
+  const handleFechaHastaChange = (val: string) => {
+    setFechaHasta(val);
+    const today = getTodayDateStr();
+    if (fechaHoyDia && (fechaDesde !== today || val !== today)) {
+      setFechaHoyDia(false);
+    }
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedPagoIds([]);
+    setSelectedRopaIds([]);
+    setFechaDesde('');
+    setFechaHasta('');
+    setFechaHoyDia(false);
+    setDateStats(null);
+    setPage(1);
+    if (onClearFilterPreset) {
+      onClearFilterPreset();
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -111,7 +195,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       if (selectedRopaIds.length > 0) {
         params.estado_ropa_id = selectedRopaIds.join(',');
       }
-      if (filterPreset?.id && selectedPagoIds.length === 0 && selectedRopaIds.length === 0) {
+      if (fechaDesde) {
+        params.fecha_desde = fechaDesde;
+      }
+      if (fechaHasta) {
+        params.fecha_hasta = fechaHasta;
+      }
+      if (filterPreset?.id && selectedPagoIds.length === 0 && selectedRopaIds.length === 0 && !fechaDesde && !fechaHasta) {
         params.preset = filterPreset.id;
       }
 
@@ -188,7 +278,15 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
 
   useEffect(() => {
     fetchData();
-  }, [search, selectedPagoIds, selectedRopaIds, filterPreset?.timestamp, page]);
+  }, [search, selectedPagoIds, selectedRopaIds, fechaDesde, fechaHasta, filterPreset?.timestamp, page]);
+
+  useEffect(() => {
+    if (fechaDesde || fechaHasta) {
+      fetchDateStats(fechaDesde, fechaHasta);
+    } else {
+      setDateStats(null);
+    }
+  }, [fechaDesde, fechaHasta]);
 
   // Loaders for Select2 with search & lazy loading
   const loadClienteOptions = useCallback(async (query: string, pageNum: number) => {
@@ -433,6 +531,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       setShowCreateModal(false);
       setPage(1);
       fetchData();
+      if (fechaDesde || fechaHasta) {
+        fetchDateStats(fechaDesde, fechaHasta);
+      }
 
       // Automatically dispatch WhatsApp notification and PDF in background, showing 5s green top alert
       sendWhatsAppBotNotification(createdTicket, 'ticket');
@@ -462,6 +563,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       setShowAbonoModal(false);
       setAbonoAmount('');
       fetchData();
+      if (fechaDesde || fechaHasta) {
+        fetchDateStats(fechaDesde, fechaHasta);
+      }
 
       // Send WhatsApp receipt update in background with 5s green top alert
       sendWhatsAppBotNotification(updatedTicket, 'ticket');
@@ -496,6 +600,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       await api.put(`/comprobantes/${ticket.id}/estado`, { estado_comprobante_id: 3 });
       window.dispatchEvent(new CustomEvent('caja:updated'));
       fetchData();
+      if (fechaDesde || fechaHasta) {
+        fetchDateStats(fechaDesde, fechaHasta);
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al anular comprobante');
     }
@@ -592,92 +699,180 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         </div>
       )}
 
-      <div className="comprobantes-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
-          <div className="comprobantes-search-wrapper">
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
+      <div className="comprobantes-header-bar" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', flex: '1 1 320px', flexWrap: 'wrap' }}>
+            <div className="comprobantes-search-wrapper">
+              <Search size={18} style={{ position: 'absolute', left: '14px', top: '12px', color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                className="form-input"
+                style={{ width: '100%', paddingLeft: '42px' }}
+                placeholder="Buscar ticket, DNI, cliente..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
+              />
+            </div>
+
+            <div className="comprobantes-filters-wrapper" style={{ display: 'flex', gap: '8px', flex: '1 1 360px', flexWrap: 'wrap' }}>
+              {/* Multi-Select Dropdown: Estado de Pago */}
+              <MultiSelectFilterDropdown
+                labelPrefix="Pago"
+                title="Estado de Pago (Comprobante)"
+                options={estadosPagoOptions}
+                selectedIds={selectedPagoIds}
+                onChange={(ids) => {
+                  setSelectedPagoIds(ids);
+                  setPage(1);
+                }}
+              />
+
+              {/* Multi-Select Dropdown: Estado de Ropa / Prendas */}
+              <MultiSelectFilterDropdown
+                labelPrefix="Prendas"
+                title="Estado de Ropa (Prendas)"
+                options={estadosRopaOptions}
+                selectedIds={selectedRopaIds}
+                onChange={(ids) => {
+                  setSelectedRopaIds(ids);
+                  setPage(1);
+                }}
+              />
+
+              {/* Toggle Button for Java-Style Checkbox Panel */}
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '0 12px',
+                  height: '42px',
+                  flexShrink: 0,
+                  background: showCheckboxesPanel ? '#e0e7ff' : '#ffffff',
+                  borderColor: showCheckboxesPanel ? '#818cf8' : 'var(--border-color)',
+                  color: showCheckboxesPanel ? '#3730a3' : '#475569',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                onClick={() => setShowCheckboxesPanel(prev => !prev)}
+                title="Ver panel de checkboxes de filtros (Estilo Java)"
+              >
+                <Filter size={15} />
+                <span>Panel Filtros</span>
+                {(selectedPagoIds.length > 0 || selectedRopaIds.length > 0) && (
+                  <span
+                    style={{
+                      background: '#4f46e5',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '1px 6px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedPagoIds.length + selectedRopaIds.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="btn-primary"
+            style={{ flex: '0 0 auto' }}
+            onClick={handleOpenCreateModal}
+          >
+            <Plus size={18} /> Registrar Comprobante
+          </button>
+        </div>
+
+        {/* Date Range Toolbar (Desde, Hasta, FECHA HOY DÍA, Resetear) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            padding: '8px 14px',
+            background: '#ffffff',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Calendar size={15} color="#64748b" />
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Desde:</span>
             <input
-              type="text"
+              type="date"
               className="form-input"
-              style={{ width: '100%', paddingLeft: '42px' }}
-              placeholder="Buscar ticket, DNI, cliente..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
+              style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
+              value={fechaDesde}
+              onChange={(e) => handleFechaDesdeChange(e.target.value)}
             />
           </div>
 
-          <div className="comprobantes-filters-wrapper" style={{ display: 'flex', gap: '8px', flex: '1 1 360px', flexWrap: 'wrap' }}>
-            {/* Multi-Select Dropdown: Estado de Pago */}
-            <MultiSelectFilterDropdown
-              labelPrefix="Pago"
-              title="Estado de Pago (Comprobante)"
-              options={estadosPagoOptions}
-              selectedIds={selectedPagoIds}
-              onChange={(ids) => {
-                setSelectedPagoIds(ids);
-                setPage(1);
-              }}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Hasta:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{ padding: '4px 8px', fontSize: '0.82rem', width: 'auto' }}
+              value={fechaHasta}
+              onChange={(e) => handleFechaHastaChange(e.target.value)}
             />
+          </div>
 
-            {/* Multi-Select Dropdown: Estado de Ropa / Prendas */}
-            <MultiSelectFilterDropdown
-              labelPrefix="Prendas"
-              title="Estado de Ropa (Prendas)"
-              options={estadosRopaOptions}
-              selectedIds={selectedRopaIds}
-              onChange={(ids) => {
-                setSelectedRopaIds(ids);
-                setPage(1);
-              }}
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              color: fechaHoyDia ? '#1d4ed8' : '#475569',
+              cursor: 'pointer',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              background: fechaHoyDia ? '#eff6ff' : '#f8fafc',
+              border: `1px solid ${fechaHoyDia ? '#3b82f6' : '#cbd5e1'}`,
+              userSelect: 'none',
+              transition: 'all 0.15s',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={fechaHoyDia}
+              onChange={(e) => handleToggleFechaHoy(e.target.checked)}
+              style={{ width: '15px', height: '15px', accentColor: '#2563eb', cursor: 'pointer' }}
             />
+            <span>FECHA HOY DÍA</span>
+          </label>
 
-            {/* Toggle Button for Java-Style Checkbox Panel */}
+          {(search || selectedPagoIds.length > 0 || selectedRopaIds.length > 0 || fechaDesde || fechaHasta || fechaHoyDia) && (
             <button
               type="button"
               className="btn-secondary"
+              onClick={handleResetFilters}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '0 12px',
-                height: '42px',
-                flexShrink: 0,
-                background: showCheckboxesPanel ? '#e0e7ff' : '#ffffff',
-                borderColor: showCheckboxesPanel ? '#818cf8' : 'var(--border-color)',
-                color: showCheckboxesPanel ? '#3730a3' : '#475569',
-                fontWeight: 600,
-                cursor: 'pointer',
+                gap: '4px',
+                padding: '4px 10px',
+                fontSize: '0.78rem',
+                color: '#dc2626',
+                borderColor: '#fca5a5',
+                background: '#fef2f2',
+                marginLeft: 'auto',
               }}
-              onClick={() => setShowCheckboxesPanel(prev => !prev)}
-              title="Ver panel de checkboxes de filtros (Estilo Java)"
+              title="Resetear todos los filtros"
             >
-              <Filter size={15} />
-              <span>Panel Filtros</span>
-              {(selectedPagoIds.length > 0 || selectedRopaIds.length > 0) && (
-                <span
-                  style={{
-                    background: '#4f46e5',
-                    color: '#ffffff',
-                    borderRadius: '9999px',
-                    padding: '1px 6px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  {selectedPagoIds.length + selectedRopaIds.length}
-                </span>
-              )}
+              <RotateCcw size={13} />
+              <span>Resetear</span>
             </button>
-          </div>
+          )}
         </div>
-
-        <button
-          className="btn-primary"
-          style={{ flex: '0 0 auto' }}
-          onClick={handleOpenCreateModal}
-        >
-          <Plus size={18} /> Registrar Comprobante
-        </button>
       </div>
 
       {/* Java-Style Checkbox Filter Panel */}
@@ -706,11 +901,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                 type="button"
                 className="btn-secondary"
                 style={{ padding: '4px 10px', fontSize: '0.78rem' }}
-                onClick={() => {
-                  setSelectedPagoIds([]);
-                  setSelectedRopaIds([]);
-                  setPage(1);
-                }}
+                onClick={handleResetFilters}
               >
                 Resetear Filtros
               </button>
@@ -816,6 +1007,70 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Date Statistics Panel (matching Java frmConsultarComprobantes updateDateStats) */}
+      {dateStats && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '12px 18px',
+            marginBottom: '16px',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
+            borderRadius: '10px',
+            fontSize: '0.86rem',
+            lineHeight: '1.65',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+          }}
+        >
+          {loadingStats ? (
+            <div style={{ color: '#64748b', fontSize: '0.84rem' }}>Actualizando estadísticas...</div>
+          ) : (
+            <>
+              <div style={{ color: '#006400', fontWeight: 600 }}>
+                Comprobantes generados {dateStats.fechaStr}: {dateStats.cantidad}
+              </div>
+              <div style={{ color: '#000096', fontWeight: 600 }}>
+                Total abonado en los comprobantes {dateStats.fechaStr}: S/. {Number(dateStats.totalAbonos).toFixed(2)}
+              </div>
+              <div style={{ color: '#960000', fontWeight: 600 }}>
+                Total abonado {dateStats.fechaStr}: S/. {Number(dateStats.totalIngresos).toFixed(2)}
+              </div>
+              <div style={{ color: '#643200', fontWeight: 600 }}>
+                Suma del costo total de los comprobantes {dateStats.fechaStr}: S/. {Number(dateStats.sumaCostoTotal).toFixed(2)}
+              </div>
+              <div style={{ color: '#008000', fontWeight: 600 }}>
+                Total abonado en efectivo {dateStats.fechaStr}: S/. {Number(dateStats.totalEfectivo).toFixed(2)}
+              </div>
+              <div style={{ color: '#800080', fontWeight: 600 }}>
+                Total abonado en YAPE/PLIN {dateStats.fechaStr}: S/. {Number(dateStats.totalYapePlin).toFixed(2)}
+              </div>
+              <div style={{ color: '#228b22', fontWeight: 600 }}>
+                Total abonado en efectivo en los comprobantes generados {dateStats.fechaStr}: S/. {Number(dateStats.compEfectivo).toFixed(2)}
+              </div>
+              <div style={{ color: '#9400d3', fontWeight: 600 }}>
+                Total abonado en YAPE/PLIN en los comprobantes generados {dateStats.fechaStr}: S/. {Number(dateStats.compYapePlin).toFixed(2)}
+              </div>
+              {dateStats.cajaApertura && (
+                <div style={{ color: '#0066cc', fontWeight: 600 }}>
+                  {dateStats.cajaApertura}
+                </div>
+              )}
+              {dateStats.cajaCierre && (
+                <div style={{ color: '#cc6600', fontWeight: 600 }}>
+                  {dateStats.cajaCierre}
+                </div>
+              )}
+              {Number(dateStats.deudaTotal) > 0 && (
+                <div style={{ color: '#b40000', fontWeight: 700, marginTop: '2px', fontSize: '0.9rem' }}>
+                  DEUDA TOTAL: S/. {Number(dateStats.deudaTotal).toFixed(2)}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
