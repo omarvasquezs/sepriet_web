@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { TopMenuBar } from './components/TopMenuBar';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ResilienceBanner } from './components/ResilienceBanner';
+import { TopAlertBanner } from './components/TopAlertBanner';
 import { AperturaCajaModal } from './components/AperturaCajaModal';
 import { DashboardPage } from './pages/DashboardPage';
 import { ComprobantesPage } from './pages/ComprobantesPage';
@@ -155,6 +156,9 @@ const MainLayout: React.FC = () => {
           onOpenAperturaModal={() => setShowGlobalAperturaModal(true)}
           onToggleMobileDrawer={() => setIsSidebarOpen(prev => !prev)}
         />
+
+        {/* Global Alert Notification Bar (Under navbar, without covering it) */}
+        <TopAlertBanner />
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div key={activeTab} className="page-transition">

@@ -23,7 +23,7 @@ import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
-import { WhatsAppModal } from '../components/WhatsAppModal';
+import { sendWhatsAppBotNotification } from '../services/whatsappBotService';
 
 interface DashboardPageProps {
   onNavigate: (tab: string) => void;
@@ -42,12 +42,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // Print & WhatsApp Modals for viewing tickets directly from Dashboard
+  // Print Modal for viewing tickets directly from Dashboard
   const [selectedPrintTicket, setSelectedPrintTicket] = useState<any>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [whatsAppTicket, setWhatsAppTicket] = useState<any>(null);
-  const [whatsAppActionType, setWhatsAppActionType] = useState<'ticket' | 'listo' | 'recogido'>('ticket');
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   // Role detection
   const roleName = (user?.role || '').toUpperCase();
@@ -1234,18 +1231,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onClose={() => setShowPrintModal(false)}
         ticket={selectedPrintTicket}
         onOpenWhatsApp={(ticket, actionType) => {
-          setWhatsAppTicket(ticket);
-          setWhatsAppActionType(actionType || 'ticket');
-          setShowWhatsAppModal(true);
+          setShowPrintModal(false);
+          sendWhatsAppBotNotification(ticket, actionType || 'ticket');
         }}
-      />
-
-      {/* Modal Enviar por WhatsApp */}
-      <WhatsAppModal
-        isOpen={showWhatsAppModal}
-        onClose={() => setShowWhatsAppModal(false)}
-        ticket={whatsAppTicket}
-        actionType={whatsAppActionType}
       />
     </div>
   );

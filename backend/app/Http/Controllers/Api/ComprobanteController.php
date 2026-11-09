@@ -698,6 +698,17 @@ class ComprobanteController extends Controller
             $status = $response->status();
 
             if ($response->successful()) {
+                $decoded = json_decode($body, true);
+                if (is_array($decoded) && isset($decoded['status']) && $decoded['status'] === 'error') {
+                    $errorComment = $decoded['comment'] ?? 'Error devuelto por la API de TextMeBot';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "TextMeBot: {$errorComment}",
+                        'textmebot_response' => $body,
+                        'pdf' => $pdfInfo,
+                    ], 400);
+                }
+
                 $secondMessage = !empty($validated['second_message']) ? trim($validated['second_message']) : null;
                 $secondStatus = null;
                 if ($secondMessage) {

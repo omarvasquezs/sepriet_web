@@ -2,10 +2,10 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Filter, Ban } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { WhatsAppModal } from '../components/WhatsAppModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AsyncSelect2, type SelectOption } from '../components/AsyncSelect2';
+import { sendWhatsAppBotNotification } from '../services/whatsappBotService';
 
 const toDateTimeLocal = (d: Date = new Date()) => {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -48,11 +48,6 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
-  // WhatsApp Modal State
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [whatsAppTicket, setWhatsAppTicket] = useState<any>(null);
-  const [whatsAppActionType, setWhatsAppActionType] = useState<'ticket' | 'listo' | 'recogido'>('ticket');
-  const [whatsAppAutoSend, setWhatsAppAutoSend] = useState(false);
 
   // Operation Dates (Admin only)
   const [fechaOperacionCreate, setFechaOperacionCreate] = useState(toDateTimeLocal());
@@ -419,11 +414,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       setPage(1);
       fetchData();
 
-      // Open WhatsApp sending dialog with the new ticket details and auto-send immediately via Bot
-      setWhatsAppTicket(createdTicket);
-      setWhatsAppActionType('ticket');
-      setWhatsAppAutoSend(true);
-      setShowWhatsAppModal(true);
+      // Automatically dispatch WhatsApp notification and PDF in background, showing 5s green top alert
+      sendWhatsAppBotNotification(createdTicket, 'ticket');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar comprobante');
     }
@@ -451,11 +443,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       setAbonoAmount('');
       fetchData();
 
-      // Offer WhatsApp receipt update
-      setWhatsAppTicket(updatedTicket);
-      setWhatsAppActionType('ticket');
-      setWhatsAppAutoSend(false);
-      setShowWhatsAppModal(true);
+      // Send WhatsApp receipt update in background with 5s green top alert
+      sendWhatsAppBotNotification(updatedTicket, 'ticket');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar abono');
     }
@@ -468,17 +457,11 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       const updated = res.data;
       fetchData();
 
-      // If marked as Listo (id=3) or Entregado/Recogido (id=4), prompt for WhatsApp notification
+      // If marked as Listo (id=3) or Entregado/Recogido (id=4), notify via WhatsApp Bot
       if (numericEstado === 3) {
-        setWhatsAppTicket(updated);
-        setWhatsAppActionType('listo');
-        setWhatsAppAutoSend(false);
-        setShowWhatsAppModal(true);
+        sendWhatsAppBotNotification(updated, 'listo');
       } else if (numericEstado === 4) {
-        setWhatsAppTicket(updated);
-        setWhatsAppActionType('recogido');
-        setWhatsAppAutoSend(false);
-        setShowWhatsAppModal(true);
+        sendWhatsAppBotNotification(updated, 'recogido');
       }
     } catch (err) {
       console.error(err);
@@ -727,12 +710,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                               cursor: 'pointer',
                               flex: '0 0 auto',
                             }}
-                            title="Notificar por WhatsApp"
+                            title="Enviar notificación por WhatsApp (Bot)"
                             onClick={() => {
-                              setWhatsAppTicket(t);
                               const action = Number(t.estado_ropa_id) === 3 ? 'listo' : (Number(t.estado_ropa_id) === 4 ? 'recogido' : 'ticket');
-                              setWhatsAppActionType(action);
-                              setShowWhatsAppModal(true);
+                              sendWhatsAppBotNotification(t, action);
                             }}
                           >
                             <MessageSquare size={14} /> WhatsApp
@@ -889,12 +870,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                         minHeight: '40px',
                         flex: '0 0 auto',
                       }}
-                      title="Enviar notificación por WhatsApp"
+                      title="Enviar notificación por WhatsApp (Bot)"
                       onClick={() => {
-                        setWhatsAppTicket(t);
                         const action = Number(t.estado_ropa_id) === 3 ? 'listo' : (Number(t.estado_ropa_id) === 4 ? 'recogido' : 'ticket');
-                        setWhatsAppActionType(action);
-                        setShowWhatsAppModal(true);
+                        sendWhatsAppBotNotification(t, action);
                       }}
                     >
                       <MessageSquare size={16} /> WhatsApp
@@ -1689,19 +1668,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         onClose={() => setShowPrintModal(false)}
         ticket={selectedTicket}
         onOpenWhatsApp={(ticket, actionType) => {
-          setWhatsAppTicket(ticket);
-          setWhatsAppActionType(actionType || 'ticket');
-          setShowWhatsAppModal(true);
+          setShowPrintModal(false);
+          sendWhatsAppBotNotification(ticket, actionType || 'ticket');
         }}
-      />
-
-      {/* Modal Enviar por WhatsApp */}
-      <WhatsAppModal
-        isOpen={showWhatsAppModal}
-        onClose={() => setShowWhatsAppModal(false)}
-        ticket={whatsAppTicket}
-        actionType={whatsAppActionType}
-        autoSend={whatsAppAutoSend}
       />
     </div>
   );
