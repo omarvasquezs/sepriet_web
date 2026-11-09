@@ -22,6 +22,8 @@ import {
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
+import { PrintPreviewModal } from '../components/PrintPreviewModal';
+import { WhatsAppModal } from '../components/WhatsAppModal';
 
 interface DashboardPageProps {
   onNavigate: (tab: string) => void;
@@ -39,6 +41,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenAperturaModal,
 }) => {
   const { user } = useAuth();
+
+  // Print & WhatsApp Modals for viewing tickets directly from Dashboard
+  const [selectedPrintTicket, setSelectedPrintTicket] = useState<any>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [whatsAppTicket, setWhatsAppTicket] = useState<any>(null);
+  const [whatsAppActionType, setWhatsAppActionType] = useState<'ticket' | 'listo' | 'recogido'>('ticket');
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   // Role detection
   const roleName = (user?.role || '').toUpperCase();
@@ -1021,8 +1030,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                               type="button"
                               className="btn-secondary"
                               style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '6px' }}
-                              onClick={() => onNavigate('comprobantes')}
-                              title="Ver en módulo de comprobantes"
+                              onClick={() => {
+                                setSelectedPrintTicket(t);
+                                setShowPrintModal(true);
+                              }}
+                              title="Ver e imprimir comprobante"
                             >
                               Ver
                             </button>
@@ -1215,6 +1227,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal Vista Previa / Impresión de Comprobante */}
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        ticket={selectedPrintTicket}
+        onOpenWhatsApp={(ticket, actionType) => {
+          setWhatsAppTicket(ticket);
+          setWhatsAppActionType(actionType || 'ticket');
+          setShowWhatsAppModal(true);
+        }}
+      />
+
+      {/* Modal Enviar por WhatsApp */}
+      <WhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        ticket={whatsAppTicket}
+        actionType={whatsAppActionType}
+      />
     </div>
   );
 };

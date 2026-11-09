@@ -171,6 +171,7 @@ const MainLayout: React.FC = () => {
               <ComprobantesPage
                 filterPreset={comprobanteFilterPreset}
                 triggerCreateTicket={triggerCreateTicket}
+                onResetTriggerCreateTicket={() => setTriggerCreateTicket(0)}
                 onClearFilterPreset={() => setComprobanteFilterPreset(null)}
               />
             )}

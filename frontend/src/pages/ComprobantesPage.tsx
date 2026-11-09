@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Download, Filter, Ban } from 'lucide-react';
+import { Search, Plus, Printer, DollarSign, Trash2, ChevronLeft, ChevronRight, MessageSquare, Calendar, X, Filter, Ban } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { WhatsAppModal } from '../components/WhatsAppModal';
+import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AsyncSelect2, type SelectOption } from '../components/AsyncSelect2';
 
@@ -19,12 +20,14 @@ export interface ComprobantesPageProps {
   } | null;
   triggerCreateTicket?: number;
   onClearFilterPreset?: () => void;
+  onResetTriggerCreateTicket?: () => void;
 }
 
 export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   filterPreset,
   triggerCreateTicket,
   onClearFilterPreset,
+  onResetTriggerCreateTicket,
 }) => {
   const { user } = useAuth();
   const isAdmin = (user?.role_id === 1) || Boolean(user?.role && user.role.toLowerCase().includes('admin'));
@@ -43,11 +46,6 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [printPdfLoading, setPrintPdfLoading] = useState(false);
-  const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
-  const [printPdfError, setPrintPdfError] = useState<string | null>(null);
-  const [printPdfFormat, setPrintPdfFormat] = useState<'ticket' | 'a4'>('a4');
-  const pdfIframeRef = useRef<HTMLIFrameElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   // WhatsApp Modal State
@@ -166,6 +164,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   useEffect(() => {
     if (triggerCreateTicket && triggerCreateTicket > 0) {
       handleOpenCreateModal();
+      if (onResetTriggerCreateTicket) {
+        onResetTriggerCreateTicket();
+      }
     }
   }, [triggerCreateTicket]);
 
@@ -492,120 +493,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
     }
   };
 
-  const resolvePdfUrl = (rawUrl?: string): string => {
-    if (!rawUrl) return '';
-    try {
-      if (rawUrl.includes('/storage/')) {
-        const storageIndex = rawUrl.indexOf('/storage/');
-        return rawUrl.substring(storageIndex);
-      }
-      const apiBase = import.meta.env.VITE_API_BASE_URL;
-      if (apiBase && (rawUrl.includes('localhost:8000') || rawUrl.startsWith('/'))) {
-        const apiOrigin = new URL(apiBase, window.location.origin).origin;
-        let url = rawUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
-        if (url.startsWith('/')) {
-          url = `${apiOrigin}${url}`;
-        }
-        return url;
-      }
-    } catch {
-      // fallback
-    }
-    return rawUrl;
-  };
-
-  const handleOpenPrintModal = async (ticket: any, format: 'ticket' | 'a4' = 'a4') => {
+  const handleOpenPrintModal = (ticket: any) => {
     setSelectedTicket(ticket);
     setShowPrintModal(true);
-    setPrintPdfLoading(true);
-    setPrintPdfError(null);
-    setPrintPdfUrl(null);
-    setPrintPdfFormat(format);
-
-    try {
-      const res = await api.get(`/comprobantes/${ticket.id}/pdf?format=${format}`);
-      const url = resolvePdfUrl(res.data?.url);
-      if (url) {
-        setPrintPdfUrl(url);
-      } else {
-        setPrintPdfError('No se pudo obtener la URL del comprobante');
-      }
-    } catch (err: any) {
-      setPrintPdfError(err.response?.data?.message || 'Error al generar la vista previa del comprobante en PDF');
-    } finally {
-      setPrintPdfLoading(false);
-    }
-  };
-
-  const handleChangePrintFormat = async (newFormat: 'ticket' | 'a4') => {
-    if (!selectedTicket || (newFormat === printPdfFormat && printPdfUrl)) return;
-    setPrintPdfFormat(newFormat);
-    setPrintPdfLoading(true);
-    setPrintPdfError(null);
-
-    try {
-      const res = await api.get(`/comprobantes/${selectedTicket.id}/pdf?format=${newFormat}`);
-      const url = resolvePdfUrl(res.data?.url);
-      if (url) {
-        setPrintPdfUrl(url);
-      } else {
-        setPrintPdfError('No se pudo obtener la URL del comprobante');
-      }
-    } catch (err: any) {
-      setPrintPdfError(err.response?.data?.message || 'Error al cambiar el formato del comprobante');
-    } finally {
-      setPrintPdfLoading(false);
-    }
-  };
-
-  const handlePrintPdfDocument = () => {
-    if (!printPdfUrl) return;
-
-    // Method 1: Try printing through iframe contentWindow
-    try {
-      if (pdfIframeRef.current?.contentWindow) {
-        pdfIframeRef.current.contentWindow.focus();
-        pdfIframeRef.current.contentWindow.print();
-        return;
-      }
-    } catch (e) {
-      console.warn('Direct iframe print exception:', e);
-    }
-
-    // Method 2: Fetch PDF blob and print via hidden iframe (same-origin blob)
-    fetch(printPdfUrl)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        iframe.src = blobUrl;
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-            } catch {
-              window.open(blobUrl, '_blank');
-            } finally {
-              setTimeout(() => {
-                document.body.removeChild(iframe);
-                URL.revokeObjectURL(blobUrl);
-              }, 60000);
-            }
-          }, 350);
-        };
-      })
-      .catch(() => {
-        window.open(printPdfUrl, '_blank');
-      });
   };
 
   const getBadgeClassPago = (nombre: string) => {
@@ -1788,255 +1678,17 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         </div>
       )}
 
-      {/* Modal PDF Preview & Print */}
-      {showPrintModal && selectedTicket && (
-        <div className="modal-overlay" onClick={() => setShowPrintModal(false)}>
-          <div
-            className="modal-content pdf-preview-modal"
-            style={{
-              maxWidth: printPdfFormat === 'a4' ? '820px' : '560px',
-              transition: 'max-width 0.25s ease',
-              width: '95%',
-              height: '95dvh',
-              maxHeight: '96dvh',
-              padding: '0',
-              overflow: 'hidden',
-              borderRadius: '14px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '14px 20px',
-                borderBottom: '1px solid var(--border-color)',
-                background: 'var(--bg-secondary, #f8fafc)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    background: '#e0e7ff',
-                    color: '#4338ca',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Printer size={18} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main, #1e293b)' }}>
-                    {selectedTicket.cod_comprobante || `Ticket #${selectedTicket.id}`}
-                  </h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-muted, #64748b)' }}>
-                    {selectedTicket.cliente?.nombres || 'Cliente'} • {new Date(selectedTicket.fecha).toLocaleDateString('es-PE')}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPrintModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted, #64748b)',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                title="Cerrar"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Format Switcher Tabs */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                padding: '8px 16px',
-                background: 'var(--bg-secondary, #f8fafc)',
-                borderBottom: '1px solid var(--border-color)',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => handleChangePrintFormat('a4')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: printPdfFormat === 'a4' ? 700 : 500,
-                  borderRadius: '6px',
-                  border: '1px solid',
-                  borderColor: printPdfFormat === 'a4' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
-                  background: printPdfFormat === 'a4' ? '#4f46e5' : '#ffffff',
-                  color: printPdfFormat === 'a4' ? '#ffffff' : 'var(--text-main, #334155)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                📄 Hoja A4
-              </button>
-              <button
-                type="button"
-                onClick={() => handleChangePrintFormat('ticket')}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: printPdfFormat === 'ticket' ? 700 : 500,
-                  borderRadius: '6px',
-                  border: '1px solid',
-                  borderColor: printPdfFormat === 'ticket' ? '#4f46e5' : 'var(--border-color, #cbd5e1)',
-                  background: printPdfFormat === 'ticket' ? '#4f46e5' : '#ffffff',
-                  color: printPdfFormat === 'ticket' ? '#ffffff' : 'var(--text-main, #334155)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                🧾 Ticket Térmico (80mm)
-              </button>
-            </div>
-
-            {/* Modal Body - PDF Iframe Preview */}
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                width: '100%',
-                background: '#475569',
-                display: 'flex',
-                alignItems: 'stretch',
-                justifyContent: 'center',
-                position: 'relative',
-              }}
-            >
-              {printPdfLoading && (
-                <div style={{ textAlign: 'center', color: '#ffffff', margin: 'auto' }}>
-                  <LoadingSpinner />
-                  <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 500 }}>
-                    Cargando vista previa del PDF...
-                  </p>
-                </div>
-              )}
-
-              {printPdfError && !printPdfLoading && (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#fecaca', margin: 'auto' }}>
-                  <p style={{ fontWeight: 600, marginBottom: '12px' }}>{printPdfError}</p>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    style={{ background: '#ffffff', color: '#1e293b' }}
-                    onClick={() => handleOpenPrintModal(selectedTicket)}
-                  >
-                    Reintentar
-                  </button>
-                </div>
-              )}
-
-              {printPdfUrl && !printPdfLoading && (
-                <iframe
-                  ref={pdfIframeRef}
-                  src={`${printPdfUrl}#view=FitH&toolbar=0&navpanes=0`}
-                  title={`Comprobante ${selectedTicket.cod_comprobante}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                    display: 'block',
-                    background: '#ffffff',
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="pdf-modal-footer">
-              <button
-                type="button"
-                className="btn-secondary pdf-btn-close"
-                onClick={() => setShowPrintModal(false)}
-              >
-                Cerrar
-              </button>
-
-              <div className="pdf-modal-actions">
-                <button
-                  type="button"
-                  className="btn-secondary pdf-btn-whatsapp"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    color: '#16a34a',
-                    borderColor: '#bbf7d0',
-                    background: '#f0fdf4',
-                    fontWeight: 600,
-                  }}
-                  onClick={() => {
-                    setWhatsAppTicket(selectedTicket);
-                    setWhatsAppActionType('ticket');
-                    setShowWhatsAppModal(true);
-                  }}
-                >
-                  <MessageSquare size={16} /> WhatsApp
-                </button>
-                {printPdfUrl && (
-                  <a
-                    href={printPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={`${selectedTicket.cod_comprobante}${printPdfFormat === 'a4' ? '_a4' : ''}.pdf`}
-                    className="btn-secondary pdf-btn-download"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      color: '#4f46e5',
-                      borderColor: '#c7d2fe',
-                      background: '#eef2ff',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Download size={15} /> Descargar
-                  </a>
-                )}
-                <button
-                  type="button"
-                  className="btn-primary pdf-btn-print"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  onClick={handlePrintPdfDocument}
-                  disabled={printPdfLoading || !printPdfUrl}
-                >
-                  <Printer size={16} /> Imprimir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Vista Previa / Impresión de Comprobante */}
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        ticket={selectedTicket}
+        onOpenWhatsApp={(ticket, actionType) => {
+          setWhatsAppTicket(ticket);
+          setWhatsAppActionType(actionType || 'ticket');
+          setShowWhatsAppModal(true);
+        }}
+      />
 
       {/* Modal Enviar por WhatsApp */}
       <WhatsAppModal
