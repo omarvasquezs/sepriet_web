@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  MessageSquare,
   Copy,
-  ExternalLink,
   Check,
   AlertCircle,
   X,
@@ -20,6 +18,7 @@ export interface WhatsAppModalProps {
   onClose: () => void;
   ticket: any;
   actionType?: 'ticket' | 'listo' | 'recogido';
+  autoSend?: boolean;
 }
 
 const COUNTRY_CODES = [
@@ -95,32 +94,37 @@ export const buildWhatsAppMessage = (
   if (ticket.detalles && ticket.detalles.length > 0) {
     ticket.detalles.forEach((det: any) => {
       const srvNom = det.servicio?.nom_servicio || 'Servicio';
-      const peso = Number(det.peso_kg || 0);
-      const costoKilo = Number(det.costo_kilo || det.precio_unitario || 0);
-      const subtotal = Number(det.subtotal || peso * costoKilo);
+      const peso = parseFloat(det.peso_kg || 0);
+      const costo = parseFloat(det.costo_kilo || 0);
+      const subtotal = peso * costo;
 
       if (peso > 0.001) {
-        sb.push(`- ${srvNom}: ${peso.toFixed(2)} kg x ${costoKilo.toFixed(2)} = ${subtotal.toFixed(2)}`);
+        sb.push(`- ${srvNom}: ${peso.toFixed(2)} kg x ${costo.toFixed(2)} = ${subtotal.toFixed(2)}`);
       } else {
-        sb.push(`- ${srvNom}: ${subtotal.toFixed(2)}`);
+        sb.push(`- ${srvNom}: ${subtotal > 0 ? subtotal.toFixed(2) : costo.toFixed(2)}`);
       }
     });
     sb.push('');
+  } else {
+    sb.push('- (sin detalles)\n');
   }
 
-  // Totales
+  // Totales y descuentos
   if (descuento > 0) {
-    const totalSinDescuento = costoTotal + descuento;
-    sb.push(`TOTAL SIN DESCUENTO: S/. ${totalSinDescuento.toFixed(2)}`);
-    sb.push(`DESCUENTO: S/. ${descuento.toFixed(2)}`);
-    sb.push(`TOTAL CON DESCUENTO: S/. ${costoTotal.toFixed(2)}\n`);
+    const totalConDescuento = costoTotal;
+    const totalSinDescuento = totalConDescuento / (1.0 - descuento / 100.0);
+    const descuentoMonto = totalSinDescuento - totalConDescuento;
+
+    sb.push(`TOTAL SIN DESCUENTO: ${totalSinDescuento.toFixed(2)}`);
+    sb.push(`DESCUENTO: ${descuento.toFixed(1)}% (S/. ${descuentoMonto.toFixed(2)})`);
+    sb.push(`TOTAL CON DESCUENTO: ${totalConDescuento.toFixed(2)}\n`);
   } else {
-    sb.push(`TOTAL: S/. ${costoTotal.toFixed(2)}\n`);
+    sb.push(`TOTAL: ${costoTotal.toFixed(2)}\n`);
   }
 
   // Abonos
   if (ticket.ingresos && ticket.ingresos.length > 0) {
-    sb.push(`ABONOS:`);
+    sb.push('ABONOS:');
     ticket.ingresos.forEach((ing: any) => {
       const f = ing.fecha
         ? new Date(ing.fecha).toLocaleDateString('es-PE') +
@@ -154,6 +158,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   onClose,
   ticket,
   actionType = 'ticket',
+  autoSend = false,
 }) => {
   const [countryCode, setCountryCode] = useState('+51');
   const [phone, setPhone] = useState('');
@@ -169,11 +174,11 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     setCurrentActionType(actionType);
   }, [actionType, isOpen]);
 
-  // Send Mode: 'whatsapp' (manual web link) or 'textmebot' (automated bot with document)
-  const [sendMode, setSendMode] = useState<'whatsapp' | 'textmebot'>('whatsapp');
+  // Bot API Key state
   const [textMeBotKey, setTextMeBotKey] = useState<string>(
     localStorage.getItem('textmebot_api_key') || 'hCS2aZ9aHwhF'
   );
+  const [showApiKeyConfig, setShowApiKeyConfig] = useState(false);
 
   // PDF Generation State
   const [pdfInfo, setPdfInfo] = useState<{ url: string; filename: string } | null>(null);
@@ -182,128 +187,44 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   // Sending state
   const [isSendingBot, setIsSendingBot] = useState(false);
-  const [botStatusMessage, setBotStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [botStatusMessage, setBotStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // Fetch or generate PDF when modal opens
-  useEffect(() => {
-    if (ticket && isOpen) {
-      const rawPhone = ticket.cliente?.telefono || '';
-      const cleanPhone = rawPhone.replace(/\D/g, '');
-      setPhone(cleanPhone);
+  const autoSendTriggeredRef = useRef(false);
 
-      const rawCode = ticket.cliente?.codigo_pais?.trim();
-      if (rawCode) {
-        setCountryCode(rawCode);
-      } else {
-        setCountryCode('+51');
-      }
-
-      setCopied(false);
-      setBotStatusMessage(null);
-
-      // Trigger background PDF generation (A4 format by default)
-      setIsGeneratingPdf(true);
-      api
-        .get(`/comprobantes/${ticket.id}/pdf?format=a4`)
-        .then((res) => {
-          if (res.data?.success) {
-            let cleanUrl = res.data.url;
-            try {
-              const apiBase = import.meta.env.VITE_API_BASE_URL;
-              if (apiBase && (cleanUrl.includes('localhost:8000') || cleanUrl.startsWith('/'))) {
-                const apiOrigin = new URL(apiBase, window.location.origin).origin;
-                cleanUrl = cleanUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
-                if (cleanUrl.startsWith('/')) {
-                  cleanUrl = `${apiOrigin}${cleanUrl}`;
-                }
-              }
-            } catch {
-              // fallback
-            }
-            setPdfInfo({
-              url: cleanUrl,
-              filename: res.data.filename,
-            });
-            setMessage(buildWhatsAppMessage(ticket, currentActionType, includePdfLink ? cleanUrl : undefined));
-          }
-        })
-        .catch((err) => {
-          console.error('Error generating PDF:', err);
-          setMessage(buildWhatsAppMessage(ticket, currentActionType));
-        })
-        .finally(() => {
-          setIsGeneratingPdf(false);
-        });
-    }
-  }, [ticket, isOpen]);
-
-  // Update message when actionType or PDF link checkbox changes
-  useEffect(() => {
-    if (ticket && isOpen) {
-      const urlToUse = includePdfLink && pdfInfo?.url ? pdfInfo.url : undefined;
-      setMessage(buildWhatsAppMessage(ticket, currentActionType, urlToUse));
-    }
-  }, [currentActionType, includePdfLink, pdfInfo, ticket, isOpen]);
-
-  if (!isOpen || !ticket) return null;
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '');
-    setPhone(val);
-  };
-
-  const isPhoneValid = phone.length >= 7 && phone.length <= 15;
-
-  const handleSendWhatsAppWeb = () => {
-    if (!isPhoneValid) {
-      alert('El número debe tener entre 7 y 15 dígitos (sin prefijo de país).');
-      return;
-    }
-    const cleanCountry = countryCode.replace('+', '');
-    const fullNumber = `${cleanCountry}${phone}`;
-    const encodedMsg = encodeURIComponent(message);
-    const url = `https://api.whatsapp.com/send?phone=${fullNumber}&text=${encodedMsg}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleSendSecondWhatsAppWeb = () => {
-    if (!isPhoneValid) {
-      alert('El número debe tener entre 7 y 15 dígitos.');
-      return;
-    }
-    const cleanCountry = countryCode.replace('+', '');
-    const fullNumber = `${cleanCountry}${phone}`;
-    const encodedMsg = encodeURIComponent(secondMessage);
-    const url = `https://api.whatsapp.com/send?phone=${fullNumber}&text=${encodedMsg}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleSendTextMeBot = async () => {
-    if (!isPhoneValid) {
-      alert('El número debe tener entre 7 y 15 dígitos.');
+  // Send via Bot handler
+  const executeSendBot = async (
+    targetPhone: string,
+    targetCountry: string,
+    targetMsg: string,
+    targetSecondMsg?: string,
+    targetSecondIncluded = true
+  ) => {
+    if (!targetPhone || targetPhone.length < 7 || targetPhone.length > 15) {
+      setBotStatusMessage({
+        type: 'error',
+        text: '⚠️ El número debe tener entre 7 y 15 dígitos.',
+      });
       return;
     }
 
-    if (!textMeBotKey.trim()) {
-      alert('Por favor ingrese su API Key de TextMeBot.');
-      return;
-    }
-
-    // Save key in localStorage
-    localStorage.setItem('textmebot_api_key', textMeBotKey.trim());
+    const key = textMeBotKey.trim() || 'hCS2aZ9aHwhF';
+    localStorage.setItem('textmebot_api_key', key);
 
     setIsSendingBot(true);
-    setBotStatusMessage(null);
+    setBotStatusMessage({
+      type: 'info',
+      text: '🤖 Enviando comprobante y PDF vía TextMeBot...',
+    });
 
-    const cleanCountry = countryCode.replace('+', '');
-    const fullNumber = `${cleanCountry}${phone}`;
+    const cleanCountry = targetCountry.replace('+', '');
+    const fullNumber = `${cleanCountry}${targetPhone}`;
 
     try {
       // 1. Enviar comprobante oficial (con documento PDF adjunto)
       const res = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, {
         phone: fullNumber,
-        apikey: textMeBotKey.trim(),
-        message: message,
+        apikey: key,
+        message: targetMsg,
         format: 'a4',
       });
 
@@ -317,20 +238,19 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       }
 
       // 2. Si es estado RECOGIDO y se incluye el 2do mensaje de agradecimiento:
-      if (currentActionType === 'recogido' && includeSecondMessage && secondMessage.trim()) {
-        // Cuenta regresiva de 8 segundos requerida por TextMeBot para mensajes consecutivos
+      if (currentActionType === 'recogido' && targetSecondIncluded && targetSecondMsg && targetSecondMsg.trim()) {
         for (let i = 8; i > 0; i--) {
           setBotStatusMessage({
-            type: 'success',
-            text: `✅ Comprobante enviado. Enviando mensaje de agradecimiento en ${i} seg...`,
+            type: 'info',
+            text: `✅ Comprobante enviado. Enviando agradecimiento en ${i} seg...`,
           });
           await new Promise((r) => setTimeout(r, 1000));
         }
 
         const res2 = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, {
           phone: fullNumber,
-          apikey: textMeBotKey.trim(),
-          message: secondMessage.trim(),
+          apikey: key,
+          message: targetSecondMsg.trim(),
           only_text: true,
         });
 
@@ -362,6 +282,96 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     }
   };
 
+  // Fetch or generate PDF when modal opens
+  useEffect(() => {
+    if (ticket && isOpen) {
+      autoSendTriggeredRef.current = false;
+      const rawPhone = ticket.cliente?.telefono || '';
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      setPhone(cleanPhone);
+
+      const rawCode = ticket.cliente?.codigo_pais?.trim();
+      const initialCountry = rawCode || '+51';
+      setCountryCode(initialCountry);
+
+      setCopied(false);
+      setBotStatusMessage(null);
+
+      // Trigger background PDF generation (A4 format by default)
+      setIsGeneratingPdf(true);
+      api
+        .get(`/comprobantes/${ticket.id}/pdf?format=a4`)
+        .then((res) => {
+          if (res.data?.success) {
+            let cleanUrl = res.data.url;
+            try {
+              const apiBase = import.meta.env.VITE_API_BASE_URL;
+              if (apiBase && (cleanUrl.includes('localhost:8000') || cleanUrl.startsWith('/'))) {
+                const apiOrigin = new URL(apiBase, window.location.origin).origin;
+                cleanUrl = cleanUrl.replace(/^https?:\/\/localhost:8000/, apiOrigin);
+                if (cleanUrl.startsWith('/')) {
+                  cleanUrl = `${apiOrigin}${cleanUrl}`;
+                }
+              }
+            } catch {
+              // fallback
+            }
+            setPdfInfo({
+              url: cleanUrl,
+              filename: res.data.filename,
+            });
+            const preparedMsg = buildWhatsAppMessage(ticket, currentActionType, cleanUrl);
+            setMessage(preparedMsg);
+
+            // Auto-send if requested and phone has minimum digits
+            if (autoSend && cleanPhone.length >= 7 && !autoSendTriggeredRef.current) {
+              autoSendTriggeredRef.current = true;
+              executeSendBot(cleanPhone, initialCountry, preparedMsg, secondMessage, includeSecondMessage);
+            } else if (autoSend && cleanPhone.length < 7) {
+              setBotStatusMessage({
+                type: 'error',
+                text: '⚠️ El cliente no tiene teléfono registrado. Ingrese el número y presione Enviar.',
+              });
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Error generating PDF:', err);
+          const fallbackMsg = buildWhatsAppMessage(ticket, currentActionType);
+          setMessage(fallbackMsg);
+
+          if (autoSend && cleanPhone.length >= 7 && !autoSendTriggeredRef.current) {
+            autoSendTriggeredRef.current = true;
+            executeSendBot(cleanPhone, initialCountry, fallbackMsg, secondMessage, includeSecondMessage);
+          }
+        })
+        .finally(() => {
+          setIsGeneratingPdf(false);
+        });
+    }
+  }, [ticket, isOpen]);
+
+  // Update message when actionType or PDF link checkbox changes
+  useEffect(() => {
+    if (ticket && isOpen) {
+      const urlToUse = includePdfLink && pdfInfo?.url ? pdfInfo.url : undefined;
+      setMessage(buildWhatsAppMessage(ticket, currentActionType, urlToUse));
+    }
+  }, [currentActionType, includePdfLink, pdfInfo, ticket, isOpen]);
+
+  if (!isOpen || !ticket) return null;
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '');
+    setPhone(val);
+  };
+
+  const isPhoneValid = phone.length >= 7 && phone.length <= 15;
+
+  const handleManualSendClick = () => {
+    executeSendBot(phone, countryCode, message, secondMessage, includeSecondMessage);
+  };
+
   const handleCopyMessage = () => {
     navigator.clipboard.writeText(message);
     setCopied(true);
@@ -378,16 +388,16 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
-          padding: '28px',
+          padding: '24px',
         }}
       >
         {/* Header */}
-        <div className="modal-header">
+        <div className="modal-header" style={{ marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
                 background: '#22c55e20',
-                color: '#22c55e',
+                color: '#16a34a',
                 padding: '8px',
                 borderRadius: '10px',
                 display: 'flex',
@@ -395,17 +405,17 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                 justifyContent: 'center',
               }}
             >
-              <MessageSquare size={22} />
+              <Bot size={22} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Notificar por WhatsApp
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Notificar por WhatsApp (Bot Automático)
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
                 {currentActionType === 'listo'
-                  ? 'Notificación de prendas listas'
+                  ? 'Aviso de prendas listas para recojo'
                   : currentActionType === 'recogido'
-                  ? 'Agradecimiento por entrega'
+                  ? 'Confirmación y agradecimiento por entrega'
                   : `Comprobante ${ticket.cod_comprobante || ''}`}
               </p>
             </div>
@@ -498,68 +508,6 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           </div>
         </div>
 
-        {/* Mode Selector Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '16px',
-            background: '#f1f5f9',
-            padding: '4px',
-            borderRadius: '10px',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setSendMode('whatsapp')}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-              background: sendMode === 'whatsapp' ? '#ffffff' : 'transparent',
-              color: sendMode === 'whatsapp' ? '#0f172a' : '#64748b',
-              boxShadow: sendMode === 'whatsapp' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            <MessageSquare size={16} color={sendMode === 'whatsapp' ? '#22c55e' : '#64748b'} />
-            WhatsApp Web / App
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSendMode('textmebot')}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-              background: sendMode === 'textmebot' ? '#ffffff' : 'transparent',
-              color: sendMode === 'textmebot' ? '#4f46e5' : '#64748b',
-              boxShadow: sendMode === 'textmebot' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            <Bot size={16} color={sendMode === 'textmebot' ? '#4f46e5' : '#64748b'} />
-            Bot Automático (TextMeBot API)
-          </button>
-        </div>
-
         {/* Scrollable Form Body */}
         <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
           {/* Phone Number Inputs */}
@@ -601,34 +549,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
           {phone.length === 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d97706', fontSize: '0.78rem', marginBottom: '10px' }}>
-              <AlertCircle size={14} /> El cliente no tiene teléfono registrado. Ingrese el número manualmente.
-            </div>
-          )}
-
-          {/* TextMeBot API Key Field (Only when TextMeBot mode is active) */}
-          {sendMode === 'textmebot' && (
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '14px',
-                marginBottom: '14px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', color: '#4f46e5', fontWeight: 600, fontSize: '0.85rem' }}>
-                <Key size={15} /> Clave de API de TextMeBot
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 8px 0' }}>
-                El bot adjuntará el comprobante en PDF automáticamente al mensaje de WhatsApp.
-              </p>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Ingresa tu API Key de TextMeBot (ej. aBc123XYZ)"
-                value={textMeBotKey}
-                onChange={(e) => setTextMeBotKey(e.target.value)}
-              />
+              <AlertCircle size={14} /> El cliente no tiene teléfono registrado. Ingrese el número para notificarlo.
             </div>
           )}
 
@@ -639,7 +560,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               border: '1px solid #bbf7d0',
               borderRadius: '10px',
               padding: '10px 14px',
-              marginBottom: '14px',
+              marginBottom: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -649,7 +570,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               <FileText size={18} color="#16a34a" />
               <div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#15803d' }}>
-                  Comprobante en PDF (Estructura Año/Mes)
+                  Comprobante en PDF (Adjunto al mensaje)
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#166534' }}>
                   {isGeneratingPdf
@@ -704,7 +625,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             )}
           </div>
 
-          {/* Status message after bot send */}
+          {/* Status Message */}
           {botStatusMessage && (
             <div
               style={{
@@ -712,14 +633,78 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                 borderRadius: '8px',
                 fontSize: '0.82rem',
                 marginBottom: '12px',
-                background: botStatusMessage.type === 'success' ? '#f0fdf4' : '#fef2f2',
-                color: botStatusMessage.type === 'success' ? '#166534' : '#991b1b',
-                border: `1px solid ${botStatusMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background:
+                  botStatusMessage.type === 'success'
+                    ? '#f0fdf4'
+                    : botStatusMessage.type === 'info'
+                    ? '#eff6ff'
+                    : '#fef2f2',
+                color:
+                  botStatusMessage.type === 'success'
+                    ? '#166534'
+                    : botStatusMessage.type === 'info'
+                    ? '#1d4ed8'
+                    : '#991b1b',
+                border: `1px solid ${
+                  botStatusMessage.type === 'success'
+                    ? '#bbf7d0'
+                    : botStatusMessage.type === 'info'
+                    ? '#bfdbfe'
+                    : '#fecaca'
+                }`,
               }}
             >
-              {botStatusMessage.text}
+              {botStatusMessage.type === 'info' && <Loader2 size={15} className="animate-spin" />}
+              <div>{botStatusMessage.text}</div>
             </div>
           )}
+
+          {/* Optional API Key Settings */}
+          <div style={{ marginBottom: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setShowApiKeyConfig(!showApiKeyConfig)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                fontSize: '0.76rem',
+                color: '#6366f1',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontWeight: 600,
+              }}
+            >
+              <Key size={13} /> {showApiKeyConfig ? 'Ocultar configuración de Bot' : 'Configuración de API Key (TextMeBot)'}
+            </button>
+            {showApiKeyConfig && (
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  marginTop: '6px',
+                }}
+              >
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="API Key de TextMeBot"
+                  value={textMeBotKey}
+                  onChange={(e) => {
+                    setTextMeBotKey(e.target.value);
+                    localStorage.setItem('textmebot_api_key', e.target.value.trim());
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Message Textarea */}
           <div className="form-group" style={{ marginBottom: '14px' }}>
@@ -855,78 +840,34 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             Cerrar
           </button>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {sendMode === 'whatsapp' ? (
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  style={{
-                    background: '#22c55e',
-                    borderColor: '#16a34a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.82rem',
-                    padding: '8px 12px',
-                  }}
-                  onClick={handleSendWhatsAppWeb}
-                  title="Abrir WhatsApp Web con la notificación de entrega"
-                >
-                  <ExternalLink size={15} />{' '}
-                  {currentActionType === 'recogido' ? '1. Enviar Comprobante' : 'Abrir en WhatsApp'}
-                </button>
-                {currentActionType === 'recogido' && includeSecondMessage && (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    style={{
-                      background: '#ecfdf5',
-                      color: '#047857',
-                      borderColor: '#a7f3d0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '0.82rem',
-                      padding: '8px 12px',
-                      fontWeight: 600,
-                    }}
-                    onClick={handleSendSecondWhatsAppWeb}
-                    title="Abrir WhatsApp Web con el mensaje de agradecimiento"
-                  >
-                    <ExternalLink size={15} /> 2. Enviar Agradecimiento
-                  </button>
-                )}
-              </div>
+          <button
+            type="button"
+            className="btn-primary"
+            style={{
+              background: '#22c55e',
+              borderColor: '#16a34a',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 600,
+              padding: '8px 18px',
+            }}
+            disabled={isSendingBot || isGeneratingPdf}
+            onClick={handleManualSendClick}
+          >
+            {isSendingBot ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Enviando con Bot...
+              </>
             ) : (
-              <button
-                type="button"
-                className="btn-primary"
-                style={{
-                  background: '#4f46e5',
-                  borderColor: '#4338ca',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                disabled={isSendingBot || isGeneratingPdf}
-                onClick={handleSendTextMeBot}
-              >
-                {isSendingBot ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Enviando vía Bot...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />{' '}
-                    {currentActionType === 'recogido' && includeSecondMessage
-                      ? 'Enviar Comprobante + Agradecimiento (2 Mensajes)'
-                      : 'Enviar PDF con TextMeBot'}
-                  </>
-                )}
-              </button>
+              <>
+                <Send size={16} />{' '}
+                {currentActionType === 'recogido' && includeSecondMessage
+                  ? 'Enviar Comprobante + Agradecimiento (Bot)'
+                  : 'Enviar Notificación con Bot'}
+              </>
             )}
-          </div>
+          </button>
         </div>
       </div>
     </div>

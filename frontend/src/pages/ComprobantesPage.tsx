@@ -52,6 +52,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppTicket, setWhatsAppTicket] = useState<any>(null);
   const [whatsAppActionType, setWhatsAppActionType] = useState<'ticket' | 'listo' | 'recogido'>('ticket');
+  const [whatsAppAutoSend, setWhatsAppAutoSend] = useState(false);
 
   // Operation Dates (Admin only)
   const [fechaOperacionCreate, setFechaOperacionCreate] = useState(toDateTimeLocal());
@@ -418,9 +419,10 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       setPage(1);
       fetchData();
 
-      // Open WhatsApp sending dialog with the new ticket details
+      // Open WhatsApp sending dialog with the new ticket details and auto-send immediately via Bot
       setWhatsAppTicket(createdTicket);
       setWhatsAppActionType('ticket');
+      setWhatsAppAutoSend(true);
       setShowWhatsAppModal(true);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar comprobante');
@@ -452,6 +454,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       // Offer WhatsApp receipt update
       setWhatsAppTicket(updatedTicket);
       setWhatsAppActionType('ticket');
+      setWhatsAppAutoSend(false);
       setShowWhatsAppModal(true);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al registrar abono');
@@ -469,10 +472,12 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       if (numericEstado === 3) {
         setWhatsAppTicket(updated);
         setWhatsAppActionType('listo');
+        setWhatsAppAutoSend(false);
         setShowWhatsAppModal(true);
       } else if (numericEstado === 4) {
         setWhatsAppTicket(updated);
         setWhatsAppActionType('recogido');
+        setWhatsAppAutoSend(false);
         setShowWhatsAppModal(true);
       }
     } catch (err) {
@@ -1696,6 +1701,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
         onClose={() => setShowWhatsAppModal(false)}
         ticket={whatsAppTicket}
         actionType={whatsAppActionType}
+        autoSend={whatsAppAutoSend}
       />
     </div>
   );
