@@ -626,6 +626,7 @@ class ComprobanteController extends Controller
             'phone' => 'required|string',
             'apikey' => 'nullable|string',
             'message' => 'nullable|string',
+            'second_message' => 'nullable|string',
             'force_regenerate_pdf' => 'nullable|boolean',
             'format' => 'nullable|string',
         ]);
@@ -686,10 +687,30 @@ class ComprobanteController extends Controller
             $status = $response->status();
 
             if ($response->successful()) {
+                $secondMessage = !empty($validated['second_message']) ? trim($validated['second_message']) : null;
+                $secondStatus = null;
+                if ($secondMessage) {
+                    usleep(700000); // 700ms pause to guarantee proper delivery order
+                    try {
+                        $secondResponse = Http::timeout(25)->get($apiUrl, [
+                            'recipient' => '+' . ltrim($cleanPhone, '+'),
+                            'apikey' => $apiKey,
+                            'text' => $secondMessage,
+                            'json' => 'yes',
+                        ]);
+                        $secondStatus = $secondResponse->body();
+                    } catch (\Exception $e2) {
+                        \Log::warning("Error sending second message via TextMeBot: " . $e2->getMessage());
+                    }
+                }
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'PDF enviado exitosamente al cliente por WhatsApp.',
+                    'message' => $secondMessage
+                        ? 'Comprobante y mensaje de agradecimiento enviados exitosamente por WhatsApp.'
+                        : 'PDF enviado exitosamente al cliente por WhatsApp.',
                     'textmebot_response' => $body,
+                    'second_response' => $secondStatus,
                     'pdf' => $pdfInfo,
                 ]);
             }

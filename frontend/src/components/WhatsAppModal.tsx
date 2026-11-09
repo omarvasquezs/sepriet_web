@@ -41,6 +41,8 @@ const COUNTRY_CODES = [
   { code: '+86', country: 'China (+86)' },
 ];
 
+export const DEFAULT_THANK_YOU_MESSAGE = `Gracias por confiar en nosotros ✨Esperamos que el servicio haya sido de tu total satisfacción.\n¡Será un gusto atenderte nuevamente!`;
+
 export const buildWhatsAppMessage = (
   ticket: any,
   actionType: 'ticket' | 'listo' | 'recogido' = 'ticket',
@@ -57,18 +59,13 @@ export const buildWhatsAppMessage = (
   const deuda = Math.max(0, costoTotal - montoAbonado);
   const diasRecojo = 30;
 
-  if (actionType === 'recogido') {
-    let msg = `Gracias por confiar en nosotros ✨ Esperamos que el servicio haya sido de tu total satisfacción.\n¡Será un gusto atenderte nuevamente!`;
-    if (pdfUrl) {
-      msg += `\n\nPuede ver su comprobante digital aquí:\n${pdfUrl}`;
-    }
-    return msg;
-  }
-
   const sb: string[] = [];
 
   if (actionType === 'listo') {
     sb.push(`Para informarle que sus prendas ya estan listas para recoger.\n`);
+    sb.push(`Comprobante: ${cod}\n`);
+  } else if (actionType === 'recogido') {
+    sb.push(`Para informarle que sus prendas han sido entregadas con éxito.\n`);
     sb.push(`Comprobante: ${cod}\n`);
   } else {
     sb.push(`LAVANDERIA SEPRIET`);
@@ -161,7 +158,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   const [countryCode, setCountryCode] = useState('+51');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  const [secondMessage, setSecondMessage] = useState(DEFAULT_THANK_YOU_MESSAGE);
+  const [includeSecondMessage, setIncludeSecondMessage] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [copiedSecond, setCopiedSecond] = useState(false);
   const [currentActionType, setCurrentActionType] = useState<'ticket' | 'listo' | 'recogido'>(actionType);
 
   // Sync actionType prop when modal opens or prop changes
@@ -266,6 +266,18 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSendSecondWhatsAppWeb = () => {
+    if (!isPhoneValid) {
+      alert('El número debe tener entre 7 y 15 dígitos.');
+      return;
+    }
+    const cleanCountry = countryCode.replace('+', '');
+    const fullNumber = `${cleanCountry}${phone}`;
+    const encodedMsg = encodeURIComponent(secondMessage);
+    const url = `https://api.whatsapp.com/send?phone=${fullNumber}&text=${encodedMsg}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const handleSendTextMeBot = async () => {
     if (!isPhoneValid) {
       alert('El número debe tener entre 7 y 15 dígitos.');
@@ -287,17 +299,23 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     const fullNumber = `${cleanCountry}${phone}`;
 
     try {
-      const res = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, {
+      const payload: any = {
         phone: fullNumber,
         apikey: textMeBotKey.trim(),
         message: message,
         format: 'a4',
-      });
+      };
+
+      if (currentActionType === 'recogido' && includeSecondMessage && secondMessage.trim()) {
+        payload.second_message = secondMessage.trim();
+      }
+
+      const res = await api.post(`/comprobantes/${ticket.id}/send-whatsapp`, payload);
 
       if (res.data?.success) {
         setBotStatusMessage({
           type: 'success',
-          text: '✅ ¡Comprobante y PDF enviados con éxito al cliente vía TextMeBot!',
+          text: res.data?.message || '✅ ¡Comprobante y mensaje de agradecimiento enviados con éxito vía TextMeBot!',
         });
       } else {
         setBotStatusMessage({
@@ -685,8 +703,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                 marginBottom: '6px',
               }}
             >
-              <label className="form-label" style={{ fontSize: '0.82rem', margin: 0 }}>
-                Vista previa del mensaje
+              <label className="form-label" style={{ fontSize: '0.82rem', margin: 0, fontWeight: 600 }}>
+                {currentActionType === 'recogido'
+                  ? '1er Mensaje: Notificación de Comprobante / Entrega'
+                  : 'Vista previa del mensaje'}
               </label>
               <button
                 type="button"
@@ -706,7 +726,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             </div>
             <textarea
               className="form-input"
-              rows={7}
+              rows={currentActionType === 'recogido' ? 5 : 7}
               style={{
                 fontFamily: 'monospace',
                 fontSize: '0.82rem',
@@ -717,6 +737,79 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               onChange={(e) => setMessage(e.target.value)}
             />
           </div>
+
+          {/* 2do Mensaje: Agradecimiento al cliente (Específico al entregar / recogido) */}
+          {currentActionType === 'recogido' && (
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: '14px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '8px',
+                }}
+              >
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: '#047857',
+                    cursor: 'pointer',
+                    margin: 0,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={includeSecondMessage}
+                    onChange={(e) => setIncludeSecondMessage(e.target.checked)}
+                  />
+                  ✨ 2do Mensaje: Agradecimiento por entrega
+                </label>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(secondMessage);
+                    setCopiedSecond(true);
+                    setTimeout(() => setCopiedSecond(false), 2500);
+                  }}
+                >
+                  {copiedSecond ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                  {copiedSecond ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+              <textarea
+                className="form-input"
+                rows={3}
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.82rem',
+                  lineHeight: '1.4',
+                  resize: 'vertical',
+                }}
+                value={secondMessage}
+                onChange={(e) => setSecondMessage(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Modal Footer Actions */}
@@ -736,20 +829,47 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
           <div style={{ display: 'flex', gap: '10px' }}>
             {sendMode === 'whatsapp' ? (
-              <button
-                type="button"
-                className="btn-primary"
-                style={{
-                  background: '#22c55e',
-                  borderColor: '#16a34a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onClick={handleSendWhatsAppWeb}
-              >
-                <ExternalLink size={16} /> Abrir en WhatsApp
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{
+                    background: '#22c55e',
+                    borderColor: '#16a34a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.82rem',
+                    padding: '8px 12px',
+                  }}
+                  onClick={handleSendWhatsAppWeb}
+                  title="Abrir WhatsApp Web con la notificación de entrega"
+                >
+                  <ExternalLink size={15} />{' '}
+                  {currentActionType === 'recogido' ? '1. Enviar Comprobante' : 'Abrir en WhatsApp'}
+                </button>
+                {currentActionType === 'recogido' && includeSecondMessage && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{
+                      background: '#ecfdf5',
+                      color: '#047857',
+                      borderColor: '#a7f3d0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '0.82rem',
+                      padding: '8px 12px',
+                      fontWeight: 600,
+                    }}
+                    onClick={handleSendSecondWhatsAppWeb}
+                    title="Abrir WhatsApp Web con el mensaje de agradecimiento"
+                  >
+                    <ExternalLink size={15} /> 2. Enviar Agradecimiento
+                  </button>
+                )}
+              </div>
             ) : (
               <button
                 type="button"
@@ -770,7 +890,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Send size={16} /> Enviar PDF con TextMeBot
+                    <Send size={16} />{' '}
+                    {currentActionType === 'recogido' && includeSecondMessage
+                      ? 'Enviar Comprobante + Agradecimiento (2 Mensajes)'
+                      : 'Enviar PDF con TextMeBot'}
                   </>
                 )}
               </button>
