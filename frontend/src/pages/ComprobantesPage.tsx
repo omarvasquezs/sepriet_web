@@ -765,8 +765,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         S/ {Number(t.monto_restante).toFixed(2)}
                       </td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '220px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '280px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}>
                           {Number(t.monto_restante) > 0 && (
                             <button
                               className="btn-secondary"
@@ -798,13 +798,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           <button
                             className="btn-primary"
                             style={{
-                              padding: '6px 12px',
+                              padding: '6px 10px',
                               fontSize: '0.82rem',
                               fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '6px',
+                              gap: '5px',
                               minHeight: '34px',
                               width: Number(t.monto_restante) > 0 ? 'auto' : '100%',
                               flex: 1,
@@ -813,6 +813,34 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                             onClick={() => handleOpenPrintModal(t)}
                           >
                             <Printer size={15} /> Ver / Imprimir
+                          </button>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '6px 9px',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              minHeight: '34px',
+                              background: '#25D366',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              flex: '0 0 auto',
+                            }}
+                            title="Notificar por WhatsApp"
+                            onClick={() => {
+                              setWhatsAppTicket(t);
+                              const action = Number(t.estado_ropa_id) === 3 ? 'listo' : (Number(t.estado_ropa_id) === 4 ? 'recogido' : 'ticket');
+                              setWhatsAppActionType(action);
+                              setShowWhatsAppModal(true);
+                            }}
+                          >
+                            <MessageSquare size={14} /> WhatsApp
                           </button>
                           {t.estado_comprobante_id !== 3 && (
                             <button
@@ -947,6 +975,34 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       onClick={() => handleOpenPrintModal(t)}
                     >
                       <Printer size={16} /> Ver / Imprimir
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        padding: '10px 12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        background: '#25D366',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        minHeight: '40px',
+                        flex: '0 0 auto',
+                      }}
+                      title="Enviar notificación por WhatsApp"
+                      onClick={() => {
+                        setWhatsAppTicket(t);
+                        const action = Number(t.estado_ropa_id) === 3 ? 'listo' : (Number(t.estado_ropa_id) === 4 ? 'recogido' : 'ticket');
+                        setWhatsAppActionType(action);
+                        setShowWhatsAppModal(true);
+                      }}
+                    >
+                      <MessageSquare size={16} /> WhatsApp
                     </button>
                     {t.estado_comprobante_id !== 3 && (
                       <button

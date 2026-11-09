@@ -72,7 +72,7 @@ export const buildWhatsAppMessage = (
     sb.push(`Comprobante: ${cod}\n`);
   } else {
     sb.push(`LAVANDERIA SEPRIET`);
-    sb.push(`Enrique Nerini 995, San Luis 15021`);
+    sb.push(`Jr. Enrique Nerini N° 995 Urb. San Luis`);
 
     let tipoLabel = 'COMPROBANTE';
     if (ticket.tipo_comprobante === 'N') tipoLabel = 'NOTA DE VENTA ELECTRÓNICA';
@@ -162,6 +162,12 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState(false);
+  const [currentActionType, setCurrentActionType] = useState<'ticket' | 'listo' | 'recogido'>(actionType);
+
+  // Sync actionType prop when modal opens or prop changes
+  useEffect(() => {
+    setCurrentActionType(actionType);
+  }, [actionType, isOpen]);
 
   // Send Mode: 'whatsapp' (manual web link) or 'textmebot' (automated bot with document)
   const [sendMode, setSendMode] = useState<'whatsapp' | 'textmebot'>('whatsapp');
@@ -218,26 +224,26 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
               url: cleanUrl,
               filename: res.data.filename,
             });
-            setMessage(buildWhatsAppMessage(ticket, actionType, includePdfLink ? cleanUrl : undefined));
+            setMessage(buildWhatsAppMessage(ticket, currentActionType, includePdfLink ? cleanUrl : undefined));
           }
         })
         .catch((err) => {
           console.error('Error generating PDF:', err);
-          setMessage(buildWhatsAppMessage(ticket, actionType));
+          setMessage(buildWhatsAppMessage(ticket, currentActionType));
         })
         .finally(() => {
           setIsGeneratingPdf(false);
         });
     }
-  }, [ticket, actionType, isOpen]);
+  }, [ticket, isOpen]);
 
-  // Update message when PDF link checkbox changes
+  // Update message when actionType or PDF link checkbox changes
   useEffect(() => {
     if (ticket && isOpen) {
       const urlToUse = includePdfLink && pdfInfo?.url ? pdfInfo.url : undefined;
-      setMessage(buildWhatsAppMessage(ticket, actionType, urlToUse));
+      setMessage(buildWhatsAppMessage(ticket, currentActionType, urlToUse));
     }
-  }, [includePdfLink, pdfInfo]);
+  }, [currentActionType, includePdfLink, pdfInfo, ticket, isOpen]);
 
   if (!isOpen || !ticket) return null;
 
@@ -350,9 +356,9 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                 Notificar por WhatsApp
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                {actionType === 'listo'
+                {currentActionType === 'listo'
                   ? 'Notificación de prendas listas'
-                  : actionType === 'recogido'
+                  : currentActionType === 'recogido'
                   ? 'Agradecimiento por entrega'
                   : `Comprobante ${ticket.cod_comprobante || ''}`}
               </p>
@@ -366,6 +372,84 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           >
             <X size={20} />
           </button>
+        </div>
+
+        {/* Notification Status Switcher Tabs */}
+        <div style={{ marginBottom: '14px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '6px',
+              background: '#f1f5f9',
+              padding: '4px',
+              borderRadius: '10px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCurrentActionType('ticket')}
+              style={{
+                padding: '7px 8px',
+                fontSize: '0.8rem',
+                fontWeight: currentActionType === 'ticket' ? 700 : 500,
+                border: 'none',
+                borderRadius: '7px',
+                cursor: 'pointer',
+                background: currentActionType === 'ticket' ? '#ffffff' : 'transparent',
+                color: currentActionType === 'ticket' ? '#1e293b' : '#64748b',
+                boxShadow: currentActionType === 'ticket' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+              }}
+            >
+              🧾 Registro / Abono
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentActionType('listo')}
+              style={{
+                padding: '7px 8px',
+                fontSize: '0.8rem',
+                fontWeight: currentActionType === 'listo' ? 700 : 500,
+                border: 'none',
+                borderRadius: '7px',
+                cursor: 'pointer',
+                background: currentActionType === 'listo' ? '#ffffff' : 'transparent',
+                color: currentActionType === 'listo' ? '#4338ca' : '#64748b',
+                boxShadow: currentActionType === 'listo' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+              }}
+            >
+              👕 Prendas Listas
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentActionType('recogido')}
+              style={{
+                padding: '7px 8px',
+                fontSize: '0.8rem',
+                fontWeight: currentActionType === 'recogido' ? 700 : 500,
+                border: 'none',
+                borderRadius: '7px',
+                cursor: 'pointer',
+                background: currentActionType === 'recogido' ? '#ffffff' : 'transparent',
+                color: currentActionType === 'recogido' ? '#047857' : '#64748b',
+                boxShadow: currentActionType === 'recogido' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+              }}
+            >
+              ✨ Entregado / Gracias
+            </button>
+          </div>
         </div>
 
         {/* Mode Selector Tabs */}

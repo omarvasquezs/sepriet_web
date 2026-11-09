@@ -30,7 +30,8 @@ class ComprobanteController extends Controller
             'estadoRopa',
             'metodoPago',
             'usuario',
-            'detalles.servicio'
+            'detalles.servicio',
+            'ingresos.metodoPago'
         ]);
 
         if ($request->filled('preset')) {
@@ -308,6 +309,7 @@ class ComprobanteController extends Controller
                 'estadoComprobante',
                 'estadoRopa',
                 'metodoPago',
+                'detalles.servicio',
                 'ingresos.metodoPago'
             ]));
         });
@@ -355,7 +357,10 @@ class ComprobanteController extends Controller
         return response()->json($comprobante->load([
             'cliente',
             'estadoComprobante',
-            'estadoRopa'
+            'estadoRopa',
+            'metodoPago',
+            'detalles.servicio',
+            'ingresos.metodoPago'
         ]));
     }
 
