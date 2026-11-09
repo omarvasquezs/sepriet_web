@@ -456,9 +456,24 @@ class ComprobanteController extends Controller
         $viewTimestamp = file_exists($viewPath) ? filemtime($viewPath) : 0;
         $templateTimestamp = max($logoTimestamp, $viewTimestamp);
 
+        $comprobanteTimestamp = 0;
+        if (!empty($comprobante->fecha_actualizacion)) {
+            $comprobanteTimestamp = max($comprobanteTimestamp, Carbon::parse($comprobante->fecha_actualizacion)->timestamp);
+        }
+        if (!empty($comprobante->fecha_actualizacion_estado_ropa)) {
+            $comprobanteTimestamp = max($comprobanteTimestamp, Carbon::parse($comprobante->fecha_actualizacion_estado_ropa)->timestamp);
+        }
+        if (!empty($comprobante->fecha_actualizacion_estado_comprobante)) {
+            $comprobanteTimestamp = max($comprobanteTimestamp, Carbon::parse($comprobante->fecha_actualizacion_estado_comprobante)->timestamp);
+        }
+        if (!empty($comprobante->updated_at)) {
+            $comprobanteTimestamp = max($comprobanteTimestamp, Carbon::parse($comprobante->updated_at)->timestamp);
+        }
+
         $pdfNeedsRegeneration = $force
             || !$disk->exists($relativePath)
-            || ($templateTimestamp > 0 && $disk->lastModified($relativePath) < $templateTimestamp);
+            || ($templateTimestamp > 0 && $disk->lastModified($relativePath) < $templateTimestamp)
+            || ($comprobanteTimestamp > 0 && $disk->lastModified($relativePath) < $comprobanteTimestamp);
 
         // Regenerar si no existe, si se solicita forzar, o si el logo/plantilla es más reciente que el PDF existente
         if ($pdfNeedsRegeneration) {
