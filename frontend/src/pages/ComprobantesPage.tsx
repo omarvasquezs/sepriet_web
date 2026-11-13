@@ -1011,7 +1011,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       )}
 
       {/* Date Statistics Panel (matching Java frmConsultarComprobantes updateDateStats) */}
-      {dateStats && (
+      {(dateStats || loadingStats) && (fechaDesde || fechaHasta) && (
         <div
           className="glass-panel"
           style={{
@@ -1026,9 +1026,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
             boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
           }}
         >
-          {loadingStats ? (
-            <div style={{ color: '#64748b', fontSize: '0.84rem' }}>Actualizando estadísticas...</div>
-          ) : (
+          {loadingStats && !dateStats ? (
+            <div style={{ color: '#64748b', fontSize: '0.84rem' }}>Calculando estadísticas de fecha...</div>
+          ) : dateStats ? (
             <>
               <div style={{ color: '#006400', fontWeight: 600 }}>
                 Comprobantes generados {dateStats.fechaStr}: {dateStats.cantidad}
@@ -1070,7 +1070,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                 </div>
               )}
             </>
-          )}
+          ) : null}
         </div>
       )}
 
