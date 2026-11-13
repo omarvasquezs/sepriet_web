@@ -14,12 +14,14 @@ import {
   Archive,
   History,
   LayoutDashboard,
+  Award,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: string, subtab?: string) => void;
   isOpen?: boolean;
   onClose?: () => void;
   onRegistrarComprobante?: () => void;
@@ -43,8 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const canAccessCaja = isAdmin || hasPermission('caja_apertura') || hasPermission('caja_cierre') || hasPermission('caja_egresos') || hasPermission('caja_historial');
   const canAccessReportes = isAdmin || hasPermission('reportes');
 
-  const handleSelectTab = (tabId: string) => {
-    setActiveTab(tabId);
+  const handleSelectTab = (tabId: string, subtab?: string) => {
+    setActiveTab(tabId, subtab);
     if (onClose) onClose();
   };
 
@@ -559,29 +561,77 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
 
                 {canAccessReportes && (
-                  <button
-                    type="button"
-                    onClick={() => handleSelectTab('reportes')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      padding: '11px 14px',
-                      minHeight: '44px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: activeTab === 'reportes' ? '#eef2ff' : 'transparent',
-                      color: activeTab === 'reportes' ? '#4f46e5' : '#1e293b',
-                      fontSize: '0.92rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontWeight: activeTab === 'reportes' ? 700 : 600,
-                    }}
-                  >
-                    <TrendingUp size={19} color="#4f46e5" />
-                    <span>Reportes Financieros</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab('reportes', 'financiero')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '11px 14px',
+                        minHeight: '44px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: activeTab === 'reportes' ? '#eef2ff' : 'transparent',
+                        color: activeTab === 'reportes' ? '#4f46e5' : '#1e293b',
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: activeTab === 'reportes' ? 700 : 600,
+                      }}
+                    >
+                      <TrendingUp size={19} color="#4f46e5" />
+                      <span>Reportes Financieros</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab('reportes', 'clientes')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '11px 14px',
+                        minHeight: '44px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#1e293b',
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Award size={19} color="#7c3aed" />
+                      <span>Clientes Frecuentes</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTab('reportes', 'servicios')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '11px 14px',
+                        minHeight: '44px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#1e293b',
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Flame size={19} color="#ea580c" />
+                      <span>Servicios Más Vendidos</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>

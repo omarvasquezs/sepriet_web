@@ -18,6 +18,8 @@ import {
   FileText,
   Sparkles,
   ArrowUpRight,
+  Award,
+  Flame,
 } from 'lucide-react';
 import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -26,7 +28,7 @@ import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { sendWhatsAppBotNotification } from '../services/whatsappBotService';
 
 interface DashboardPageProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, subtab?: string) => void;
   onRegistrarComprobante?: () => void;
   onRegistrarCliente?: () => void;
   onConsultarComprobantes?: (preset: string, label: string) => void;
@@ -69,6 +71,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   });
 
   const [recentTickets, setRecentTickets] = useState<any[]>([]);
+  const [topServicios, setTopServicios] = useState<any[]>([]);
+  const [topClientes, setTopClientes] = useState<any[]>([]);
   const [ticketFilter, setTicketFilter] = useState<'todos' | 'debe' | 'cancelados'>('todos');
   const [loading, setLoading] = useState(true);
 
@@ -147,6 +151,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       });
 
       setRecentTickets(tickets);
+
+      // Fetch top clientes and top servicios for business preview
+      try {
+        const [serviciosTopRes, clientesTopRes] = await Promise.all([
+          api.get('/reportes/ranking-servicios', { params: { orden_por: 'recaudado' } }),
+          api.get('/reportes/clientes-frecuentes', { params: { orden_por: 'visitas', limit: 5 } }),
+        ]);
+        setTopServicios(serviciosTopRes.data?.servicios?.slice(0, 5) || []);
+        setTopClientes(clientesTopRes.data?.clientes?.slice(0, 5) || []);
+      } catch (e) {
+        console.error('Error fetching dashboard rankings:', e);
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -863,6 +879,130 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               {isAtencion ? `${stats.ticketsPendientes} tickets con saldo` : 'Directorio de clientes'}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3.5 BUSINESS INTELLIGENCE PREVIEWS: TOP SERVICIOS & TOP CLIENTES */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+        {/* TOP SERVICIOS MÁS VENDIDOS */}
+        <div className="glass-card" style={{ padding: '18px 20px', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ padding: '6px', borderRadius: '8px', background: '#fff7ed', color: '#ea580c' }}>
+                <Flame size={18} />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                Servicios Más Vendidos
+              </h4>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('reportes', 'servicios')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ea580c',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              Ver Ranking <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {topServicios.length === 0 ? (
+              <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, textAlign: 'center', padding: '16px' }}>Cargando ranking de servicios...</p>
+            ) : (
+              topServicios.map((s, idx) => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: '#f8fafc', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                    </span>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.nom_servicio}>
+                      {s.nom_servicio}
+                    </span>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#059669' }}>
+                      S/ {Number(s.total_recaudado || 0).toFixed(2)}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                      {s.veces_solicitado} pedidos ({s.porcentaje}%)
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* TOP CLIENTES FRECUENTES */}
+        <div className="glass-card" style={{ padding: '18px 20px', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ padding: '6px', borderRadius: '8px', background: '#f5f3ff', color: '#7c3aed' }}>
+                <Award size={18} />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                Clientes Más Frecuentes
+              </h4>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('reportes', 'clientes')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#7c3aed',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              Ver Todos <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {topClientes.length === 0 ? (
+              <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, textAlign: 'center', padding: '16px' }}>Cargando clientes frecuentes...</p>
+            ) : (
+              topClientes.map((c, idx) => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: '#f8fafc', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.nombres}>
+                        {c.nombres}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        {c.telefono ? `Cel: ${c.telefono}` : 'Sin teléfono'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#4f46e5' }}>
+                      {c.total_visitas} visitas
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
+                      S/ {Number(c.total_gastado || 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

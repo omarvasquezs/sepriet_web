@@ -52,4 +52,6 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Reportes
     Route::get('/reportes/financiero', [ReporteController::class, 'financiero']);
     Route::get('/reportes/trabajo', [ReporteController::class, 'trabajo']);
+    Route::get('/reportes/clientes-frecuentes', [ReporteController::class, 'clientesFrecuentes']);
+    Route::get('/reportes/ranking-servicios', [ReporteController::class, 'rankingServicios']);
 });

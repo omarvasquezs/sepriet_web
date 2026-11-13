@@ -28,6 +28,7 @@ const MainLayout: React.FC = () => {
   // Triggers & Presets from Top Menu (Java / VJS Navigation)
   const [triggerCreateTicket, setTriggerCreateTicket] = useState(0);
   const [triggerCreateCliente, setTriggerCreateCliente] = useState(0);
+  const [reportesInitialTab, setReportesInitialTab] = useState<'financiero' | 'trabajo' | 'clientes' | 'servicios'>('financiero');
   const [comprobanteFilterPreset, setComprobanteFilterPreset] = useState<{
     id: string;
     label: string;
@@ -51,8 +52,11 @@ const MainLayout: React.FC = () => {
     }
   }, [user]);
 
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = (newTab: string, subtab?: string) => {
     setIsSidebarOpen(false);
+    if (newTab === 'reportes' && subtab) {
+      setReportesInitialTab(subtab as any);
+    }
     if (newTab === activeTab) {
       if (newTab === 'dashboard') {
         window.dispatchEvent(new CustomEvent('caja:updated'));
@@ -184,7 +188,19 @@ const MainLayout: React.FC = () => {
             )}
             {activeTab === 'servicios' && <ServiciosPage />}
             {activeTab === 'caja' && <CajaPage />}
-            {activeTab === 'reportes' && <ReportesPage />}
+            {activeTab === 'reportes' && (
+              <ReportesPage
+                initialTab={reportesInitialTab}
+                onNavigateToComprobantesCliente={(clienteName) => {
+                  setComprobanteFilterPreset({
+                    id: 'cliente_' + clienteName,
+                    label: `Cliente: ${clienteName}`,
+                    timestamp: Date.now()
+                  });
+                  handleTabChange('comprobantes');
+                }}
+              />
+            )}
             {activeTab === 'usuarios' && <UsuariosPage initialTab="usuarios" />}
             {activeTab === 'roles' && <UsuariosPage initialTab="roles" />}
           </div>

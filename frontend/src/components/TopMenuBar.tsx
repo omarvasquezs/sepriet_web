@@ -18,13 +18,15 @@ import {
   Layers,
   Sparkles,
   Home,
+  Award,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 interface TopMenuBarProps {
   activeTab: string;
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, subtab?: string) => void;
   onRegistrarComprobante: () => void;
   onRegistrarCliente: () => void;
   onConsultarComprobantes: (preset: string, label: string) => void;
@@ -443,7 +445,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <button
                   type="button"
                   className="top-menu-subitem"
-                  onClick={() => handleAction(() => onNavigate('reportes'))}
+                  onClick={() => handleAction(() => onNavigate('reportes', 'financiero'))}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <TrendingUp size={16} color="#4f46e5" />
@@ -453,11 +455,31 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <button
                   type="button"
                   className="top-menu-subitem"
-                  onClick={() => handleAction(() => onNavigate('reportes'))}
+                  onClick={() => handleAction(() => onNavigate('reportes', 'trabajo'))}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles size={16} color="#0284c7" />
                     <span>Carga de Trabajo</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('reportes', 'clientes'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Award size={16} color="#7c3aed" />
+                    <span>Clientes Frecuentes</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="top-menu-subitem"
+                  onClick={() => handleAction(() => onNavigate('reportes', 'servicios'))}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Flame size={16} color="#ea580c" />
+                    <span>Servicios Más Vendidos</span>
                   </div>
                 </button>
               </div>
