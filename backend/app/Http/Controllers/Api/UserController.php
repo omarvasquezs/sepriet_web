@@ -133,16 +133,28 @@ class UserController extends Controller
             ->orWhere('id_usuario_cierre', $id)
             ->exists();
         $hasEgresos = \App\Models\CajaEgreso::where('id_usuario', $id)->exists();
-        $hasComprobantes = \App\Models\Comprobante::where('user_id', $id)->exists();
-        $hasIngresos = \App\Models\ReporteIngreso::where('user_id', $id)->exists();
+        $hasComprobantes = \App\Models\Comprobante::where('user_id', $id)
+            ->orWhere('last_updated_by', $id)
+            ->exists();
+        $hasIngresos = Schema::hasColumn('reporte_ingresos', 'user_id')
+            ? \App\Models\ReporteIngreso::where('user_id', $id)->exists()
+            : false;
 
         if ($hasCaja || $hasEgresos || $hasComprobantes || $hasIngresos) {
             return response()->json([
-                'message' => 'No se puede eliminar el usuario porque tiene transacciones de caja o comprobantes registrados. Puede deshabilitarlo para revocar su acceso.'
+                'message' => 'No se puede eliminar el usuario porque tiene transacciones de caja o comprobantes registrados. Puede deshabilitarlo para revocar su acceso.',
+                'can_disable' => true,
             ], 422);
         }
 
-        $user->delete();
+        try {
+            $user->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'message' => 'No se puede eliminar el usuario porque tiene historial asociado en el sistema. Puede deshabilitarlo para revocar su acceso.',
+                'can_disable' => true,
+            ], 422);
+        }
 
         return response()->json(['message' => 'Usuario eliminado correctamente.']);
     }

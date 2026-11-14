@@ -218,6 +218,24 @@ export const UsuariosPage: React.FC<UsuariosPageProps> = ({ initialTab = 'usuari
     setShowUserModal(true);
   };
 
+  const handleToggleHabilitado = async (u: any, newStatus?: boolean) => {
+    if (currentUser?.id === u.id) {
+      alert('No puedes modificar el estado de tu propia cuenta.');
+      return;
+    }
+    const targetStatus = typeof newStatus === 'boolean' ? newStatus : !u.habilitado;
+    const actionText = targetStatus ? 'habilitar' : 'deshabilitar';
+    if (!window.confirm(`¿Estás seguro de que deseas ${actionText} a "${u.name || u.username}"?`)) {
+      return;
+    }
+    try {
+      await api.put(`/users/${u.id}`, { habilitado: targetStatus });
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.message || `Error al ${actionText} usuario.`);
+    }
+  };
+
   const handleDeleteUser = async (u: any) => {
     if (currentUser?.id === u.id) {
       alert('No puedes eliminar tu propia cuenta de usuario.');
@@ -233,7 +251,20 @@ export const UsuariosPage: React.FC<UsuariosPageProps> = ({ initialTab = 'usuari
       fetchUsers();
       fetchRoles();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al eliminar usuario');
+      const msg = err.response?.data?.message || 'Error al eliminar usuario';
+      if (err.response?.data?.can_disable || msg.toLowerCase().includes('deshabilitar')) {
+        const wantDisable = window.confirm(`${msg}\n\n¿Deseas DESHABILITAR a "${u.name || u.username}" ahora mismo para revocar su acceso al sistema?`);
+        if (wantDisable) {
+          try {
+            await api.put(`/users/${u.id}`, { habilitado: false });
+            fetchUsers();
+          } catch (disableErr: any) {
+            alert(disableErr.response?.data?.message || 'Error al deshabilitar usuario.');
+          }
+        }
+      } else {
+        alert(msg);
+      }
     }
   };
 
@@ -548,15 +579,29 @@ export const UsuariosPage: React.FC<UsuariosPageProps> = ({ initialTab = 'usuari
                             </span>
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            {u.habilitado ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#16a34a', fontSize: '0.8rem', fontWeight: 600 }}>
-                                <CheckCircle2 size={14} /> Activo
-                              </span>
-                            ) : (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}>
-                                <XCircle size={14} /> Inactivo
-                              </span>
-                            )}
+                            <button
+                              type="button"
+                              disabled={isSelf}
+                              onClick={() => handleToggleHabilitado(u)}
+                              title={isSelf ? 'No puedes deshabilitar tu propia cuenta' : (u.habilitado ? 'Click para deshabilitar usuario' : 'Click para habilitar usuario')}
+                              style={{
+                                background: u.habilitado ? '#dcfce7' : '#fee2e2',
+                                color: u.habilitado ? '#15803d' : '#b91c1c',
+                                border: `1px solid ${u.habilitado ? '#bbf7d0' : '#fecaca'}`,
+                                borderRadius: '14px',
+                                padding: '3px 10px',
+                                fontSize: '0.78rem',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                cursor: isSelf ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              {u.habilitado ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
+                              {u.habilitado ? 'Activo' : 'Inactivo'}
+                            </button>
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
