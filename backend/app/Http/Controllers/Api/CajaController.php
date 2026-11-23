@@ -152,11 +152,14 @@ class CajaController extends Controller
         }
 
         // 3. Date filtering for consolidated summary and detailed egresos
-        $fechaDesde = $request->filled('fecha_desde')
-            ? Carbon::parse($request->fecha_desde)->startOfDay()
-            : Carbon::parse($cajaAbierta->datetime_apertura);
+        $cajaAperturaTime = Carbon::parse($cajaAbierta->datetime_apertura);
+        $isCustomFilter = $request->filled('fecha_desde') && $request->filled('fecha_hasta');
 
-        $fechaHasta = $request->filled('fecha_hasta')
+        $fechaDesde = $isCustomFilter
+            ? Carbon::parse($request->fecha_desde)->startOfDay()
+            : $cajaAperturaTime;
+
+        $fechaHasta = $isCustomFilter
             ? Carbon::parse($request->fecha_hasta)->endOfDay()
             : now();
 
@@ -193,7 +196,7 @@ class CajaController extends Controller
         $egresosQuery = CajaEgreso::with(['metodoPago', 'usuario'])
             ->where('id_caja', $cajaAbierta->id);
 
-        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+        if ($isCustomFilter && ($request->fecha_desde !== $cajaAperturaTime->toDateString() || $request->fecha_hasta !== now()->toDateString())) {
             $egresosQuery->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
         }
 
@@ -394,12 +397,12 @@ class CajaController extends Controller
         ]);
 
         $cajaAbierta = CajaAperturaCierre::whereNull('datetime_cierre')
-            ->whereDate('datetime_apertura', now()->toDateString())
+            ->latest('id')
             ->first();
 
         if (!$cajaAbierta) {
             return response()->json([
-                'message' => 'Debe aperturar la caja del día de hoy antes de registrar egresos',
+                'message' => 'Debe aperturar la caja antes de registrar egresos',
                 'requiere_apertura' => true
             ], 422);
         }

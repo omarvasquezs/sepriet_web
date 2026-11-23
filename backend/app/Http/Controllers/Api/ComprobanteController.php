@@ -484,6 +484,11 @@ class ComprobanteController extends Controller
 
         if (!empty($validated['estado_ropa_id'])) {
             $nuevoEstadoRopa = (int)$validated['estado_ropa_id'];
+            if ($nuevoEstadoRopa === 4 && (float)$comprobante->monto_restante > 0.001) {
+                return response()->json([
+                    'message' => 'No se puede marcar como RECOGIDO porque el comprobante tiene un saldo pendiente de S/ ' . number_format($comprobante->monto_restante, 2) . '. Debe registrar el abono o cancelación total antes de entregar las prendas.'
+                ], 422);
+            }
             if ($nuevoEstadoRopa !== (int)$comprobante->estado_ropa_id && $nuevoEstadoRopa === 4) {
                 $comprobante->fecha_actualizacion_estado_ropa = $fechaOperacion;
             }

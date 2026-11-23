@@ -21,6 +21,13 @@ export interface ReportesPageProps {
   onNavigateToComprobantesCliente?: (clienteName: string) => void;
 }
 
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const ReportesPage: React.FC<ReportesPageProps> = ({
   initialTab = 'financiero',
   onNavigateToComprobantesCliente,
@@ -34,11 +41,11 @@ export const ReportesPage: React.FC<ReportesPageProps> = ({
     }
   }, [initialTab]);
 
-  // Date filters
+  // Date filters in local timezone (America/Lima)
   const [fechaInicio, setFechaInicio] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+    getLocalDateString(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   );
-  const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
+  const [fechaFin, setFechaFin] = useState(getLocalDateString());
   const [datePreset, setDatePreset] = useState<'mes_actual' | 'mes_anterior' | 'hoy' | '30_dias' | 'todo' | 'custom'>('mes_actual');
 
   // Clientes Frecuentes filters

@@ -575,8 +575,14 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
   };
 
   const handleEstadoRopaChange = async (ticket: any, estadoRopaId: string) => {
+    const numericEstado = Number(estadoRopaId);
+    if (numericEstado === 4 && Number(ticket.monto_restante) > 0.001) {
+      alert(`No se puede marcar como RECOGIDO porque el comprobante tiene un saldo pendiente de S/ ${Number(ticket.monto_restante).toFixed(2)}.\n\nDebe registrar el abono o cancelación total antes de entregar las prendas.`);
+      fetchData();
+      return;
+    }
+
     try {
-      const numericEstado = Number(estadoRopaId);
       const res = await api.put(`/comprobantes/${ticket.id}/estado`, { estado_ropa_id: numericEstado });
       const updated = res.data;
       fetchData();
@@ -587,8 +593,9 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
       } else if (numericEstado === 4) {
         sendWhatsAppBotNotification(updated, 'recogido');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al actualizar estado de la prenda');
+      fetchData();
     }
   };
 
@@ -1094,7 +1101,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Total</th>
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Abonado</th>
                     <th style={{ whiteSpace: 'nowrap', minWidth: '105px' }}>Restante</th>
-                    <th style={{ whiteSpace: 'nowrap', minWidth: '220px', textAlign: 'center' }}>Acciones</th>
+                    <th style={{ whiteSpace: 'nowrap', minWidth: '310px', textAlign: 'center' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1115,9 +1122,15 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           value={t.estado_ropa_id || 1}
                           onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
                         >
-                          {catalogos.estados_ropa.map((er: any) => (
-                            <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
-                          ))}
+                          {catalogos.estados_ropa.map((er: any) => {
+                            const isRecogido = er.id === 4;
+                            const hasPendingDebt = Number(t.monto_restante) > 0.001;
+                            return (
+                              <option key={er.id} value={er.id} disabled={isRecogido && hasPendingDebt}>
+                                {er.nom_estado_ropa || er.nombre}{isRecogido && hasPendingDebt ? ` (Debe S/ ${Number(t.monto_restante).toFixed(2)})` : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </td>
                       <td style={{ fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>S/ {Number(t.costo_total).toFixed(2)}</td>
@@ -1125,8 +1138,8 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       <td style={{ color: Number(t.monto_restante) > 0 ? '#dc2626' : '#059669', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         S/ {Number(t.monto_restante).toFixed(2)}
                       </td>
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '280px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}>
+                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '310px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                           {Number(t.monto_restante) > 0 && (
                             <button
                               className="btn-secondary"
@@ -1142,7 +1155,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                                 justifyContent: 'center',
                                 gap: '4px',
                                 minHeight: '34px',
-                                flex: '0 0 auto',
+                                flexShrink: 0,
                               }}
                               title="Registrar Abono"
                               onClick={() => {
@@ -1166,8 +1179,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                               justifyContent: 'center',
                               gap: '5px',
                               minHeight: '34px',
-                              width: Number(t.monto_restante) > 0 ? 'auto' : '100%',
-                              flex: 1,
+                              flexShrink: 0,
                             }}
                             title="Ver Comprobante, Imprimir, Descargar o Enviar por WhatsApp"
                             onClick={() => handleOpenPrintModal(t)}
@@ -1177,22 +1189,22 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                           <button
                             type="button"
                             style={{
-                              padding: '6px 9px',
+                              padding: '6px 11px',
                               fontSize: '0.82rem',
                               fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '4px',
+                              gap: '5px',
                               minHeight: '34px',
                               background: '#25D366',
                               color: '#ffffff',
                               border: 'none',
                               borderRadius: '6px',
                               cursor: 'pointer',
-                              flex: '0 0 auto',
+                              flexShrink: 0,
                             }}
-                            title="Enviar notificación por WhatsApp (Bot)"
+                            title="Enviar comprobante por WhatsApp al cliente (Bot)"
                             onClick={() => {
                               const action = Number(t.estado_ropa_id) === 3 ? 'listo' : (Number(t.estado_ropa_id) === 4 ? 'recogido' : 'ticket');
                               sendWhatsAppBotNotification(t, action);
@@ -1215,7 +1227,7 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                                 justifyContent: 'center',
                                 gap: '4px',
                                 minHeight: '34px',
-                                flex: '0 0 auto',
+                                flexShrink: 0,
                               }}
                               title="Anular comprobante"
                               onClick={() => handleAnular(t)}
@@ -1279,9 +1291,15 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                       value={t.estado_ropa_id || 1}
                       onChange={(e) => handleEstadoRopaChange(t, e.target.value)}
                     >
-                      {catalogos.estados_ropa.map((er: any) => (
-                        <option key={er.id} value={er.id}>{er.nom_estado_ropa || er.nombre}</option>
-                      ))}
+                      {catalogos.estados_ropa.map((er: any) => {
+                        const isRecogido = er.id === 4;
+                        const hasPendingDebt = Number(t.monto_restante) > 0.001;
+                        return (
+                          <option key={er.id} value={er.id} disabled={isRecogido && hasPendingDebt}>
+                            {er.nom_estado_ropa || er.nombre}{isRecogido && hasPendingDebt ? ` (Debe S/ ${Number(t.monto_restante).toFixed(2)})` : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 

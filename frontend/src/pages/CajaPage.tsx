@@ -20,6 +20,13 @@ import api from '../api/axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AperturaCajaModal } from '../components/AperturaCajaModal';
 
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const CajaPage: React.FC = () => {
   const [activeViewTab, setActiveViewTab] = useState<'actual' | 'historial'>('actual');
   const [cajaInfo, setCajaInfo] = useState<any>(null);
@@ -31,8 +38,8 @@ export const CajaPage: React.FC = () => {
   const [showCierreSuccessModal, setShowCierreSuccessModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Date filters
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Date filters in local timezone (America/Lima)
+  const todayStr = getLocalDateString();
   const [fechaDesde, setFechaDesde] = useState(todayStr);
   const [fechaHasta, setFechaHasta] = useState(todayStr);
 
@@ -119,9 +126,10 @@ export const CajaPage: React.FC = () => {
   };
 
   const handleResetFilter = () => {
-    setFechaDesde(todayStr);
-    setFechaHasta(todayStr);
-    fetchCaja(todayStr, todayStr);
+    const curToday = getLocalDateString();
+    setFechaDesde(curToday);
+    setFechaHasta(curToday);
+    fetchCaja(curToday, curToday);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1026,7 +1034,7 @@ export const CajaPage: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.10"
+                  step="any"
                   min="0.01"
                   className="form-input"
                   required
