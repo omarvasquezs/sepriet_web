@@ -722,12 +722,13 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
             </div>
 
             <div className="comprobantes-filters-wrapper" style={{ display: 'flex', gap: '8px', flex: '1 1 360px', flexWrap: 'wrap' }}>
-              {/* Multi-Select Dropdown: Estado de Pago */}
+              {/* Dropdown: Estado de Pago (Comprobante) - Selección Única / Radio */}
               <MultiSelectFilterDropdown
                 labelPrefix="Pago"
                 title="Estado de Pago (Comprobante)"
                 options={estadosPagoOptions}
                 selectedIds={selectedPagoIds}
+                singleSelect={true}
                 onChange={(ids) => {
                   setSelectedPagoIds(ids);
                   setPage(1);
@@ -965,17 +966,48 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
               </div>
             </div>
 
-            {/* Columna Estado Comprobante (Pago) */}
+            {/* Columna Estado Comprobante (Pago) - Selección Única / Radio */}
             <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
               <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span>Estado Comprobante:</span>
-                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b' }}>
-                  {selectedPagoIds.length === 0 ? 'Todos' : `${selectedPagoIds.length} seleccionados`}
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#4f46e5' }}>
+                  {selectedPagoIds.length === 0 ? 'Todos' : (selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2) ? 'Debe y Abono' : (estadosPagoOptions.find(o => o.id === selectedPagoIds[0])?.name || 'Seleccionado'))}
                 </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 12px' }}>
+                {/* Opción TODOS */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    background: selectedPagoIds.length === 0 ? '#e0e7ff' : '#ffffff',
+                    border: `1px solid ${selectedPagoIds.length === 0 ? '#818cf8' : '#e2e8f0'}`,
+                    fontWeight: selectedPagoIds.length === 0 ? 700 : 500,
+                    fontSize: '0.84rem',
+                    color: selectedPagoIds.length === 0 ? '#3730a3' : '#475569',
+                    userSelect: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="filtro_estado_comprobante_panel"
+                    checked={selectedPagoIds.length === 0}
+                    onChange={() => {
+                      setSelectedPagoIds([]);
+                      setPage(1);
+                    }}
+                    style={{ accentColor: '#4f46e5', cursor: 'pointer' }}
+                  />
+                  <span>TODOS</span>
+                </label>
+
                 {estadosPagoOptions.map((ep) => {
-                  const isChecked = selectedPagoIds.includes(ep.id);
+                  const isChecked = selectedPagoIds.length === 1 && selectedPagoIds[0] === ep.id;
                   return (
                     <label
                       key={ep.id}
@@ -984,33 +1016,64 @@ export const ComprobantesPage: React.FC<ComprobantesPageProps> = ({
                         alignItems: 'center',
                         gap: '6px',
                         cursor: 'pointer',
-                        padding: '3px 6px',
-                        borderRadius: '4px',
-                        background: isChecked ? '#dcfce7' : 'transparent',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: isChecked ? '#dcfce7' : '#ffffff',
+                        border: `1px solid ${isChecked ? '#86efac' : '#e2e8f0'}`,
                         fontWeight: isChecked ? 700 : 500,
                         fontSize: '0.84rem',
                         color: isChecked ? '#14532d' : '#475569',
                         userSelect: 'none',
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       <input
-                        type="checkbox"
+                        type="radio"
+                        name="filtro_estado_comprobante_panel"
                         checked={isChecked}
                         onChange={() => {
-                          if (isChecked) {
-                            setSelectedPagoIds(selectedPagoIds.filter(id => id !== ep.id));
-                          } else {
-                            setSelectedPagoIds([...selectedPagoIds, ep.id]);
-                          }
+                          setSelectedPagoIds([ep.id]);
                           setPage(1);
                         }}
-                        style={{ width: '16px', height: '16px', accentColor: '#16a34a', cursor: 'pointer' }}
+                        style={{ accentColor: '#16a34a', cursor: 'pointer' }}
                       />
-                      {ep.dotColor && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: ep.dotColor }} />}
+                      {ep.dotColor && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: ep.dotColor }} />}
                       <span>{ep.name}</span>
                     </label>
                   );
                 })}
+
+                {/* Opción adicional: DEBE + ABONO (NO CANCELADOS) */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    background: selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2) ? '#fef3c7' : '#ffffff',
+                    border: `1px solid ${selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2) ? '#fcd34d' : '#e2e8f0'}`,
+                    fontWeight: selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2) ? 700 : 500,
+                    fontSize: '0.84rem',
+                    color: selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2) ? '#92400e' : '#475569',
+                    userSelect: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Comprobantes pendientes de cobro (Debe + Abono)"
+                >
+                  <input
+                    type="radio"
+                    name="filtro_estado_comprobante_panel"
+                    checked={selectedPagoIds.length === 2 && selectedPagoIds.includes(1) && selectedPagoIds.includes(2)}
+                    onChange={() => {
+                      setSelectedPagoIds([1, 2]);
+                      setPage(1);
+                    }}
+                    style={{ accentColor: '#d97706', cursor: 'pointer' }}
+                  />
+                  <span>DEBE / ABONO (NO CANCELADOS)</span>
+                </label>
               </div>
             </div>
           </div>

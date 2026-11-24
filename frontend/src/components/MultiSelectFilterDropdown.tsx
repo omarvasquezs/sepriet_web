@@ -15,6 +15,7 @@ interface MultiSelectFilterDropdownProps {
   selectedIds: number[];
   onChange: (selectedIds: number[]) => void;
   style?: React.CSSProperties;
+  singleSelect?: boolean;
 }
 
 export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps> = ({
@@ -24,6 +25,7 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
   selectedIds,
   onChange,
   style,
+  singleSelect = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,9 +46,19 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
     };
   }, [isOpen]);
 
-  const isFiltering = selectedIds.length > 0 && selectedIds.length < options.length;
+  const isFiltering = selectedIds.length > 0 && (singleSelect || selectedIds.length < options.length);
 
   const toggleOption = (id: number) => {
+    if (singleSelect) {
+      if (selectedIds.length === 1 && selectedIds[0] === id) {
+        onChange([]);
+      } else {
+        onChange([id]);
+      }
+      setIsOpen(false);
+      return;
+    }
+
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter(item => item !== id));
     } else {
@@ -55,26 +67,41 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
   };
 
   const selectAll = () => {
+    if (singleSelect) {
+      onChange([]);
+      setIsOpen(false);
+      return;
+    }
     onChange(options.map(opt => opt.id));
   };
 
   const clearAll = () => {
     onChange([]);
+    if (singleSelect) setIsOpen(false);
   };
 
   // Label text calculation
   let labelText = `${labelPrefix}: Todos`;
-  if (selectedIds.length > 0 && selectedIds.length < options.length) {
-    const selectedNames = options
-      .filter(opt => selectedIds.includes(opt.id))
-      .map(opt => opt.name);
+  if (selectedIds.length > 0) {
+    if (singleSelect) {
+      if (selectedIds.length === 2 && selectedIds.includes(1) && selectedIds.includes(2)) {
+        labelText = `${labelPrefix}: Debe / Abono`;
+      } else {
+        const found = options.find(opt => selectedIds.includes(opt.id));
+        labelText = `${labelPrefix}: ${found ? found.name : 'Seleccionado'}`;
+      }
+    } else if (selectedIds.length < options.length) {
+      const selectedNames = options
+        .filter(opt => selectedIds.includes(opt.id))
+        .map(opt => opt.name);
 
-    if (selectedNames.length === 1) {
-      labelText = `${labelPrefix}: ${selectedNames[0]}`;
-    } else if (selectedNames.length === 2) {
-      labelText = `${labelPrefix}: ${selectedNames[0]}, ${selectedNames[1]}`;
-    } else {
-      labelText = `${labelPrefix}: ${selectedNames[0]}, ${selectedNames[1]} (+${selectedNames.length - 2})`;
+      if (selectedNames.length === 1) {
+        labelText = `${labelPrefix}: ${selectedNames[0]}`;
+      } else if (selectedNames.length === 2) {
+        labelText = `${labelPrefix}: ${selectedNames[0]}, ${selectedNames[1]}`;
+      } else {
+        labelText = `${labelPrefix}: ${selectedNames[0]}, ${selectedNames[1]} (+${selectedNames.length - 2})`;
+      }
     }
   }
 
@@ -201,22 +228,26 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
               {title}
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={selectAll}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#4f46e5',
-                  cursor: 'pointer',
-                  padding: '2px 4px',
-                }}
-              >
-                Todos
-              </button>
-              <span style={{ color: '#cbd5e1' }}>|</span>
+              {!singleSelect && (
+                <>
+                  <button
+                    type="button"
+                    onClick={selectAll}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: '#4f46e5',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    Todos
+                  </button>
+                  <span style={{ color: '#cbd5e1' }}>|</span>
+                </>
+              )}
               <button
                 type="button"
                 onClick={clearAll}
@@ -225,18 +256,56 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
                   border: 'none',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  color: '#64748b',
+                  color: singleSelect && selectedIds.length === 0 ? '#16a34a' : '#64748b',
                   cursor: 'pointer',
                   padding: '2px 4px',
                 }}
               >
-                Limpiar
+                {singleSelect ? 'Ver Todos' : 'Limpiar'}
               </button>
             </div>
           </div>
 
           {/* Options Checklist */}
           <div style={{ maxHeight: '240px', overflowY: 'auto', padding: '6px' }}>
+            {singleSelect && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.86rem',
+                  fontWeight: selectedIds.length === 0 ? 700 : 500,
+                  color: selectedIds.length === 0 ? '#15803d' : '#475569',
+                  background: selectedIds.length === 0 ? '#f0fdf4' : 'transparent',
+                  transition: 'background 0.15s ease',
+                  marginBottom: '2px',
+                  userSelect: 'none',
+                }}
+                onClick={clearAll}
+              >
+                <input
+                  type="radio"
+                  name={`radio_${title}`}
+                  checked={selectedIds.length === 0}
+                  onChange={clearAll}
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#16a34a',
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ flex: 1 }}>TODOS (Sin filtro)</span>
+                {selectedIds.length === 0 && (
+                  <Check size={14} color="#16a34a" style={{ flexShrink: 0 }} />
+                )}
+              </label>
+            )}
+
             {options.map((option) => {
               const isChecked = selectedIds.includes(option.id);
               return (
@@ -265,7 +334,8 @@ export const MultiSelectFilterDropdown: React.FC<MultiSelectFilterDropdownProps>
                   }}
                 >
                   <input
-                    type="checkbox"
+                    type={singleSelect ? 'radio' : 'checkbox'}
+                    name={singleSelect ? `radio_${title}` : undefined}
                     checked={isChecked}
                     onChange={() => toggleOption(option.id)}
                     style={{
